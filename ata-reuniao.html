@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ata de Reunião — EM Vidros</title>
+<style>
+/* ===================== TELA ===================== */
+:root{
+  --bg-app:#f5f7fa;--bg-side:#1a1d2e;--bg-side-hover:#2a2f47;
+  --bg-card:#fff;--txt-main:#1a1d2e;--txt-dim:#6b7280;--txt-muted:#9ca3af;
+  --border:#e5e7eb;--accent:#2563eb;--accent-soft:#dbeafe;
+  --green:#16a34a;--green-soft:#dcfce7;
+  --shadow:0 1px 3px rgba(0,0,0,.06);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(--txt-main);font-size:13px;display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--bg-side);color:#c8ccd6;display:flex;flex-direction:column;position:fixed;height:100vh;left:0;top:0;z-index:10;}
+.brand{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.08);}
+.brand-name{font-weight:700;font-size:1rem;color:#fff;}
+.brand-sub{font-size:.72rem;color:#7a8194;margin-top:3px;}
+.nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-label{padding:8px 20px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:#7a8194;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:.86rem;color:#c8ccd6;transition:.12s;border-left:3px solid transparent;}
+.nav-item:hover{background:var(--bg-side-hover);color:#fff;}
+.nav-item.ativo{background:var(--bg-side-hover);color:#fff;border-left-color:var(--accent);}
+.sidebar-bottom{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:.72rem;color:#7a8194;}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;}
+.topbar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.topbar h1{font-size:1.05rem;font-weight:700;}
+.content{padding:24px 28px;flex:1;max-width:900px;}
+
+/* FORMULÁRIO */
+.card{background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px;box-shadow:var(--shadow);}
+.card-titulo{font-size:.82rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-group.full{grid-column:1/-1;}
+.form-group label{font-size:.72rem;font-weight:600;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.4px;}
+.form-group input,.form-group select,.form-group textarea{background:var(--bg-app);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:.9rem;color:var(--txt-main);font-family:inherit;width:100%;resize:vertical;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--accent);}
+
+/* TÓPICOS */
+.topico{background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:12px;box-shadow:var(--shadow);position:relative;}
+.topico-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.topico-num{background:var(--accent);color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;}
+.topico-titulo{font-weight:700;font-size:.95rem;flex:1;}
+.btn-remover{background:none;border:none;cursor:pointer;color:var(--txt-muted);font-size:1.1rem;padding:4px;border-radius:6px;transition:.12s;}
+.btn-remover:hover{background:#fee2e2;color:#dc2626;}
+
+/* PARTICIPANTES */
+.part-lista{display:flex;flex-direction:column;gap:6px;}
+.part-row{display:flex;gap:8px;align-items:center;}
+.part-row input{flex:1;background:var(--bg-app);border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.88rem;font-family:inherit;}
+.part-row input:focus{outline:none;border-color:var(--accent);}
+.colab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;}
+.colab-chk{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;background:var(--bg-app);border:1.5px solid var(--border);font-size:.85rem;transition:.12s;}
+.colab-chk:hover{border-color:var(--accent);}
+.colab-chk input[type=checkbox]{accent-color:var(--accent);width:15px;height:15px;flex-shrink:0;}
+.colab-chk.marcado{background:var(--accent-soft);border-color:var(--accent);font-weight:600;}
+.btn-add{background:var(--accent-soft);color:var(--accent);border:none;border-radius:8px;padding:8px 16px;font-size:.83rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px;transition:.12s;}
+.btn-add:hover{background:var(--accent);color:#fff;}
+.btn-add-topico{background:var(--green-soft);color:var(--green);border:none;border-radius:8px;padding:10px 20px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:.12s;}
+.btn-add-topico:hover{background:var(--green);color:#fff;}
+.btn-gerar{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;transition:.12s;}
+.btn-gerar:hover{opacity:.9;}
+.acoes{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;}
+
+
+/* ===================== IMPRESSÃO ===================== */
+@media print {
+  @page { size: A4; margin: 18mm 18mm 18mm 18mm; }
+
+  body { background: #fff; font-family: Arial, sans-serif; font-size: 11pt; color: #000; display: block; }
+  .sidebar, .topbar, .no-print { display: none !important; }
+  .main { margin-left: 0; }
+  .content { max-width: 100%; padding: 0; }
+
+  /* CABEÇALHO DA ATA */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    border-bottom: 2.5pt solid #000;
+    padding-bottom: 10pt;
+    margin-bottom: 14pt;
+  }
+  .print-header .empresa { font-size: 15pt; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .print-header .doc-tipo { font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 4pt; }
+  .print-header .doc-num { font-size: 10pt; color: #555; margin-top: 2pt; }
+
+  /* BLOCO DE CAMPOS */
+  .print-fields { display: block !important; margin-bottom: 14pt; }
+  .print-field-row { display: flex; gap: 16pt; margin-bottom: 5pt; }
+  .print-field { flex: 1; }
+  .print-field .f-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #555; }
+  .print-field .f-value { font-size: 10.5pt; border-bottom: 1pt solid #000; padding-bottom: 2pt; min-height: 14pt; margin-top: 1pt; }
+
+  /* TÓPICOS */
+  .print-topico { page-break-inside: avoid; margin-bottom: 14pt; }
+  .print-topico .top-num { font-weight: 700; font-size: 10.5pt; text-transform: uppercase; border-left: 3pt solid #000; padding-left: 6pt; margin-bottom: 6pt; }
+  .print-topico .top-row { display: flex; gap: 12pt; margin-bottom: 4pt; }
+  .print-topico .top-col { flex: 1; }
+  .print-topico .top-col .f-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; color: #555; margin-bottom: 2pt; }
+  .print-topico .top-col .f-value { font-size: 10pt; background: #f8f8f8; border: .5pt solid #ccc; padding: 5pt 7pt; border-radius: 3pt; min-height: 24pt; }
+  .print-topico .top-resp { display: flex; gap: 12pt; margin-top: 4pt; }
+  .print-topico .top-resp .f-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; color: #555; }
+  .print-topico .top-resp .f-value { font-size: 10pt; }
+
+  /* PARTICIPANTES */
+  .print-participantes { display: block !important; page-break-before: always; }
+  .print-part-titulo { font-weight: 700; font-size: 11pt; text-transform: uppercase; border-bottom: 1.5pt solid #000; padding-bottom: 4pt; margin-bottom: 12pt; }
+  .print-part-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14pt; margin-bottom: 20pt; }
+  .print-part-item { border-bottom: .8pt solid #000; padding-bottom: 2pt; }
+  .print-part-name { font-size: 10pt; font-weight: 600; }
+  .print-part-assinatura { font-size: 8pt; color: #777; margin-top: 14pt; }
+
+  /* GESTORES */
+  .print-gestores { margin-top: 20pt; border-top: 1.5pt solid #000; padding-top: 12pt; }
+  .print-gestores .f-label { font-weight: 700; font-size: 9pt; text-transform: uppercase; margin-bottom: 8pt; }
+  .print-gestor-row { display: flex; gap: 20pt; margin-top: 6pt; }
+  .print-gestor { flex: 1; }
+  .print-gestor .g-nome { font-size: 10pt; font-weight: 700; margin-top: 28pt; border-top: .8pt solid #000; padding-top: 4pt; }
+  .print-gestor .g-cargo { font-size: 8.5pt; color: #555; }
+
+  /* OCULTAR ELEMENTOS DE TELA */
+  .card, .topico, .form-group, .btn-add, .btn-add-topico, .btn-gerar, .btn-remover, .acoes { display: none !important; }
+  .print-header, .print-fields, .print-participantes { display: block !important; }
+  .print-topicos { display: block !important; }
+}
+
+/* Ocultar elementos só de impressão em tela */
+.print-header, .print-fields, .print-topicos, .print-participantes { display: none; }
+
+/* ABAS */
+.tabs-bar{display:flex;gap:6px;padding:14px 28px 0;background:var(--bg-card);border-bottom:1px solid var(--border);}
+.tab-btn{padding:9px 20px;border:none;background:none;cursor:pointer;font-family:inherit;font-size:.86rem;font-weight:600;color:var(--txt-dim);border-bottom:2.5px solid transparent;transition:.12s;margin-bottom:-1px;}
+.tab-btn.ativa{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-badge{background:var(--accent);color:#fff;border-radius:99px;font-size:.7rem;padding:1px 7px;margin-left:6px;font-weight:700;}
+.panel{display:none;}.panel.ativa{display:block;}
+
+/* HISTÓRICO */
+.hist-card{background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:12px;display:flex;align-items:flex-start;gap:16px;box-shadow:var(--shadow);}
+.hist-date{background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:8px 12px;text-align:center;flex-shrink:0;min-width:56px;}
+.hist-date .hd-dia{font-size:1.4rem;font-weight:700;line-height:1;}
+.hist-date .hd-mes{font-size:.7rem;font-weight:600;text-transform:uppercase;}
+.hist-info{flex:1;}
+.hist-num{font-size:.72rem;color:var(--txt-dim);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.hist-titulo{font-weight:700;font-size:.95rem;margin:2px 0 6px;}
+.hist-meta{font-size:.78rem;color:var(--txt-dim);}
+.hist-acoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.badge-pdf{display:inline-flex;align-items:center;gap:4px;border-radius:99px;padding:3px 10px;font-size:.72rem;font-weight:700;}
+.badge-pendente{background:#fef3c7;color:#92400e;}
+.badge-ok{background:var(--green-soft);color:var(--green);}
+.btn-hist{padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-app);cursor:pointer;font-size:.78rem;font-family:inherit;font-weight:600;color:var(--txt-main);transition:.12s;}
+.btn-hist:hover{border-color:var(--accent);color:var(--accent);}
+.btn-hist.danger{color:#dc2626;}.btn-hist.danger:hover{border-color:#dc2626;background:#fee2e2;}
+.btn-hist.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+.hist-empty{text-align:center;padding:48px 0;color:var(--txt-dim);}
+
+/* MODAL IMPORTAR ATA */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center;}
+.modal-overlay.hidden{display:none;}
+.modal-box{background:var(--bg-card);border-radius:16px;padding:28px 28px 24px;width:100%;max-width:520px;box-shadow:0 8px 32px rgba(0,0,0,.18);max-height:90vh;overflow-y:auto;}
+.modal-titulo{font-weight:700;font-size:1rem;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.modal-mes-grupo{margin-bottom:10px;}
+.modal-mes-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--txt-dim);margin-bottom:6px;}
+.modal-mes-itens{display:flex;flex-direction:column;gap:6px;}
+.import-row{display:grid;grid-template-columns:110px 1fr 90px 32px;gap:6px;align-items:center;}
+.import-row input{background:var(--bg-app);border:1.5px solid var(--border);border-radius:7px;padding:6px 9px;font-size:.82rem;font-family:inherit;color:var(--txt-main);width:100%;}
+.import-row input:focus{outline:none;border-color:var(--accent);}
+.import-row .btn-pdf-col{display:flex;align-items:center;gap:4px;}
+.btn-import-pdf{padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;background:var(--bg-app);cursor:pointer;font-size:.75rem;font-family:inherit;color:var(--txt-dim);transition:.12s;white-space:nowrap;}
+.btn-import-pdf.ok{background:var(--green-soft);color:var(--green);border-color:var(--green);}
+.btn-import-pdf:hover{border-color:var(--accent);color:var(--accent);}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
+.btn-modal-cancel{padding:9px 20px;border:1.5px solid var(--border);border-radius:8px;background:none;cursor:pointer;font-family:inherit;font-size:.86rem;font-weight:600;}
+.btn-modal-save{padding:9px 20px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;font-size:.86rem;font-weight:600;}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="brand">
+    <div class="brand-name"><img src="docs/logo-emvidros.svg" alt="EM Vidros" style="height:56px;width:auto;display:block;"></div>
+    <div class="brand-sub">Ata de Reunião</div>
+  </div>
+  <div class="nav">
+    <div class="nav-label">Módulos</div>
+    <div class="nav-item" onclick="window.location='formulario-registro.html'">✏️ Registro Diário</div>
+    <div class="nav-item" onclick="window.location='dashboard-semanal.html'">📊 Dashboard</div>
+    <div class="nav-item" onclick="window.location='manutencao-frota.html'">🔧 Manutenção Frota</div>
+    <div class="nav-item" onclick="window.location='documentos-frota.html'">📂 Documentos</div>
+    <div class="nav-item ativo">📝 Ata de Reunião</div>
+    <div class="nav-item" onclick="window.location='integracao-frota.html'">🧑‍🏫 Integração</div>
+  </div>
+  <div class="sidebar-bottom">v1.0 · Ago 2026</div>
+</nav>
+
+<main class="main">
+  <div class="topbar">
+    <div><h1>Ata de Reunião</h1></div>
+    <div class="acoes no-print" style="display:flex;gap:8px;">
+      <button class="btn-gerar" onclick="gerarPDF()">🖨️ Gerar PDF para Assinatura</button>
+      <button class="btn-gerar" id="btnAnexar" onclick="document.getElementById('inputPDF').click()" style="background:var(--green);display:none">📎 Anexar PDF Assinado</button>
+      <input type="file" id="inputPDF" accept="application/pdf" style="display:none" onchange="anexarPDF(this)">
+    </div>
+  </div>
+
+  <!-- ABAS -->
+  <div class="tabs-bar no-print">
+    <button class="tab-btn ativa" id="tabBtnAta" onclick="switchTab('ata')">📋 Nova Ata</button>
+    <button class="tab-btn" id="tabBtnHist" onclick="switchTab('hist')">📁 Histórico <span class="tab-badge" id="badgeHist">0</span></button>
+  </div>
+
+  <!-- PAINEL ATA -->
+  <div class="content panel ativa" id="panelAta">
+
+    <!-- CABEÇALHO DA ATA -->
+    <div class="card no-print">
+      <div class="card-titulo">📋 Identificação da Reunião</div>
+      <div class="form-grid-3">
+        <div class="form-group">
+          <label>Nº da Ata</label>
+          <input type="text" id="f_num" placeholder="Ex: 001/2026">
+        </div>
+        <div class="form-group">
+          <label>Data</label>
+          <input type="date" id="f_data">
+        </div>
+        <div class="form-group">
+          <label>Horário</label>
+          <input type="time" id="f_horario">
+        </div>
+        <div class="form-group full">
+          <label>Título da Reunião</label>
+          <input type="text" id="f_titulo" placeholder="Ex: Alinhamento Equipe Expedição">
+        </div>
+        <div class="form-group">
+          <label>Local</label>
+          <input type="text" id="f_local" placeholder="Ex: Raposa - MA">
+        </div>
+        <div class="form-group">
+          <label>Reunião convocada por</label>
+          <input type="text" id="f_convocada" value="Lívia Lima, Raimundo Pontes">
+        </div>
+        <div class="form-group">
+          <label>Facilitadores</label>
+          <input type="text" id="f_facilitadores" value="Gestores de Expedição – EM Vidros">
+        </div>
+        <div class="form-group full">
+          <label>Participantes (descrição geral)</label>
+          <input type="text" id="f_participantes_geral" value="Equipe Expedição (Motoristas e Assist frota)">
+        </div>
+      </div>
+    </div>
+
+    <!-- TÓPICOS -->
+    <div id="topicosContainer"></div>
+
+    <div class="no-print" style="margin-bottom:16px;">
+      <button class="btn-add-topico" onclick="adicionarTopico()">+ Adicionar Tópico</button>
+    </div>
+
+    <!-- LISTA DE PARTICIPANTES (para assinatura) -->
+    <div class="card no-print">
+      <div class="card-titulo">✍️ Participantes</div>
+      <div style="margin-bottom:12px;font-size:13px;color:var(--text-muted)">Selecione quem esteve presente na reunião.</div>
+
+      <!-- Motoristas -->
+      <div style="margin-bottom:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Motoristas</div>
+      <div class="colab-grid" id="checkMotoristas"></div>
+
+      <!-- Ajudantes -->
+      <div style="margin:14px 0 4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Ajudantes de Entrega</div>
+      <div class="colab-grid" id="checkAjudantes"></div>
+
+      <!-- Atendimento ao Cliente -->
+      <div style="margin:14px 0 4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Atendimento ao Cliente</div>
+      <div class="colab-grid" id="checkAtendimento"></div>
+
+      <!-- Assistente de Logística -->
+      <div style="margin:14px 0 4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Assistente de Logística</div>
+      <div class="colab-grid" id="checkLogistica"></div>
+
+      <!-- Ações rápidas + extra -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center;">
+        <button class="btn-add" onclick="marcarTodos(true)">✔ Marcar todos</button>
+        <button class="btn-add" onclick="marcarTodos(false)">✕ Desmarcar todos</button>
+        <button class="btn-add" onclick="adicionarParticipanteExtra()">+ Adicionar externo</button>
+      </div>
+
+      <!-- Extras (convidados fora da lista) -->
+      <div class="part-lista" id="listaPart" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- GESTORES -->
+    <div class="card no-print">
+      <div class="card-titulo">🏷️ Gestores</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nome do Gestor 1</label>
+          <input type="text" id="g1_nome" value="Lívia Maria de Castro Cutrim Lima">
+        </div>
+        <div class="form-group">
+          <label>Cargo do Gestor 1</label>
+          <input type="text" id="g1_cargo" value="Gerente de Logística">
+        </div>
+        <div class="form-group">
+          <label>Nome do Gestor 2</label>
+          <input type="text" id="g2_nome" value="Raimundo Pontes Pereira">
+        </div>
+        <div class="form-group">
+          <label>Cargo do Gestor 2</label>
+          <input type="text" id="g2_cargo" value="Coordenador de Expedição">
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panelAta -->
+
+  <!-- PAINEL HISTÓRICO -->
+  <div class="content panel" id="panelHist">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:.82rem;color:var(--txt-dim);">Atas salvas neste dispositivo.</div>
+      <button class="btn-gerar" style="font-size:.82rem;padding:8px 16px;" onclick="abrirModalImportar()">📥 Importar Atas Passadas</button>
+    </div>
+    <div id="listaHistorico"></div>
+  </div>
+
+  <!-- MODAL IMPORTAR ATAS PASSADAS -->
+  <div class="modal-overlay hidden" id="modalImportar">
+    <div class="modal-box">
+      <div class="modal-titulo">📥 Importar Atas — Jan a Ago 2026</div>
+      <div style="font-size:.8rem;color:var(--txt-dim);margin-bottom:16px;">Para cada reunião realizada: informe a data, o título e o número. Se tiver o PDF assinado, clique em 📎 para já anexar.</div>
+      <div style="display:grid;grid-template-columns:110px 1fr 90px 32px;gap:6px;margin-bottom:6px;">
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;color:var(--txt-dim);">Data</div>
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;color:var(--txt-dim);">Título da Reunião</div>
+        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;color:var(--txt-dim);">Nº da Ata</div>
+        <div></div>
+      </div>
+      <div id="importRows"></div>
+      <button class="btn-add" style="margin-top:10px;" onclick="addImportRow()">+ Adicionar linha</button>
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" onclick="fecharModalImportar()">Cancelar</button>
+        <button class="btn-modal-save" onclick="salvarImportadas()">✔ Salvar no Histórico</button>
+      </div>
+    </div>
+  </div>
+  <input type="file" id="inputPDFImport" accept="application/pdf" style="display:none" onchange="onPDFImportSelecionado(this)">
+
+</main>
+
+<!-- ===================== ELEMENTOS DE IMPRESSÃO ===================== -->
+<div class="print-header">
+  <div class="empresa">EM Vidros Indústria e Comércio de Vidros Ltda</div>
+  <div class="doc-tipo">Ata de Reunião — Expedição Raposa</div>
+  <div class="doc-num" id="p_num_ata"></div>
+</div>
+
+<div class="print-fields">
+  <div class="print-field-row">
+    <div class="print-field"><div class="f-label">Título da Reunião</div><div class="f-value" id="p_titulo"></div></div>
+  </div>
+  <div class="print-field-row">
+    <div class="print-field"><div class="f-label">Data</div><div class="f-value" id="p_data"></div></div>
+    <div class="print-field"><div class="f-label">Horário</div><div class="f-value" id="p_horario"></div></div>
+    <div class="print-field"><div class="f-label">Local</div><div class="f-value" id="p_local"></div></div>
+  </div>
+  <div class="print-field-row">
+    <div class="print-field"><div class="f-label">Reunião convocada por</div><div class="f-value" id="p_convocada"></div></div>
+    <div class="print-field"><div class="f-label">Facilitadores</div><div class="f-value" id="p_facilitadores"></div></div>
+    <div class="print-field"><div class="f-label">Participantes</div><div class="f-value" id="p_participantes_geral"></div></div>
+  </div>
+</div>
+
+<div class="print-topicos" id="printTopicos"></div>
+
+<div class="print-participantes">
+  <div class="print-part-titulo">Participantes</div>
+  <div style="display:flex;justify-content:space-between;font-size:8pt;font-weight:700;text-transform:uppercase;color:#555;margin-bottom:8pt;">
+    <span>Nome</span><span>Assinatura</span>
+  </div>
+  <div class="print-part-grid" id="printPart"></div>
+
+  <div class="print-gestores">
+    <div class="f-label">Gestores Responsáveis</div>
+    <div class="print-gestor-row">
+      <div class="print-gestor">
+        <div class="g-nome" id="p_g1_nome"></div>
+        <div class="g-cargo" id="p_g1_cargo"></div>
+      </div>
+      <div class="print-gestor">
+        <div class="g-nome" id="p_g2_nome"></div>
+        <div class="g-cargo" id="p_g2_cargo"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let topicoCount = 0;
+
+// ===================== INIT =====================
+document.addEventListener('DOMContentLoaded', () => {
+  // Data e hora automáticas
+  const agora = new Date();
+  document.getElementById('f_data').value = agora.toISOString().split('T')[0];
+  document.getElementById('f_horario').value = agora.toTimeString().slice(0,5);
+
+  // 3 tópicos vazios iniciais
+  adicionarTopico();
+  adicionarTopico();
+  adicionarTopico();
+
+  // Renderizar checkboxes da equipe
+  renderCheckboxes('checkMotoristas',  COLABORADORES.motorista);
+  renderCheckboxes('checkAjudantes',   COLABORADORES.ajudante);
+  renderCheckboxes('checkAtendimento', COLABORADORES.atendimento);
+  renderCheckboxes('checkLogistica',   COLABORADORES.logistica);
+  atualizarBadge();
+});
+
+// ===================== TÓPICOS =====================
+function adicionarTopico(disc='', concl='', resp='', prazo='') {
+  topicoCount++;
+  const n = topicoCount;
+  const div = document.createElement('div');
+  div.className = 'topico no-print';
+  div.id = 'topico_' + n;
+  div.innerHTML = `
+    <div class="topico-header">
+      <div class="topico-num">${n}</div>
+      <div class="topico-titulo">Tópico ${n}</div>
+      <button class="btn-remover" onclick="removerTopico(${n})" title="Remover tópico">✕</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full"><label>Discussão</label><input type="text" id="t${n}_disc" placeholder="Assunto discutido..." value="${esc(disc)}"></div>
+      <div class="form-group full"><label>Conclusões / Encaminhamentos</label><textarea id="t${n}_concl" rows="3" placeholder="Deliberações e encaminhamentos...">${esc(concl)}</textarea></div>
+      <div class="form-group"><label>Responsável</label><input type="text" id="t${n}_resp" placeholder="Nome ou função" value="${esc(resp)}"></div>
+      <div class="form-group"><label>Prazo</label><input type="text" id="t${n}_prazo" placeholder="Ex: Imediato / 30/09/2026" value="${esc(prazo)}"></div>
+    </div>`;
+  document.getElementById('topicosContainer').appendChild(div);
+}
+
+function removerTopico(n) {
+  const el = document.getElementById('topico_' + n);
+  if (el) el.remove();
+}
+
+// ===================== COLABORADORES =====================
+const COLABORADORES = {
+  motorista: [
+    'Adinaldo de Souza de Jesus','Anderson Penha Dos Anjos','Gabriel Reis Costa',
+    'Leandro do Nascimento Brito','Raimundo Correia Ferreira','Raimundo Nonato da Silva Divino',
+    'Saturnino Assumpção Dias Filho','Silio Vinicius Cruz Castro','Victor Gonçalves Vasconcelos'
+  ],
+  ajudante: [
+    'Alejandro Marques Alves','Carlos Augusto Ferreira','Edmilson Fonseca Ribeiro',
+    'Emerson Hugo Silva Rodrigues','Erizelton Abreu Ferreira','Esteves Gabriel de Sousa de Assis',
+    'Josenilson Pereira da Silva','Kleryson Cleber Pereira Isaias','Laurenilson Pereira Dias',
+    'Terles Sousa Dias'
+  ],
+  atendimento: [
+    'Erika Sousa de Oliveira Reis','Luís Henrique Pereira Diniz'
+  ],
+  logistica: [
+    'Andreina Santos Vilar'
+  ]
+};
+
+function renderCheckboxes(containerId, nomes) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  nomes.forEach(nome => {
+    const label = document.createElement('label');
+    label.className = 'colab-chk';
+    label.innerHTML = `<input type="checkbox" onchange="atualizarMarcado(this)"> ${esc(nome)}`;
+    container.appendChild(label);
+  });
+}
+
+function atualizarMarcado(chk) {
+  chk.closest('.colab-chk').classList.toggle('marcado', chk.checked);
+}
+
+function marcarTodos(estado) {
+  document.querySelectorAll('.colab-chk input[type=checkbox]').forEach(chk => {
+    chk.checked = estado;
+    chk.closest('.colab-chk').classList.toggle('marcado', estado);
+  });
+}
+
+// ===================== PARTICIPANTES EXTERNOS =====================
+function adicionarParticipanteExtra() {
+  const row = document.createElement('div');
+  row.className = 'part-row';
+  row.innerHTML = `<input type="text" placeholder="Nome completo (externo / convidado)">
+    <button class="btn-remover" onclick="this.parentElement.remove()" title="Remover">✕</button>`;
+  document.getElementById('listaPart').appendChild(row);
+}
+
+// ===================== GERAR PDF =====================
+function gerarPDF() {
+  // Preencher campos de impressão
+  const num = document.getElementById('f_num').value.trim();
+  document.getElementById('p_num_ata').textContent = num ? 'Ata nº ' + num : '';
+  document.getElementById('p_titulo').textContent     = document.getElementById('f_titulo').value;
+  document.getElementById('p_data').textContent       = formatarData(document.getElementById('f_data').value);
+  document.getElementById('p_horario').textContent    = document.getElementById('f_horario').value;
+  document.getElementById('p_local').textContent      = document.getElementById('f_local').value;
+  document.getElementById('p_convocada').textContent  = document.getElementById('f_convocada').value;
+  document.getElementById('p_facilitadores').textContent = document.getElementById('f_facilitadores').value;
+  document.getElementById('p_participantes_geral').textContent = document.getElementById('f_participantes_geral').value;
+  document.getElementById('p_g1_nome').textContent    = document.getElementById('g1_nome').value;
+  document.getElementById('p_g1_cargo').textContent   = document.getElementById('g1_cargo').value;
+  document.getElementById('p_g2_nome').textContent    = document.getElementById('g2_nome').value;
+  document.getElementById('p_g2_cargo').textContent   = document.getElementById('g2_cargo').value;
+
+  // Tópicos
+  const container = document.getElementById('printTopicos');
+  container.innerHTML = '';
+  const topicos = document.querySelectorAll('[id^="topico_"]');
+  let idx = 0;
+  topicos.forEach(t => {
+    const num = t.id.replace('topico_','');
+    const disc  = document.getElementById('t'+num+'_disc')?.value  || '';
+    const concl = document.getElementById('t'+num+'_concl')?.value || '';
+    const resp  = document.getElementById('t'+num+'_resp')?.value  || '';
+    const prazo = document.getElementById('t'+num+'_prazo')?.value || '';
+    if (!disc && !concl) return;
+    idx++;
+    const div = document.createElement('div');
+    div.className = 'print-topico';
+    div.innerHTML = `
+      <div class="top-num">Tópico ${idx}</div>
+      <div class="top-row">
+        <div class="top-col"><div class="f-label">Discussão</div><div class="f-value">${htmlEsc(disc)}</div></div>
+        <div class="top-col"><div class="f-label">Conclusões / Encaminhamentos</div><div class="f-value">${htmlEsc(concl).replace(/\n/g,'<br>')}</div></div>
+      </div>
+      <div class="top-resp">
+        <div><div class="f-label">Responsável:</div><div class="f-value"><b>${htmlEsc(resp)||'—'}</b></div></div>
+        <div style="margin-left:24pt;"><div class="f-label">Prazo:</div><div class="f-value"><b>${htmlEsc(prazo)||'—'}</b></div></div>
+      </div>`;
+    container.appendChild(div);
+  });
+
+  // Participantes — checkboxes marcados + externos
+  const grid = document.getElementById('printPart');
+  grid.innerHTML = '';
+  const nomes = [];
+  document.querySelectorAll('.colab-chk input[type=checkbox]:checked').forEach(chk => {
+    nomes.push(chk.closest('.colab-chk').textContent.trim());
+  });
+  document.querySelectorAll('#listaPart .part-row input').forEach(inp => {
+    const v = inp.value.trim();
+    if (v) nomes.push(v);
+  });
+  nomes.forEach(nome => {
+    const item = document.createElement('div');
+    item.className = 'print-part-item';
+    item.innerHTML = `<div class="print-part-name">${htmlEsc(nome)}</div><div class="print-part-assinatura">Assinatura</div>`;
+    grid.appendChild(item);
+  });
+
+  salvarAta();
+  window.print();
+}
+
+// ===================== SALVAR / HISTÓRICO =====================
+function coletarDados() {
+  const participantes = [];
+  document.querySelectorAll('.colab-chk input[type=checkbox]:checked').forEach(chk => {
+    participantes.push(chk.closest('.colab-chk').textContent.trim());
+  });
+  document.querySelectorAll('#listaPart .part-row input').forEach(inp => {
+    const v = inp.value.trim(); if (v) participantes.push(v);
+  });
+
+  const topicos = [];
+  document.querySelectorAll('[id^="topico_"]').forEach(t => {
+    const n = t.id.replace('topico_','');
+    const disc = document.getElementById('t'+n+'_disc')?.value || '';
+    const concl = document.getElementById('t'+n+'_concl')?.value || '';
+    if (disc || concl) topicos.push({
+      disc, concl,
+      resp: document.getElementById('t'+n+'_resp')?.value || '',
+      prazo: document.getElementById('t'+n+'_prazo')?.value || ''
+    });
+  });
+
+  return {
+    num:          document.getElementById('f_num').value.trim(),
+    titulo:       document.getElementById('f_titulo').value.trim(),
+    data:         document.getElementById('f_data').value,
+    horario:      document.getElementById('f_horario').value,
+    local:        document.getElementById('f_local').value.trim(),
+    convocada:    document.getElementById('f_convocada').value.trim(),
+    participantes,
+    topicos
+  };
+}
+
+let ataAtualId = null;
+
+function salvarAta() {
+  const dados = coletarDados();
+  const atas = JSON.parse(localStorage.getItem('emvidros_atas') || '[]');
+
+  if (ataAtualId) {
+    const idx = atas.findIndex(a => a.id === ataAtualId);
+    if (idx >= 0) { atas[idx] = { ...atas[idx], ...dados }; }
+  } else {
+    ataAtualId = 'ata_' + Date.now();
+    atas.unshift({ id: ataAtualId, ...dados, pdfB64: null, savedAt: new Date().toISOString() });
+    document.getElementById('btnAnexar').style.display = '';
+  }
+  localStorage.setItem('emvidros_atas', JSON.stringify(atas));
+  atualizarBadge();
+}
+
+function atualizarBadge() {
+  const n = JSON.parse(localStorage.getItem('emvidros_atas') || '[]').length;
+  document.getElementById('badgeHist').textContent = n;
+}
+
+function renderHistorico() {
+  const atas = JSON.parse(localStorage.getItem('emvidros_atas') || '[]');
+  const el = document.getElementById('listaHistorico');
+  if (!atas.length) {
+    el.innerHTML = '<div class="hist-empty">📋 Nenhuma ata registrada ainda.<br><small>Gere o PDF de uma ata para ela aparecer aqui.</small></div>';
+    return;
+  }
+  el.innerHTML = '';
+  atas.forEach(a => {
+    const [ano,mes,dia] = (a.data || '----').split('-');
+    const meses = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const mesNome = meses[parseInt(mes||0)] || '—';
+    const temPDF = !!a.pdfB64;
+    const badge = temPDF
+      ? `<span class="badge-pdf badge-ok">✅ PDF anexado</span>`
+      : `<span class="badge-pdf badge-pendente">📎 PDF pendente</span>`;
+    const card = document.createElement('div');
+    card.className = 'hist-card';
+    card.innerHTML = `
+      <div class="hist-date"><div class="hd-dia">${dia||'--'}</div><div class="hd-mes">${mesNome} ${(ano||'').slice(2)}</div></div>
+      <div class="hist-info">
+        <div class="hist-num">${a.num ? 'Ata nº '+htmlEsc(a.num)+' · ' : ''}${a.horario||''}</div>
+        <div class="hist-titulo">${htmlEsc(a.titulo || 'Sem título')}</div>
+        <div class="hist-meta">${a.local ? htmlEsc(a.local)+' · ' : ''}${a.participantes.length} participante(s) · ${a.topicos.length} tópico(s)</div>
+        <div style="margin-top:8px;">${badge}</div>
+        <div class="hist-acoes">
+          ${temPDF ? `<button class="btn-hist primary" onclick="downloadPDF('${a.id}')">⬇️ Baixar PDF</button>` : ''}
+          <button class="btn-hist" onclick="anexarParaAta('${a.id}')">📎 ${temPDF ? 'Substituir PDF' : 'Anexar PDF'}</button>
+          <button class="btn-hist danger" onclick="deletarAta('${a.id}')">🗑 Excluir</button>
+        </div>
+      </div>`;
+    el.appendChild(card);
+  });
+}
+
+function switchTab(tab) {
+  const eAta = tab === 'ata';
+  document.getElementById('panelAta').classList.toggle('ativa', eAta);
+  document.getElementById('panelHist').classList.toggle('ativa', !eAta);
+  document.getElementById('tabBtnAta').classList.toggle('ativa', eAta);
+  document.getElementById('tabBtnHist').classList.toggle('ativa', !eAta);
+  if (!eAta) renderHistorico();
+}
+
+// ===================== ANEXAR PDF =====================
+let _anexarParaId = null;
+
+function anexarPDF(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 4 * 1024 * 1024) {
+    alert('PDF muito grande (máx 4 MB). Reduza o tamanho antes de anexar.');
+    input.value = ''; return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const atas = JSON.parse(localStorage.getItem('emvidros_atas') || '[]');
+    const id = _anexarParaId || ataAtualId;
+    const idx = atas.findIndex(a => a.id === id);
+    if (idx >= 0) {
+      atas[idx].pdfB64 = e.target.result;
+      localStorage.setItem('emvidros_atas', JSON.stringify(atas));
+      alert('PDF anexado com sucesso!');
+      renderHistorico();
+    }
+    _anexarParaId = null;
+    input.value = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+function anexarParaAta(id) {
+  _anexarParaId = id;
+  document.getElementById('inputPDF').click();
+}
+
+function downloadPDF(id) {
+  const atas = JSON.parse(localStorage.getItem('emvidros_atas') || '[]');
+  const a = atas.find(x => x.id === id);
+  if (!a || !a.pdfB64) return;
+  const link = document.createElement('a');
+  link.href = a.pdfB64;
+  const nome = [a.num ? 'ata-'+a.num.replace('/','') : 'ata', a.data, a.titulo].filter(Boolean).join('-');
+  link.download = nome.replace(/[^a-zA-Z0-9-]/g,'-') + '.pdf';
+  link.click();
+}
+
+function deletarAta(id) {
+  if (!confirm('Excluir esta ata do histórico?')) return;
+  let atas = JSON.parse(localStorage.getItem('emvidros_atas') || '[]');
+  atas = atas.filter(a => a.id !== id);
+  localStorage.setItem('emvidros_atas', JSON.stringify(atas));
+  if (id === ataAtualId) { ataAtualId = null; document.getElementById('btnAnexar').style.display='none'; }
+  atualizarBadge();
+  renderHistorico();
+}
+
+// ===================== IMPORTAR ATAS PASSADAS =====================
+// Meses Jan–Ago 2026 com sugestão de datas (último dia útil de cada mês ~)
+const MESES_IMPORT = [
+  { mes:'Janeiro',   ano:'2026', data:'2026-01-31' },
+  { mes:'Fevereiro', ano:'2026', data:'2026-02-28' },
+  { mes:'Março',     ano:'2026', data:'2026-03-31' },
+  { mes:'Abril',     ano:'2026', data:'2026-04-30' },
+  { mes:'Maio',      ano:'2026', data:'2026-05-31' },
+  { mes:'Junho',     ano:'2026', data:'2026-06-30' },
+  { mes:'Julho',     ano:'2026', data:'2026-07-31' },
+  { mes:'Agosto',    ano:'2026', data:'2026-08-31' },
+];
+
+let _importPdfs = {};   // rowId → base64
+let _importRowId = null;
+let _rowCounter  = 0;
+
+function abrirModalImportar() {
+  _importPdfs  = {};
+  _importRowId = null;
+  document.getElementById('importRows').innerHTML = '';
+  // Pré-popular uma linha por mês
+  MESES_IMPORT.forEach(m => addImportRow(m.data, 'Alinhamento Equipe Expedição', '', m.mes));
+  document.getElementById('modalImportar').classList.remove('hidden');
+}
+
+function fecharModalImportar() {
+  document.getElementById('modalImportar').classList.add('hidden');
+}
+
+function addImportRow(data='', titulo='', num='', mesLabel='') {
+  const id = 'imp_' + (++_rowCounter);
+  const row = document.createElement('div');
+  row.className = 'import-row';
+  row.id = id;
+  row.innerHTML = `
+    <input type="date" id="${id}_data" value="${data}">
+    <input type="text"  id="${id}_titulo" placeholder="Título da reunião" value="${esc(titulo)}">
+    <input type="text"  id="${id}_num" placeholder="001/2026" value="${esc(num)}">
+    <button class="btn-import-pdf" id="${id}_pdfbtn" onclick="escolherPDFImport('${id}')" title="Anexar PDF assinado">📎</button>`;
+  document.getElementById('importRows').appendChild(row);
+  if (mesLabel) {
+    const lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:.68rem;color:var(--txt-dim);margin:2px 0 4px;grid-column:1/-1;';
+    lbl.textContent = mesLabel + ' 2026';
+    document.getElementById('importRows').insertBefore(lbl, row);
+  }
+}
+
+function escolherPDFImport(rowId) {
+  _importRowId = rowId;
+  document.getElementById('inputPDFImport').value = '';
+  document.getElementById('inputPDFImport').click();
+}
+
+function onPDFImportSelecionado(input) {
+  const file = input.files[0];
+  if (!file || !_importRowId) return;
+  if (file.size > 4 * 1024 * 1024) { alert('PDF muito grande (máx 4 MB).'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    _importPdfs[_importRowId] = e.target.result;
+    const btn = document.getElementById(_importRowId + '_pdfbtn');
+    if (btn) { btn.textContent = '✅'; btn.classList.add('ok'); btn.title = file.name; }
+    _importRowId = null;
+  };
+  reader.readAsDataURL(file);
+}
+
+function salvarImportadas() {
+  const atas = JSON.parse(localStorage.getItem('emvidros_atas') || '[]');
+  const rows = document.querySelectorAll('#importRows .import-row');
+  let adicionadas = 0;
+  rows.forEach(row => {
+    const id    = row.id;
+    const data  = document.getElementById(id+'_data')?.value || '';
+    const titulo= document.getElementById(id+'_titulo')?.value.trim() || '';
+    if (!data && !titulo) return; // linha vazia
+    const nova = {
+      id: 'ata_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      num:    document.getElementById(id+'_num')?.value.trim() || '',
+      titulo: titulo || 'Ata de Reunião',
+      data, horario: '', local: 'Raposa - MA',
+      convocada: 'Lívia Lima, Raimundo Pontes',
+      participantes: [], topicos: [],
+      pdfB64: _importPdfs[id] || null,
+      savedAt: new Date().toISOString(),
+      importada: true
+    };
+    atas.push(nova);
+    adicionadas++;
+  });
+  // Ordenar por data decrescente
+  atas.sort((a,b) => (b.data||'').localeCompare(a.data||''));
+  localStorage.setItem('emvidros_atas', JSON.stringify(atas));
+  fecharModalImportar();
+  atualizarBadge();
+  renderHistorico();
+  alert(adicionadas + ' ata(s) importada(s) com sucesso!');
+}
+
+// ===================== HELPERS =====================
+function esc(s){ return (s||'').replace(/"/g,'&quot;'); }
+function htmlEsc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function formatarData(d) {
+  if (!d) return '';
+  const [a,m,dia] = d.split('-');
+  return `${dia}/${m}/${a}`;
+}
+</script>
+</body>
+</html>

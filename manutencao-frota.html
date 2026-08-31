@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manutenção Frota — EM Vidros</title>
+<style>
+:root{
+  --bg-app:#f5f7fa;--bg-side:#1a1d2e;--bg-side-hover:#2a2f47;--bg-side-active:#2563eb;
+  --txt-side:#c8ccd6;--txt-side-dim:#7a8194;--txt-side-bright:#fff;
+  --bg-card:#fff;--txt-main:#1a1d2e;--txt-dim:#6b7280;--txt-muted:#9ca3af;
+  --border:#e5e7eb;--accent:#2563eb;--accent-soft:#dbeafe;
+  --green:#16a34a;--green-soft:#dcfce7;
+  --orange:#ea580c;--orange-soft:#ffedd5;
+  --red:#dc2626;--red-soft:#fee2e2;
+  --yellow:#ca8a04;--yellow-soft:#fef9c3;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(--txt-main);font-size:13px;display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--bg-side);color:var(--txt-side);display:flex;flex-direction:column;position:fixed;height:100vh;left:0;top:0;z-index:10;}
+.brand{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.08);}
+.brand-name{font-weight:700;font-size:1rem;color:#fff;display:flex;align-items:center;gap:8px;}
+.brand-sub{font-size:.72rem;color:var(--txt-side-dim);margin-top:3px;}
+.nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-label{padding:8px 20px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--txt-side-dim);font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:.86rem;color:var(--txt-side);transition:.12s;border-left:3px solid transparent;}
+.nav-item:hover{background:var(--bg-side-hover);color:#fff;}
+.nav-item.ativo{background:var(--bg-side-hover);color:#fff;border-left-color:var(--accent);}
+.nav-item .ico{width:18px;text-align:center;font-size:1rem;}
+.sidebar-bottom{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:.72rem;color:var(--txt-side-dim);}
+.user-chip{padding:10px 20px;border-top:1px solid rgba(255,255,255,.08);}
+.user-nome{font-size:.8rem;color:#fff;font-weight:600;}
+.user-base{font-size:.7rem;color:var(--txt-side-dim);}
+
+/* MAIN */
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.topbar h1{font-size:1.05rem;font-weight:700;}
+.content{padding:24px 28px;flex:1;}
+
+/* ABAS */
+.tabs{display:flex;gap:4px;background:var(--bg-app);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content;margin-bottom:20px;}
+.tab-btn{padding:8px 20px;border-radius:7px;border:none;background:transparent;font-size:.85rem;font-weight:600;cursor:pointer;color:var(--txt-dim);font-family:inherit;transition:.12s;}
+.tab-btn.ativo{background:var(--bg-card);color:var(--accent);box-shadow:var(--shadow);}
+
+/* FILTROS */
+.filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:center;}
+.base-chip{border:2px solid var(--border);background:var(--bg-card);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--txt-dim);transition:.12s;font-family:inherit;}
+.base-chip:hover{border-color:var(--accent);}
+.base-chip.ativo-raposa{border-color:#2563eb;background:#dbeafe;color:#2563eb;}
+.base-chip.ativo-imperatriz{border-color:#16a34a;background:#dcfce7;color:#16a34a;}
+.base-chip.ativo-belem{border-color:#ea580c;background:#ffedd5;color:#ea580c;}
+
+/* CARDS VEÍCULO */
+.veiculos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+.veiculo-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
+.veiculo-header{padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+.placa-badge{background:var(--bg-side);color:#fff;font-size:.85rem;font-weight:700;padding:4px 10px;border-radius:6px;letter-spacing:1px;}
+.veiculo-km{font-size:.78rem;color:var(--txt-dim);margin-left:auto;}
+.veiculo-items{padding:8px 0;}
+.manut-item{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid var(--border);}
+.manut-item:last-child{border-bottom:none;}
+.status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.status-ok{background:var(--green);}
+.status-alerta{background:var(--yellow);}
+.status-vencida{background:var(--red);}
+.manut-nome{font-size:.83rem;font-weight:600;flex:1;}
+.manut-restante{font-size:.75rem;color:var(--txt-dim);white-space:nowrap;}
+.manut-actions{display:flex;gap:6px;padding:10px 16px;border-top:1px solid var(--border);background:var(--bg-app);}
+.btn-sm{border:none;border-radius:6px;padding:6px 12px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:.12s;}
+.btn-registrar-sm{background:var(--accent);color:#fff;}
+.btn-registrar-sm:hover{background:#1d4ed8;}
+.btn-config-sm{background:var(--bg-card);border:1.5px solid var(--border);color:var(--txt-dim);}
+.btn-config-sm:hover{border-color:var(--accent);color:var(--accent);}
+
+/* LISTA CORRETIVAS / HISTORICO */
+.lista-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
+.lista-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.lista-header h2{font-size:.95rem;font-weight:700;flex:1;}
+.lista-body{overflow-y:auto;max-height:600px;}
+.reg-row{display:flex;align-items:flex-start;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);}
+.reg-row:last-child{border-bottom:none;}
+.reg-tipo-badge{padding:3px 8px;border-radius:6px;font-size:.72rem;font-weight:700;white-space:nowrap;}
+.badge-preventiva{background:var(--green-soft);color:var(--green);}
+.badge-corretiva{background:var(--orange-soft);color:var(--orange);}
+.reg-info{flex:1;min-width:0;}
+.reg-titulo{font-weight:600;font-size:.86rem;margin-bottom:2px;}
+.reg-detalhe{font-size:.78rem;color:var(--txt-dim);}
+.reg-docs{display:flex;align-items:center;gap:4px;font-size:.75rem;}
+.doc-ok{color:var(--green);}
+.doc-pendente{color:var(--red);}
+.reg-data{font-size:.72rem;color:var(--txt-muted);white-space:nowrap;}
+
+/* MODAL CONFIG */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;display:none;align-items:center;justify-content:center;}
+.modal-overlay.aberto{display:flex;}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:540px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.modal-header{background:var(--bg-side);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-header h3{font-size:.95rem;font-weight:700;}
+.modal-close{background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;opacity:.7;line-height:1;}
+.modal-close:hover{opacity:1;}
+.modal-body{padding:16px 20px;overflow-y:auto;flex:1;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;}
+.btn-salvar{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:inherit;}
+.btn-salvar:hover{background:#1d4ed8;}
+.btn-cancelar{background:var(--bg-app);color:var(--txt-dim);border:1.5px solid var(--border);border-radius:8px;padding:9px 16px;font-size:.88rem;cursor:pointer;font-family:inherit;}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+label.lbl{font-size:.78rem;font-weight:600;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.4px;}
+input.inp,select.inp{background:var(--bg-app);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:.9rem;color:var(--txt-main);font-family:inherit;width:100%;}
+input.inp:focus,select.inp:focus{outline:none;border-color:var(--accent);background:#fff;}
+.item-linha{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-app);border:1.5px solid var(--border);border-radius:8px;margin-bottom:8px;}
+.item-linha .item-nome{flex:1;font-size:.85rem;font-weight:600;}
+.item-linha .item-detalhe{font-size:.75rem;color:var(--txt-dim);}
+.btn-del{background:var(--red-soft);color:var(--red);border:none;border-radius:5px;padding:4px 8px;cursor:pointer;font-size:.8rem;font-family:inherit;}
+
+/* IMPORT */
+.import-zone{border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:.12s;}
+.import-zone:hover{border-color:var(--accent);background:var(--accent-soft);}
+.import-zone input{display:none;}
+
+/* SUMMARY CHIPS */
+.summary-chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.summary-chip{background:var(--bg-card);border:1.5px solid var(--border);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:8px;}
+.chip-num{font-size:1.3rem;font-weight:800;}
+.chip-label{font-size:.75rem;color:var(--txt-dim);line-height:1.3;}
+.chip-vencida .chip-num{color:var(--red);}
+.chip-alerta .chip-num{color:var(--yellow);}
+.chip-ok .chip-num{color:var(--green);}
+.chip-pendente-doc .chip-num{color:var(--orange);}
+
+@media(max-width:768px){.veiculos-grid{grid-template-columns:1fr;} .main{margin-left:0;}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="brand">
+    <div class="brand-name"><img src="docs/logo-emvidros.svg" alt="EM Vidros" style="height:56px;width:auto;display:block;"></div>
+    <div class="brand-sub">Manutenção Frota · Logística</div>
+  </div>
+  <div class="nav">
+    <div class="nav-label">Módulos</div>
+    <div class="nav-item" onclick="window.location='formulario-registro.html'"><span class="ico">✏️</span> Registro Diário</div>
+    <div class="nav-item" onclick="window.location='dashboard-semanal.html'"><span class="ico">📊</span> Dashboard</div>
+    <div class="nav-item ativo"><span class="ico">🔧</span> Manutenção Frota</div>
+    <div class="nav-item" onclick="window.location='documentos-frota.html'"><span class="ico">📂</span> Documentos</div>
+    <div class="nav-item" onclick="window.location='ata-reuniao.html'"><span class="ico">📝</span> Ata de Reunião</div>
+    <div class="nav-item" onclick="window.location='integracao-frota.html'"><span class="ico">🧑‍🏫</span> Integração</div>
+  </div>
+  <div class="sidebar-bottom">v1.0 · Ago 2026</div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <h1>Manutenção da Frota</h1>
+      <div style="font-size:.8rem;color:var(--txt-dim);" id="dataAtual"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn-sm btn-config-sm" onclick="abrirImport()">📥 Importar histórico</button>
+      <button class="btn-sm btn-registrar-sm" onclick="window.location='formulario-registro.html?tipo=manutencao'">+ Nova Manutenção</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- RESUMO -->
+    <div class="summary-chips" id="summaryChips"></div>
+
+    <!-- ABAS -->
+    <div class="tabs">
+      <button class="tab-btn ativo" id="tabPreventivas" onclick="mudarAba('preventivas')">🛡️ Preventivas</button>
+      <button class="tab-btn" id="tabCorretivas" onclick="mudarAba('corretivas')">🔨 Corretivas</button>
+      <button class="tab-btn" id="tabHistorico" onclick="mudarAba('historico')">📋 Histórico</button>
+    </div>
+
+    <!-- FILTRO BASE -->
+    <div class="filtros" id="filtrosBase">
+      <button class="base-chip ativo-raposa" id="chipRaposa" onclick="selecionarBase('Raposa')">📍 Raposa</button>
+      <button class="base-chip" id="chipImperatriz" onclick="selecionarBase('Imperatriz')">📍 Imperatriz</button>
+      <button class="base-chip" id="chipBelem" onclick="selecionarBase('Belém')">📍 Belém</button>
+    </div>
+
+    <!-- CONTEÚDO PREVENTIVAS -->
+    <div id="painelPreventivas">
+      <div class="veiculos-grid" id="gradeVeiculos"></div>
+    </div>
+
+    <!-- CONTEÚDO CORRETIVAS -->
+    <div id="painelCorretivas" style="display:none;">
+      <div class="lista-card">
+        <div class="lista-header">
+          <h2>🔨 Manutenções Corretivas</h2>
+          <span style="font-size:.78rem;color:var(--txt-dim);" id="totalCorretivas">—</span>
+        </div>
+        <div class="lista-body" id="listaCorretivas">
+          <div style="padding:30px;text-align:center;color:var(--txt-muted);">Nenhuma corretiva registrada.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTEÚDO HISTÓRICO -->
+    <div id="painelHistorico" style="display:none;">
+      <div class="lista-card">
+        <div class="lista-header">
+          <h2>📋 Histórico Completo</h2>
+          <div style="display:flex;gap:8px;">
+            <select id="filtroTipoHistorico" class="inp" style="width:auto;font-size:.8rem;" onchange="renderHistorico()">
+              <option value="">Todos</option>
+              <option value="preventiva">Preventivas</option>
+              <option value="corretiva">Corretivas</option>
+            </select>
+            <select id="filtroDocHistorico" class="inp" style="width:auto;font-size:.8rem;" onchange="renderHistorico()">
+              <option value="">Todos os docs</option>
+              <option value="pendente">Pendente de doc</option>
+              <option value="concluido">Doc OK</option>
+            </select>
+          </div>
+        </div>
+        <div class="lista-body" id="listaHistorico">
+          <div style="padding:30px;text-align:center;color:var(--txt-muted);">Nenhum registro encontrado.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL CONFIG PREVENTIVA -->
+<div class="modal-overlay" id="modalConfig">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalConfigTitulo">⚙️ Configurar Manutenções</h3>
+      <button class="modal-close" onclick="fecharModalConfig()">✕</button>
+    </div>
+    <div class="modal-body" id="modalConfigBody"></div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" onclick="fecharModalConfig()">Fechar</button>
+      <button class="btn-salvar" onclick="salvarConfig()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPORT -->
+<div class="modal-overlay" id="modalImport">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📥 Importar Histórico de Manutenções</h3>
+      <button class="modal-close" onclick="fecharModalImport()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.85rem;color:var(--txt-dim);margin-bottom:16px;">Importe um arquivo CSV ou Excel com o histórico de manutenções (Jul/Ago). O arquivo deve ter as colunas: <strong>data, placa, base, tipo, servico, valor, fornecedor, km</strong>.</p>
+      <div class="import-zone" onclick="document.getElementById('importFile').click()">
+        <input type="file" id="importFile" accept=".csv,.xlsx,.xls" onchange="processarImport(this)">
+        <div style="font-size:1.5rem;margin-bottom:8px;">📂</div>
+        <div style="font-weight:600;margin-bottom:4px;">Clique para selecionar o arquivo</div>
+        <div style="font-size:.78rem;color:var(--txt-muted);">CSV, Excel (.xlsx, .xls)</div>
+      </div>
+      <div id="importPreview" style="margin-top:14px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" onclick="fecharModalImport()">Cancelar</button>
+      <button class="btn-salvar" id="btnConfirmarImport" style="display:none;" onclick="confirmarImport()">✅ Importar registros</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== CONFIG =====================
+const STORAGE_KEY     = 'emvidros_indicadores';
+const PREVENTIVA_KEY  = 'emvidros_preventiva';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUXXAoZeuvTYm3s9Buj3ocnPH9vNitZ30XBcM696qp0r0wkiUE-Ubsr7uPde0X0l_spA/exec';
+
+const VEICULOS_RAPOSA     = ['PTV0006','PTT0004','ROW3A87','SMW0B96','SM02J13','SMP6F86','SMQ2I80'];
+const VEICULOS_IMPERATRIZ = ['DMG9D41','NXD4H26','NXB2H55','ROW4J37','SMR2H61','SND9C34','SMM4A02'];
+const VEICULOS_BELEM      = ['SMP2F01'];
+
+// Informações dos veículos por placa
+const VEICULOS_INFO = {
+  'PTV0006': { modelo:'ATEGO 3030 CE', marca:'Mercedes-Benz', ano:'2019/2020', intervalo_preventiva:20000 },
+  'PTT0004': { modelo:'ACCELO 1316',   marca:'Mercedes-Benz', ano:'2019/2020', intervalo_preventiva:20000 },
+  'ROW3A87': { modelo:'26.260 CRM 6x2',marca:'Volkswagen',    ano:'2023/2024', intervalo_preventiva:30000 },
+  'SM02J13': { modelo:'ATEGO 2429',    marca:'Mercedes-Benz', ano:'2024/2025', intervalo_preventiva:30000 },
+  'SMP6F86': { modelo:'ATEGO 2429',    marca:'Mercedes-Benz', ano:'2024/2025', intervalo_preventiva:30000 },
+  'SMW0B96': { modelo:'ATEGO 2429',    marca:'Mercedes-Benz', ano:'2024/2025', intervalo_preventiva:30000 },
+  'SMQ2I80': { modelo:'ACCELO 1017',   marca:'Mercedes-Benz', ano:'2024/2024', intervalo_preventiva:30000 },
+};
+
+// Último km registrado no PGQ Manutenção Preventiva 2026
+const ULTIMO_KM_PGQ = {
+  'PTV0006': 408413,
+  'PTT0004': 354277,
+  'ROW3A87': 176585,
+  'SMP6F86': 136720,
+  'SMQ2I80': 40000,
+};
+
+// Config padrão por placa baseada no PGQ EM Vidros 2026
+// Intervalo do fabricante vs intervalo adotado pela EM Vidros
+const CONFIG_PADRAO_RAPOSA = {
+  'PTV0006': [
+    { tipo:'Manutenção Preventiva Geral', intervalo_km:20000, alerta_km:2000, ultimo_km:408413, obs:'ATEGO 3030 CE 2019 — EM Vidros: 20.000 km' },
+    { tipo:'Lavagem',                     intervalo_km:3000,  alerta_km:300,  ultimo_km:408413 },
+  ],
+  'PTT0004': [
+    { tipo:'Manutenção Preventiva Geral', intervalo_km:20000, alerta_km:2000, ultimo_km:354277, obs:'ACCELO 1316 2019 — EM Vidros: 20.000 km' },
+    { tipo:'Lavagem',                     intervalo_km:3000,  alerta_km:300,  ultimo_km:354277 },
+  ],
+  'ROW3A87': [
+    { tipo:'Manutenção Preventiva Geral', intervalo_km:30000, alerta_km:3000, ultimo_km:176585, obs:'VW 26.260 2023 — EM Vidros: 30.000 km' },
+    { tipo:'Lavagem',                     intervalo_km:3000,  alerta_km:300,  ultimo_km:176585 },
+  ],
+  'SM02J13': [
+    { tipo:'Manutenção Preventiva Geral', intervalo_km:30000, alerta_km:3000, ultimo_km:null, obs:'ATEGO 2429 2024 — EM Vidros: 30.000 km' },
+    { tipo:'Lavagem',                     intervalo_km:3000,  alerta_km:300,  ultimo_km:null },
+  ],
+  'SMP6F86': [
+    { tipo:'Manutenção Preventiva Geral', intervalo_km:30000, alerta_km:3000, ultimo_km:136720, obs:'ATEGO 2429 2024 — EM Vidros: 30.000 km' },
+    { tipo:'Lavagem',                     intervalo_km:3000,  alerta_km:300,  ultimo_km:136720 },
+  ],
+  'SMW0B96': [
+    { tipo:'Manutenção Preventiva Geral', intervalo_km:30000, alerta_km:3000, ultimo_km:null, obs:'ATEGO 2429 2024 — EM Vidros: 30.000 km' },
+    { tipo:'Lavagem',                     intervalo_km:3000,  alerta_km:300,  ultimo_km:null },
+  ],
+  'SMQ2I80': [
+    { tipo:'Manutenção Preventiva Geral', intervalo_km:30000, alerta_km:3000, ultimo_km:40000, obs:'ACCELO 1017 2024 — EM Vidros: 30.000 km' },
+    { tipo:'Lavagem',                     intervalo_km:3000,  alerta_km:300,  ultimo_km:40000 },
+  ],
+};
+
+const TIPOS_PREVENTIVA_PADRAO = [
+  { tipo:'Manutenção Preventiva Geral', intervalo_km:30000, alerta_km:3000 },
+  { tipo:'Troca de óleo',              intervalo_km:10000, alerta_km:500 },
+  { tipo:'Filtro de ar',               intervalo_km:30000, alerta_km:1000 },
+  { tipo:'Filtro de combustível',      intervalo_km:30000, alerta_km:1000 },
+  { tipo:'Lavagem',                    intervalo_km:3000,  alerta_km:200 },
+  { tipo:'Revisão de freios',          intervalo_km:20000, alerta_km:1000 },
+  { tipo:'Alinhamento/Balanceamento',  intervalo_km:15000, alerta_km:500 },
+  { tipo:'Tacógrafo (calibração)',     intervalo_km:30000, alerta_km:1000 },
+];
+
+// ===================== ESTADO =====================
+let baseAtual = 'Raposa';
+let abaAtual  = 'preventivas';
+let configAtual = {}; // placa → [{tipo, intervalo_km, ultimo_km, alerta_km}]
+let placaConfigurando = null;
+let dadosImport = [];
+
+// ===================== INIT =====================
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('dataAtual').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  carregarConfig();
+  renderTudo();
+});
+
+// ===================== CONFIG PERSISTIDA =====================
+function carregarConfig() {
+  try { configAtual = JSON.parse(localStorage.getItem(PREVENTIVA_KEY)) || {}; } catch { configAtual = {}; }
+  // Pré-carregar config padrão da Raposa se ainda não configurado
+  Object.entries(CONFIG_PADRAO_RAPOSA).forEach(([placa, itens]) => {
+    if (!configAtual[placa]) configAtual[placa] = itens.map(i => ({...i}));
+  });
+  salvarConfigLocal();
+}
+
+function salvarConfigLocal() {
+  try { localStorage.setItem(PREVENTIVA_KEY, JSON.stringify(configAtual)); } catch {}
+}
+
+// ===================== KM ATUAL POR PLACA =====================
+function kmAtualPorPlaca(placa) {
+  let max = null;
+  try {
+    const dados = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    dados.forEach(d => {
+      const p = (d.veiculo || d.placa || '').toUpperCase();
+      if (p !== placa.toUpperCase()) return;
+      const candidates = [d.km_chegada, d.km, d.km_odometro].filter(v => v && v > 0);
+      candidates.forEach(v => { if (max === null || v > max) max = v; });
+    });
+  } catch {}
+  return max;
+}
+
+// ===================== STATUS PREVENTIVA =====================
+function calcularStatus(item, kmAtual) {
+  if (!item.ultimo_km) return { status:'sem_dado', restante:null };
+  const proximo = item.ultimo_km + item.intervalo_km;
+  const restante = proximo - (kmAtual || item.ultimo_km);
+  if (restante <= 0) return { status:'vencida', restante };
+  if (restante <= item.alerta_km) return { status:'alerta', restante };
+  return { status:'ok', restante };
+}
+
+// ===================== RESUMO =====================
+function renderResumo() {
+  const veiculos = veiculosDaBase(baseAtual);
+  let nVencidas = 0, nAlertas = 0, nOk = 0, nSemDados = 0, nPendenteDoc = 0;
+
+  veiculos.forEach(pl => {
+    const itens = configAtual[pl] || [];
+    const km = kmAtualPorPlaca(pl);
+    itens.forEach(it => {
+      const { status } = calcularStatus(it, km);
+      if (status === 'vencida') nVencidas++;
+      else if (status === 'alerta') nAlertas++;
+      else if (status === 'ok') nOk++;
+      else nSemDados++;
+    });
+  });
+
+  // Pendências documentais
+  try {
+    const dados = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    nPendenteDoc = dados.filter(d => d.tipo==='manutencao' && d.base===baseAtual && d.status_documental==='pendente').length;
+  } catch {}
+
+  const el = document.getElementById('summaryChips');
+  el.innerHTML = `
+    <div class="summary-chip chip-vencida"><span class="chip-num">${nVencidas}</span><span class="chip-label">Manutenções<br>Vencidas</span></div>
+    <div class="summary-chip chip-alerta"><span class="chip-num">${nAlertas}</span><span class="chip-label">Em<br>Alerta</span></div>
+    <div class="summary-chip chip-ok"><span class="chip-num">${nOk}</span><span class="chip-label">Em<br>Dia</span></div>
+    <div class="summary-chip chip-pendente-doc"><span class="chip-num">${nPendenteDoc}</span><span class="chip-label">Pendente<br>de Documento</span></div>
+  `;
+}
+
+// ===================== VEÍCULOS POR BASE =====================
+function veiculosDaBase(base) {
+  return base==='Raposa' ? VEICULOS_RAPOSA : base==='Imperatriz' ? VEICULOS_IMPERATRIZ : VEICULOS_BELEM;
+}
+
+// ===================== GRADE DE VEÍCULOS =====================
+function renderGradeVeiculos() {
+  const grade = document.getElementById('gradeVeiculos');
+  const veiculos = veiculosDaBase(baseAtual);
+  grade.innerHTML = veiculos.map(placa => renderCardVeiculo(placa)).join('');
+}
+
+function renderCardVeiculo(placa) {
+  const km = kmAtualPorPlaca(placa) || ULTIMO_KM_PGQ[placa] || null;
+  const itens = configAtual[placa] || [];
+  const info = VEICULOS_INFO[placa];
+  const kmStr = km ? km.toLocaleString('pt-BR') + ' km' : 'km não registrado';
+  const modeloStr = info ? `${info.modelo} · ${info.marca} · ${info.ano}` : '';
+
+  const itensHTML = itens.length === 0
+    ? `<div style="padding:14px 16px;font-size:.82rem;color:var(--txt-muted);text-align:center;">Nenhum item configurado</div>`
+    : itens.map(it => {
+        const { status, restante } = calcularStatus(it, km);
+        const dotClass = status==='vencida' ? 'status-vencida' : status==='alerta' ? 'status-alerta' : 'status-ok';
+        const restTxt = restante === null ? '—'
+          : restante <= 0 ? `${Math.abs(restante).toLocaleString('pt-BR')} km vencida`
+          : `${restante.toLocaleString('pt-BR')} km restantes`;
+        return `<div class="manut-item">
+          <div class="status-dot ${dotClass}"></div>
+          <div class="manut-nome">${it.tipo}</div>
+          <div class="manut-restante" style="color:${status==='vencida'?'var(--red)':status==='alerta'?'var(--yellow)':'var(--green)'}">${restTxt}</div>
+        </div>`;
+      }).join('');
+
+  return `<div class="veiculo-card">
+    <div class="veiculo-header">
+      <div class="placa-badge">${placa}</div>
+      <div style="flex:1;min-width:0;margin-left:8px;"><div style="font-size:.72rem;color:var(--txt-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${modeloStr}</div><div class="veiculo-km" style="margin-left:0;">📏 ${kmStr}</div></div>
+    </div>
+    <div class="veiculo-items">${itensHTML}</div>
+    <div class="manut-actions">
+      <button class="btn-sm btn-config-sm" onclick="abrirConfig('${placa}')">⚙️ Configurar</button>
+      <button class="btn-sm btn-registrar-sm" onclick="irParaRegistro('${placa}')">+ Registrar</button>
+    </div>
+  </div>`;
+}
+
+// ===================== CORRETIVAS =====================
+function renderCorretivas() {
+  const lista = document.getElementById('listaCorretivas');
+  const total = document.getElementById('totalCorretivas');
+  try {
+    const dados = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const corretivas = dados.filter(d => d.tipo==='manutencao' && d.tipo_manutencao==='corretiva' && d.base===baseAtual)
+      .sort((a,b)=>new Date(b.registrado_em)-new Date(a.registrado_em));
+    total.textContent = `${corretivas.length} registro${corretivas.length!==1?'s':''}`;
+    if (corretivas.length === 0) {
+      lista.innerHTML = '<div style="padding:30px;text-align:center;color:var(--txt-muted);">Nenhuma corretiva registrada para esta base.</div>';
+      return;
+    }
+    lista.innerHTML = corretivas.map(d => rowManutencao(d)).join('');
+  } catch { lista.innerHTML = '<div style="padding:20px;color:var(--txt-muted);">Erro ao carregar dados.</div>'; }
+}
+
+// ===================== HISTÓRICO =====================
+function renderHistorico() {
+  const lista = document.getElementById('listaHistorico');
+  const filtroTipo = document.getElementById('filtroTipoHistorico').value;
+  const filtroDoc  = document.getElementById('filtroDocHistorico').value;
+  try {
+    const dados = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    let manutencoes = dados.filter(d => d.tipo==='manutencao' && d.base===baseAtual);
+    if (filtroTipo) manutencoes = manutencoes.filter(d => d.tipo_manutencao===filtroTipo);
+    if (filtroDoc)  manutencoes = manutencoes.filter(d => d.status_documental===filtroDoc);
+    manutencoes.sort((a,b)=>new Date(b.registrado_em)-new Date(a.registrado_em));
+    if (manutencoes.length === 0) {
+      lista.innerHTML = '<div style="padding:30px;text-align:center;color:var(--txt-muted);">Nenhum registro com esses filtros.</div>';
+      return;
+    }
+    lista.innerHTML = manutencoes.map(d => rowManutencao(d)).join('');
+  } catch { lista.innerHTML = '<div style="padding:20px;color:var(--txt-muted);">Erro ao carregar dados.</div>'; }
+}
+
+function rowManutencao(d) {
+  const tipo = d.tipo_manutencao || '—';
+  const badgeClass = tipo==='preventiva' ? 'badge-preventiva' : 'badge-corretiva';
+  const data = d.data_entrada || d.data || d.registrado_em?.split('T')[0] || '—';
+  const docStatus = d.status_documental === 'concluido'
+    ? `<span class="doc-ok">✅ Doc OK</span>`
+    : `<span class="doc-pendente">📎 Pendente</span>`;
+  return `<div class="reg-row">
+    <span class="reg-tipo-badge ${badgeClass}">${tipo==='preventiva'?'🛡️ Preventiva':'🔨 Corretiva'}</span>
+    <div class="reg-info">
+      <div class="reg-titulo">${d.placa||'—'} · ${d.servico||'—'}</div>
+      <div class="reg-detalhe">R$ ${(d.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})} · ${d.fornecedor||'—'}${d.km_odometro?' · '+d.km_odometro.toLocaleString('pt-BR')+' km':''}</div>
+      <div class="reg-docs" style="margin-top:4px;">${docStatus}${d.data_programada ? ` · Programada: ${d.data_programada}` : ''}</div>
+    </div>
+    <div class="reg-data">${data}</div>
+  </div>`;
+}
+
+// ===================== MODAL CONFIG PREVENTIVA =====================
+function abrirConfig(placa) {
+  placaConfigurando = placa;
+  const itens = configAtual[placa] || [];
+  const km = kmAtualPorPlaca(placa);
+  document.getElementById('modalConfigTitulo').textContent = `⚙️ Preventivas — ${placa}`;
+  const body = document.getElementById('modalConfigBody');
+
+  const itensHTML = itens.map((it,i) => `
+    <div class="item-linha" id="il_${i}">
+      <div>
+        <div class="item-nome">${it.tipo}</div>
+        <div class="item-detalhe">A cada ${it.intervalo_km.toLocaleString('pt-BR')} km · Alerta ${it.alerta_km.toLocaleString('pt-BR')} km antes · Último: ${it.ultimo_km ? it.ultimo_km.toLocaleString('pt-BR')+' km' : 'não informado'}</div>
+      </div>
+      <button class="btn-del" onclick="removerItem(${i})">✕</button>
+    </div>`).join('');
+
+  body.innerHTML = `
+    <div style="font-size:.78rem;color:var(--txt-dim);margin-bottom:12px;">km atual registrado: <strong>${km ? km.toLocaleString('pt-BR')+' km' : 'não disponível'}</strong></div>
+    <div id="listaItensConfig">${itensHTML || '<div style="color:var(--txt-muted);font-size:.83rem;margin-bottom:12px;">Nenhum item configurado ainda.</div>'}</div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px;">
+      <div style="font-size:.8rem;font-weight:700;color:var(--txt-dim);margin-bottom:10px;">Adicionar item:</div>
+      <div class="form-group">
+        <label class="lbl">Tipo de manutenção</label>
+        <select id="novoTipo" class="inp">
+          ${TIPOS_PREVENTIVA_PADRAO.map(t=>`<option value="${t.tipo}">${t.tipo}</option>`).join('')}
+          <option value="__outro__">Outro (digitar abaixo)</option>
+        </select>
+      </div>
+      <div class="form-group" id="grupoOutroTipo" style="display:none;">
+        <label class="lbl">Descrição</label>
+        <input type="text" id="novoTipoCustom" class="inp" placeholder="Ex: Troca de correia dentada">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div class="form-group">
+          <label class="lbl">Intervalo (km)</label>
+          <input type="number" id="novoIntervalo" class="inp" placeholder="10000">
+        </div>
+        <div class="form-group">
+          <label class="lbl">Alerta (km antes)</label>
+          <input type="number" id="novoAlerta" class="inp" placeholder="500">
+        </div>
+        <div class="form-group">
+          <label class="lbl">Último km realizado</label>
+          <input type="number" id="novoUltimoKm" class="inp" placeholder="${km||''}">
+        </div>
+      </div>
+      <button type="button" class="btn-sm btn-registrar-sm" style="width:100%;margin-top:4px;" onclick="adicionarItemConfig()">+ Adicionar item</button>
+    </div>`;
+
+  document.getElementById('novoTipo').addEventListener('change', e => {
+    document.getElementById('grupoOutroTipo').style.display = e.target.value==='__outro__' ? 'block' : 'none';
+  });
+
+  document.getElementById('modalConfig').classList.add('aberto');
+}
+
+function removerItem(idx) {
+  if (!confirm('Remover este item?')) return;
+  (configAtual[placaConfigurando] || []).splice(idx, 1);
+  salvarConfigLocal();
+  abrirConfig(placaConfigurando);
+}
+
+function adicionarItemConfig() {
+  const tipoSel = document.getElementById('novoTipo').value;
+  const tipo = tipoSel === '__outro__' ? document.getElementById('novoTipoCustom').value.trim() : tipoSel;
+  const intervalo = parseInt(document.getElementById('novoIntervalo').value) || 0;
+  const alerta    = parseInt(document.getElementById('novoAlerta').value) || 500;
+  const ultimoKm  = parseInt(document.getElementById('novoUltimoKm').value) || null;
+  if (!tipo || !intervalo) { alert('Preencha o tipo e o intervalo de km.'); return; }
+  if (!configAtual[placaConfigurando]) configAtual[placaConfigurando] = [];
+  configAtual[placaConfigurando].push({ tipo, intervalo_km: intervalo, alerta_km: alerta, ultimo_km: ultimoKm });
+  salvarConfigLocal();
+  abrirConfig(placaConfigurando);
+}
+
+function salvarConfig() {
+  salvarConfigLocal();
+  fecharModalConfig();
+  renderTudo();
+}
+
+function fecharModalConfig() {
+  document.getElementById('modalConfig').classList.remove('aberto');
+  placaConfigurando = null;
+}
+
+// ===================== IMPORT =====================
+function abrirImport() { document.getElementById('modalImport').classList.add('aberto'); }
+function fecharModalImport() {
+  document.getElementById('modalImport').classList.remove('aberto');
+  document.getElementById('importPreview').innerHTML = '';
+  document.getElementById('btnConfirmarImport').style.display = 'none';
+  dadosImport = [];
+}
+
+function processarImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const texto = e.target.result;
+    const linhas = texto.split('\n').map(l=>l.trim()).filter(Boolean);
+    if (linhas.length < 2) { document.getElementById('importPreview').innerHTML = '<div style="color:var(--red);">Arquivo inválido ou vazio.</div>'; return; }
+    const headers = linhas[0].split(',').map(h=>h.trim().toLowerCase());
+    dadosImport = [];
+    const erros = [];
+    for (let i = 1; i < linhas.length; i++) {
+      const cols = linhas[i].split(',');
+      const row = {};
+      headers.forEach((h,j) => row[h] = (cols[j]||'').trim());
+      if (!row.placa || !row.data) { erros.push(`Linha ${i+1}: placa ou data ausente`); continue; }
+      dadosImport.push({
+        tipo:'manutencao', base: row.base || baseAtual,
+        registrado_em: new Date(row.data).toISOString(),
+        data: row.data, data_entrada: row.data,
+        placa: row.placa.toUpperCase(),
+        tipo_manutencao: (row.tipo||'corretiva').toLowerCase().includes('prev') ? 'preventiva' : 'corretiva',
+        servico: row.servico || row['serviço'] || '—',
+        valor: parseFloat(row.valor) || 0,
+        fornecedor: row.fornecedor || '',
+        km_odometro: parseInt(row.km) || null,
+        status_documental: 'pendente'
+      });
+    }
+    const preview = document.getElementById('importPreview');
+    preview.innerHTML = `<div style="background:var(--green-soft);border:1px solid var(--green);border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:.85rem;"><strong>${dadosImport.length} registros</strong> encontrados para importar${erros.length?` · <span style="color:var(--red);">${erros.length} com erro</span>`:''}</div>`;
+    if (erros.length) preview.innerHTML += `<div style="font-size:.78rem;color:var(--red);">${erros.join('<br>')}</div>`;
+    document.getElementById('btnConfirmarImport').style.display = dadosImport.length ? 'block' : 'none';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function confirmarImport() {
+  if (!dadosImport.length) return;
+  const dados = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  dadosImport.forEach(d => dados.push(d));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+  // Enviar ao Apps Script
+  for (const d of dadosImport) {
+    try { await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(d) }); } catch {}
+  }
+  alert(`✅ ${dadosImport.length} registros importados com sucesso!`);
+  fecharModalImport();
+  renderTudo();
+}
+
+// ===================== NAVEGAÇÃO =====================
+function selecionarBase(base) {
+  baseAtual = base;
+  ['Raposa','Imperatriz','Belém'].forEach(b => {
+    const el = document.getElementById('chip' + b.replace('é','e').replace('ê','e'));
+    if (!el) return;
+    el.className = 'base-chip';
+    if (b===base) el.className += ' ativo-' + b.toLowerCase().replace('é','e').replace('ê','e');
+  });
+  renderTudo();
+}
+
+function mudarAba(aba) {
+  abaAtual = aba;
+  ['preventivas','corretivas','historico'].forEach(a => {
+    document.getElementById('tab' + a.charAt(0).toUpperCase()+a.slice(1)).classList.toggle('ativo', a===aba);
+    document.getElementById('painel' + a.charAt(0).toUpperCase()+a.slice(1)).style.display = a===aba ? '' : 'none';
+  });
+  renderTudo();
+}
+
+function irParaRegistro(placa) {
+  window.location = 'formulario-registro.html?placa=' + placa + '&tipo=manutencao';
+}
+
+// ===================== RENDER TUDO =====================
+function renderTudo() {
+  renderResumo();
+  if (abaAtual === 'preventivas') renderGradeVeiculos();
+  if (abaAtual === 'corretivas')  renderCorretivas();
+  if (abaAtual === 'historico')   renderHistorico();
+}
+</script>
+</body>
+</html>

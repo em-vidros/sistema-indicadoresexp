@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Semanal — EM Vidros</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg-app:#f5f7fa;
+  --bg-side:#1a1d2e;
+  --bg-side-hover:#2a2f47;
+  --txt-side:#c8ccd6;
+  --txt-side-dim:#7a8194;
+  --bg-card:#fff;
+  --txt-main:#1a1d2e;
+  --txt-dim:#6b7280;
+  --txt-muted:#9ca3af;
+  --border:#e5e7eb;
+  --accent:#2563eb;
+  --accent-soft:#dbeafe;
+  --green:#16a34a;
+  --green-soft:#dcfce7;
+  --orange:#ea580c;
+  --orange-soft:#ffedd5;
+  --red:#dc2626;
+  --red-soft:#fee2e2;
+  --yellow:#ca8a04;
+  --yellow-soft:#fef9c3;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(--txt-main);font-size:13px;display:flex;min-height:100vh;}
+
+.sidebar{width:220px;background:var(--bg-side);color:var(--txt-side);display:flex;flex-direction:column;position:fixed;height:100vh;left:0;top:0;z-index:10;}
+.brand{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.08);}
+.brand-name{font-weight:700;font-size:1rem;color:#fff;display:flex;align-items:center;gap:8px;}
+.brand-sub{font-size:.72rem;color:var(--txt-side-dim);margin-top:3px;}
+.nav{flex:1;padding:12px 0;}
+.nav-label{padding:8px 20px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--txt-side-dim);font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:.86rem;color:var(--txt-side);transition:.12s;border-left:3px solid transparent;}
+.nav-item:hover{background:var(--bg-side-hover);color:#fff;}
+.nav-item.ativo{background:var(--bg-side-hover);color:#fff;border-left-color:var(--accent);}
+
+/* FILTROS SIDEBAR */
+.filtros-box{padding:14px 16px;border-top:1px solid rgba(255,255,255,.08);}
+.filtros-box h4{font-size:.66rem;text-transform:uppercase;letter-spacing:.8px;color:var(--txt-side-dim);margin-bottom:10px;font-weight:600;}
+.filtro-group{margin-bottom:10px;}
+.filtro-group label{font-size:.74rem;color:var(--txt-side-dim);display:block;margin-bottom:4px;}
+.filtro-group select,.filtro-group input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;padding:7px 8px;border-radius:6px;font-size:.8rem;font-family:inherit;}
+.filtro-group select option{background:var(--bg-side);}
+
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.topbar h1{font-size:1.05rem;font-weight:700;}
+.topbar .sub{font-size:.8rem;color:var(--txt-dim);}
+.btn-top{background:#fff;color:var(--txt-main);border:1px solid var(--border);font-weight:500;font-size:.82rem;padding:8px 14px;border-radius:8px;cursor:pointer;transition:.12s;font-family:inherit;}
+.btn-top:hover{background:var(--bg-app);}
+.btn-top.primario{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-top.primario:hover{background:#1d4ed8;}
+
+.content{padding:24px 28px;flex:1;}
+.sec-title{font-size:.88rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.5px;margin:24px 0 12px;}
+.sec-title:first-child{margin-top:0;}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:8px;}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+.kpi-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);}
+.kpi-card.ok{border-left:4px solid var(--green);}
+.kpi-card.warn{border-left:4px solid var(--orange);}
+.kpi-card.crit{border-left:4px solid var(--red);}
+.kpi-card.info{border-left:4px solid var(--accent);}
+.kpi-label{font-size:.72rem;font-weight:600;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
+.kpi-valor{font-size:1.6rem;font-weight:700;line-height:1;margin-bottom:4px;}
+.kpi-valor.ok{color:var(--green);}
+.kpi-valor.warn{color:var(--orange);}
+.kpi-valor.crit{color:var(--red);}
+.kpi-valor.info{color:var(--accent);}
+.kpi-meta{font-size:.72rem;color:var(--txt-muted);}
+.kpi-sub{font-size:.75rem;color:var(--txt-dim);margin-top:2px;}
+
+/* CHARTS */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:800px){.charts-grid{grid-template-columns:1fr;}}
+.chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);}
+.chart-card h3{font-size:.86rem;font-weight:700;margin-bottom:12px;color:var(--txt-main);}
+.chart-wrap{position:relative;height:180px;}
+
+/* TABELAS */
+.table-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
+.table-card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.table-card-header h3{font-size:.9rem;font-weight:700;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+thead th{padding:9px 12px;text-align:left;font-size:.72rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.4px;background:var(--bg-app);border-bottom:1px solid var(--border);white-space:nowrap;}
+thead th:not(:first-child){text-align:right;}
+tbody tr{border-bottom:1px solid var(--border);transition:.1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--bg-app);}
+tbody td{padding:9px 12px;vertical-align:middle;}
+tbody td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums;}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:600;}
+.badge.ok{background:var(--green-soft);color:var(--green);}
+.badge.warn{background:var(--orange-soft);color:var(--orange);}
+.badge.crit{background:var(--red-soft);color:var(--red);}
+.badge.info{background:var(--accent-soft);color:var(--accent);}
+.vazio{padding:28px;text-align:center;color:var(--txt-muted);}
+
+/* PONTUALIDADE PILLS */
+.pont-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px;}
+.pont-pill{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;font-size:.78rem;font-weight:600;}
+.pont-pill.adiantado{background:var(--green-soft);color:var(--green);}
+.pont-pill.prazo{background:var(--yellow-soft);color:var(--yellow);}
+.pont-pill.atrasado{background:var(--red-soft);color:var(--red);}
+
+/* SEMANAS NAV */
+.semanas-nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+.semana-btn{border:1.5px solid var(--border);background:var(--bg-card);border-radius:8px;padding:6px 14px;font-size:.8rem;font-weight:600;cursor:pointer;transition:.12s;font-family:inherit;}
+.semana-btn:hover{border-color:var(--accent);background:var(--accent-soft);}
+.semana-btn.ativo{background:var(--accent);color:#fff;border-color:var(--accent);}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="brand">
+    <div class="brand-name"><img src="docs/logo-emvidros.svg" alt="EM Vidros" style="height:56px;width:auto;display:block;"></div>
+    <div class="brand-sub">Dashboard Logístico</div>
+  </div>
+  <div class="nav">
+    <div class="nav-label">Visualização</div>
+    <div class="nav-item ativo" onclick="mostrarTela('kpis')"><span>📈</span> KPIs da Semana</div>
+    <div class="nav-item" onclick="mostrarTela('viagens')"><span>🚛</span> Viagens</div>
+    <div class="nav-item" onclick="mostrarTela('frota')"><span>🔧</span> Frota</div>
+    <div class="nav-label" style="margin-top:8px;">Ações</div>
+    <div class="nav-item" onclick="window.location='formulario-registro.html'"><span>✏️</span> Registrar Rota</div>
+    <div class="nav-item" onclick="atualizarDados()"><span>🔄</span> Atualizar</div>
+  </div>
+  <div style="padding:8px 16px;font-size:.75rem;" id="statusSync">Carregando...</div>
+  <div class="filtros-box">
+    <h4>Filtros</h4>
+    <div class="filtro-group">
+      <label>Base</label>
+      <select id="filtroBase" onchange="atualizar()">
+        <option value="todas">Todas as Bases</option>
+        <option value="Raposa">Raposa</option>
+        <option value="Imperatriz">Imperatriz</option>
+      </select>
+    </div>
+    <div class="filtro-group">
+      <label>Período</label>
+      <select id="filtroPeriodo" onchange="atualizar()">
+        <option value="semana">Esta Semana</option>
+        <option value="ultima_semana">Semana Passada</option>
+        <option value="mes">Este Mês</option>
+        <option value="tudo">Todo o Período</option>
+      </select>
+    </div>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="topbar">
+    <div>
+      <h1 id="topbarTitulo">KPIs da Semana</h1>
+      <div class="sub" id="topbarSub"></div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-top" onclick="copiarWhatsApp()" id="btnWpp">📱 Copiar p/ WhatsApp</button>
+      <button class="btn-top" onclick="gerarRelatorio()">📄 Relatório .txt</button>
+      <button class="btn-top primario" onclick="window.location='formulario-registro.html'">+ Registrar Rota</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- TELA KPIs -->
+    <div id="telaKpis">
+      <div class="sec-title">Indicadores da Semana</div>
+      <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-card info"><div class="kpi-label">Total de Registros</div><div class="kpi-valor info" id="kTotalReg">—</div><div class="kpi-meta">no período</div></div>
+        <div class="kpi-card" id="cardPontualidade">
+          <div class="kpi-label">Pontualidade</div>
+          <div class="pont-row" id="pontRow"><span style="color:var(--txt-muted)">Sem dados</span></div>
+          <div class="kpi-meta">Meta: ≤ 5% atraso</div>
+        </div>
+        <div class="kpi-card" id="cardCustoRota">
+          <div class="kpi-label">Custo / Carga (Rotas)</div>
+          <div class="kpi-valor" id="kCustoRota">—</div>
+          <div class="kpi-meta">Meta: &lt; 7,00%</div>
+        </div>
+        <div class="kpi-card" id="cardQuebra">
+          <div class="kpi-label">% Quebra Expedição</div>
+          <div class="kpi-valor" id="kQuebra">—</div>
+          <div class="kpi-meta">Meta: &lt; 1,00%</div>
+        </div>
+        <div class="kpi-card" id="cardManutProd">
+          <div class="kpi-label">Manutenção / Produção</div>
+          <div class="kpi-valor" id="kManutProd">—</div>
+          <div class="kpi-meta">Meta: &lt; 2,00%</div>
+        </div>
+      </div>
+
+      <!-- KPIs FINANCEIROS -->
+      <div class="kpi-grid" style="margin-top:10px;grid-template-columns:repeat(4,1fr);">
+        <div class="kpi-card info"><div class="kpi-label">Total Carga (R$)</div><div class="kpi-valor info" id="kTotalCarga">—</div><div class="kpi-sub" id="kViagens">— viagens</div></div>
+        <div class="kpi-card"><div class="kpi-label">Total Custo Viagens</div><div class="kpi-valor" id="kCustoViagens">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Total Manutenções</div><div class="kpi-valor" id="kManutTotal">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Total Abastecimento</div><div class="kpi-valor" id="kAbTotal">—</div></div>
+      </div>
+
+      <!-- GRÁFICOS -->
+      <div class="sec-title">Evolução Semanal</div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>% Custo / Carga por Semana</h3>
+          <div class="chart-wrap"><canvas id="chartCustoRota"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>Pontualidade — Distribuição</h3>
+          <div class="chart-wrap"><canvas id="chartPontualidade"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ROTAS CRÍTICAS -->
+      <div class="sec-title">Rotas — % Custo / Carga</div>
+      <div class="table-card">
+        <div class="table-card-header"><h3>Por Rota</h3></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Rota</th><th>Viagens</th><th>Carga (R$)</th><th>Custo (R$)</th><th>% Custo</th><th>Status</th></tr></thead>
+            <tbody id="tabelaRotas"><tr><td colspan="6" class="vazio">Sem dados no período</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TELA VIAGENS -->
+    <div id="telaViagens" style="display:none;">
+      <div class="sec-title">Registro de Viagens</div>
+      <div class="table-card">
+        <div class="table-card-header"><h3>Viagens do Período</h3><span id="countViagens" style="font-size:.8rem;color:var(--txt-dim);"></span></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Motorista</th><th>Veículo</th><th>Rota</th><th>km</th><th>Carga (R$)</th><th>Custo (R$)</th><th>% Custo</th><th>Pontualidade</th></tr></thead>
+            <tbody id="tabelaViagens"><tr><td colspan="9" class="vazio">Sem dados</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TELA FROTA -->
+    <div id="telaFrota" style="display:none;">
+      <div class="sec-title">Manutenções do Período</div>
+      <div class="table-card">
+        <div class="table-card-header"><h3>Manutenções</h3></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Placa</th><th>Base</th><th>Serviço</th><th>Valor (R$)</th><th>Fornecedor</th></tr></thead>
+            <tbody id="tabelaManut"><tr><td colspan="6" class="vazio">Sem dados</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="sec-title" style="margin-top:20px;">Abastecimentos</div>
+      <div class="table-card">
+        <div class="table-card-header"><h3>Abastecimentos</h3></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Placa</th><th>Base</th><th>Litros</th><th>R$/L</th><th>Total (R$)</th><th>km</th></tr></thead>
+            <tbody id="tabelaAbast"><tr><td colspan="7" class="vazio">Sem dados</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+const STORAGE_KEY = 'emvidros_indicadores';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUXXAoZeuvTYm3s9Buj3ocnPH9vNitZ30XBcM696qp0r0wkiUE-Ubsr7uPde0X0l_spA/exec';
+let chartCustoRota = null, chartPont = null;
+let telaAtiva = 'kpis';
+let _dadosCache = [];
+
+// ===================== DADOS =====================
+async function carregarDadosRemoto() {
+  const statusEl = document.getElementById('statusSync');
+  if (statusEl) { statusEl.textContent = 'Atualizando...'; statusEl.style.color = '#6b7280'; }
+  try {
+    const tipos = ['viagem','abastecimento','manutencao','quebra'];
+    const resultados = await Promise.all(tipos.map(async tipo => {
+      const r = await fetch(APPS_SCRIPT_URL + '?tipo=' + tipo, {signal: AbortSignal.timeout(10000)});
+      const arr = await r.json();
+      return Array.isArray(arr) ? arr : [];
+    }));
+    _dadosCache = resultados.flat();
+    // Mesclar com dados locais não sincronizados
+    try {
+      const local = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      const remoteTimes = new Set(_dadosCache.map(d => d.registrado_em));
+      const soLocal = local.filter(d => !remoteTimes.has(d.registrado_em));
+      _dadosCache = [..._dadosCache, ...soLocal];
+    } catch {}
+    if (statusEl) { statusEl.textContent = 'Sincronizado · ' + new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); statusEl.style.color = '#16a34a'; }
+  } catch {
+    try { _dadosCache = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { _dadosCache = []; }
+    if (statusEl) { statusEl.textContent = 'Dados locais (sem conexão)'; statusEl.style.color = '#ea580c'; }
+  }
+}
+
+function carregarDados() {
+  return _dadosCache;
+}
+
+function filtrarDados(dados) {
+  const base = document.getElementById('filtroBase').value;
+  const periodo = document.getElementById('filtroPeriodo').value;
+  const agora = new Date();
+
+  let inicio;
+  if (periodo === 'semana') {
+    inicio = new Date(agora);
+    inicio.setDate(agora.getDate() - agora.getDay() + (agora.getDay()===0 ? -6 : 1));
+    inicio.setHours(0,0,0,0);
+  } else if (periodo === 'ultima_semana') {
+    inicio = new Date(agora);
+    inicio.setDate(agora.getDate() - agora.getDay() + (agora.getDay()===0 ? -13 : -6));
+    inicio.setHours(0,0,0,0);
+    const fim = new Date(inicio); fim.setDate(fim.getDate()+7);
+    return dados.filter(d => {
+      if (base !== 'todas' && d.base !== base) return false;
+      const dt = new Date(d.data_saida || d.data || d.registrado_em);
+      return dt >= inicio && dt < fim;
+    });
+  } else if (periodo === 'mes') {
+    inicio = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  } else {
+    inicio = new Date('2020-01-01');
+  }
+
+  return dados.filter(d => {
+    if (base !== 'todas' && d.base !== base) return false;
+    const dt = new Date(d.data_saida || d.data || d.registrado_em);
+    return dt >= inicio;
+  });
+}
+
+// ===================== KPIs =====================
+function calcularKPIs(dados) {
+  const viagens    = dados.filter(d => d.tipo === 'viagem');
+  const abasts     = dados.filter(d => d.tipo === 'abastecimento');
+  const manuts     = dados.filter(d => d.tipo === 'manutencao');
+  const quebras    = dados.filter(d => d.tipo === 'quebra');
+
+  const totalCarga   = viagens.reduce((s,d) => s + (d.valor_carga||0), 0);
+  const totalCustoV  = viagens.reduce((s,d) => s + (d.custo_viagem||0), 0);
+  const totalManut   = manuts.reduce((s,d) => s + (d.valor||0), 0);
+  const totalAbast   = abasts.reduce((s,d) => s + (d.valor_total||0), 0);
+  const m2Expedido   = quebras.reduce((s,d) => s + (d.m2_expedido||0), 0);
+  const m2Quebrado   = quebras.reduce((s,d) => s + (d.m2_quebrado||0), 0);
+
+  const pctCustoRota = totalCarga > 0 ? totalCustoV / totalCarga * 100 : null;
+  const pctQuebra    = m2Expedido > 0 ? m2Quebrado / m2Expedido * 100 : null;
+  const pctManutProd = totalCarga > 0 ? totalManut / totalCarga * 100 : null;
+
+  const pont = {adiantado:0, no_prazo:0, atrasado:0, total: viagens.filter(v=>v.pontualidade).length};
+  viagens.forEach(v => { if(v.pontualidade) pont[v.pontualidade] = (pont[v.pontualidade]||0) + 1; });
+
+  return { viagens, abasts, manuts, quebras, totalCarga, totalCustoV, totalManut, totalAbast, pctCustoRota, pctQuebra, pctManutProd, pont };
+}
+
+// ===================== RENDERIZAR =====================
+function atualizar() {
+  const dados = filtrarDados(carregarDados());
+  const kpis  = calcularKPIs(dados);
+  atualizarSubtitulo(dados);
+
+  // Totais
+  document.getElementById('kTotalReg').textContent = dados.length;
+  document.getElementById('kTotalCarga').textContent = kpis.totalCarga > 0 ? 'R$ ' + kpis.totalCarga.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}) : '—';
+  document.getElementById('kViagens').textContent = kpis.viagens.length + ' viagem' + (kpis.viagens.length!==1?'s':'');
+  document.getElementById('kCustoViagens').textContent = kpis.totalCustoV > 0 ? 'R$ ' + kpis.totalCustoV.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}) : '—';
+  document.getElementById('kManutTotal').textContent = kpis.totalManut > 0 ? 'R$ ' + kpis.totalManut.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}) : '—';
+  document.getElementById('kAbTotal').textContent = kpis.totalAbast > 0 ? 'R$ ' + kpis.totalAbast.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}) : '—';
+
+  // Custo Rota
+  const cr = document.getElementById('kCustoRota');
+  const cardCR = document.getElementById('cardCustoRota');
+  if (kpis.pctCustoRota !== null) {
+    cr.textContent = kpis.pctCustoRota.toFixed(2) + '%';
+    const cls = kpis.pctCustoRota < 7 ? 'ok' : kpis.pctCustoRota < 9 ? 'warn' : 'crit';
+    cr.className = 'kpi-valor ' + cls;
+    cardCR.className = 'kpi-card ' + cls;
+  } else { cr.textContent = '—'; cr.className = 'kpi-valor'; }
+
+  // Quebra
+  const qb = document.getElementById('kQuebra');
+  const cardQ = document.getElementById('cardQuebra');
+  if (kpis.pctQuebra !== null) {
+    qb.textContent = kpis.pctQuebra.toFixed(2) + '%';
+    const cls = kpis.pctQuebra < 1 ? 'ok' : kpis.pctQuebra < 2 ? 'warn' : 'crit';
+    qb.className = 'kpi-valor ' + cls;
+    cardQ.className = 'kpi-card ' + cls;
+  } else { qb.textContent = '—'; qb.className = 'kpi-valor'; }
+
+  // Manut/Produção
+  const mp = document.getElementById('kManutProd');
+  const cardMP = document.getElementById('cardManutProd');
+  if (kpis.pctManutProd !== null) {
+    mp.textContent = kpis.pctManutProd.toFixed(2) + '%';
+    const cls = kpis.pctManutProd < 2 ? 'ok' : kpis.pctManutProd < 3 ? 'warn' : 'crit';
+    mp.className = 'kpi-valor ' + cls;
+    cardMP.className = 'kpi-card ' + cls;
+  } else { mp.textContent = '—'; mp.className = 'kpi-valor'; }
+
+  // Pontualidade
+  const pt = kpis.pont;
+  const cardPt = document.getElementById('cardPontualidade');
+  const row = document.getElementById('pontRow');
+  if (pt.total > 0) {
+    const pAdiant = Math.round(pt.adiantado/pt.total*100);
+    const pPrazo  = Math.round(pt.no_prazo/pt.total*100);
+    const pAtraso = Math.round(pt.atrasado/pt.total*100);
+    row.innerHTML = `
+      <span class="pont-pill adiantado">✅ ${pAdiant}% Adiant.</span>
+      <span class="pont-pill prazo">🟡 ${pPrazo}% Prazo</span>
+      <span class="pont-pill atrasado">🔴 ${pAtraso}% Atraso</span>`;
+    cardPt.className = 'kpi-card ' + (pAtraso <= 5 ? 'ok' : 'warn');
+  } else {
+    row.innerHTML = '<span style="color:var(--txt-muted)">Sem dados</span>';
+    cardPt.className = 'kpi-card';
+  }
+
+  // Tabela rotas
+  const rotas = {};
+  kpis.viagens.forEach(v => {
+    if (!v.rota) return;
+    if (!rotas[v.rota]) rotas[v.rota] = {n:0,carga:0,custo:0};
+    rotas[v.rota].n++;
+    rotas[v.rota].carga += v.valor_carga||0;
+    rotas[v.rota].custo += v.custo_viagem||0;
+  });
+  const rotaArr = Object.entries(rotas).map(([r,d]) => ({rota:r,...d,pct:d.carga>0?d.custo/d.carga*100:0})).sort((a,b)=>b.pct-a.pct);
+  const tbRotas = document.getElementById('tabelaRotas');
+  tbRotas.innerHTML = rotaArr.length === 0 ? '<tr><td colspan="6" class="vazio">Sem viagens no período</td></tr>' :
+    rotaArr.map(r => {
+      const cls = r.pct < 7 ? 'ok' : r.pct < 10 ? 'warn' : 'crit';
+      const lbl = r.pct < 7 ? '✓ OK' : r.pct < 10 ? 'Atenção' : 'Crítico';
+      return `<tr>
+        <td><strong>${r.rota}</strong></td>
+        <td style="text-align:right">${r.n}</td>
+        <td style="text-align:right">R$ ${r.carga.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
+        <td style="text-align:right">R$ ${r.custo.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
+        <td style="text-align:right"><strong>${r.pct.toFixed(2)}%</strong></td>
+        <td><span class="badge ${cls}">${lbl}</span></td>
+      </tr>`;
+    }).join('');
+
+  // Tabela viagens
+  const tbVi = document.getElementById('tabelaViagens');
+  document.getElementById('countViagens').textContent = kpis.viagens.length + ' viagem(ns)';
+  tbVi.innerHTML = kpis.viagens.length === 0 ? '<tr><td colspan="9" class="vazio">Sem viagens no período</td></tr>' :
+    [...kpis.viagens].sort((a,b)=>new Date(b.data_saida)-new Date(a.data_saida)).map(v => {
+      const km = v.km_rodados || (v.km_chegada && v.km_saida ? v.km_chegada-v.km_saida : '—');
+      const cls = (v.pct_custo||0) < 7 ? 'ok' : (v.pct_custo||0) < 10 ? 'warn' : 'crit';
+      const ptCls = {adiantado:'ok',no_prazo:'info',atrasado:'crit'}[v.pontualidade]||'';
+      const ptLbl = {adiantado:'Adiantado',no_prazo:'No Prazo',atrasado:'Atrasado'}[v.pontualidade]||'—';
+      return `<tr>
+        <td>${v.data_saida||'—'}</td>
+        <td>${v.motorista||'—'}</td>
+        <td><code style="font-size:.78rem;background:var(--bg-app);padding:2px 6px;border-radius:4px;">${v.veiculo||'—'}</code></td>
+        <td>${v.rota||'—'}</td>
+        <td style="text-align:right">${typeof km==='number' ? km.toLocaleString('pt-BR') : km}</td>
+        <td style="text-align:right">R$ ${(v.valor_carga||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
+        <td style="text-align:right">R$ ${(v.custo_viagem||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</td>
+        <td style="text-align:right"><span class="badge ${cls}">${(v.pct_custo||0).toFixed(1)}%</span></td>
+        <td>${v.pontualidade ? '<span class="badge '+ptCls+'">'+ptLbl+'</span>' : '—'}</td>
+      </tr>`;
+    }).join('');
+
+  // Tabela manutenções
+  const tbMn = document.getElementById('tabelaManut');
+  tbMn.innerHTML = kpis.manuts.length === 0 ? '<tr><td colspan="6" class="vazio">Sem manutenções</td></tr>' :
+    [...kpis.manuts].sort((a,b)=>new Date(b.data)-new Date(a.data)).map(m =>
+      `<tr><td>${m.data||'—'}</td><td><code style="font-size:.78rem;background:var(--bg-app);padding:2px 6px;border-radius:4px;">${m.placa||'—'}</code></td><td>${m.base||'—'}</td><td>${m.servico||'—'}</td><td style="text-align:right">R$ ${(m.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td><td>${m.fornecedor||'—'}</td></tr>`
+    ).join('');
+
+  // Tabela abastecimentos
+  const tbAb = document.getElementById('tabelaAbast');
+  tbAb.innerHTML = kpis.abasts.length === 0 ? '<tr><td colspan="7" class="vazio">Sem abastecimentos</td></tr>' :
+    [...kpis.abasts].sort((a,b)=>new Date(b.data)-new Date(a.data)).map(a =>
+      `<tr><td>${a.data||'—'}</td><td><code style="font-size:.78rem;background:var(--bg-app);padding:2px 6px;border-radius:4px;">${a.placa||'—'}</code></td><td>${a.base||'—'}</td><td style="text-align:right">${(a.litros||0).toFixed(1)} L</td><td style="text-align:right">R$ ${(a.vl_litro||0).toFixed(3)}</td><td style="text-align:right">R$ ${(a.valor_total||0).toFixed(2)}</td><td style="text-align:right">${a.km ? a.km.toLocaleString('pt-BR') : '—'}</td></tr>`
+    ).join('');
+
+  // Gráficos
+  renderizarGraficos(dados);
+}
+
+// ===================== GRÁFICOS =====================
+function renderizarGraficos(dados) {
+  // Custo/carga por semana (últimas 8 semanas)
+  const semanas = [];
+  for (let i = 7; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i*7);
+    const ini = new Date(d); ini.setDate(d.getDate() - d.getDay() + (d.getDay()===0?-6:1)); ini.setHours(0,0,0,0);
+    const fim = new Date(ini); fim.setDate(ini.getDate()+7);
+    const semVi = dados.filter(x => x.tipo==='viagem' && new Date(x.data_saida||x.registrado_em)>=ini && new Date(x.data_saida||x.registrado_em)<fim);
+    const sTotalCarga = semVi.reduce((s,v)=>s+(v.valor_carga||0),0);
+    const sTotalCusto = semVi.reduce((s,v)=>s+(v.custo_viagem||0),0);
+    const label = ini.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+    semanas.push({label, pct: sTotalCarga>0 ? sTotalCusto/sTotalCarga*100 : null});
+  }
+
+  if (chartCustoRota) chartCustoRota.destroy();
+  const ctx1 = document.getElementById('chartCustoRota').getContext('2d');
+  chartCustoRota = new Chart(ctx1, {
+    type:'line',
+    data:{
+      labels: semanas.map(s=>s.label),
+      datasets:[{
+        label:'% Custo/Carga',
+        data: semanas.map(s=>s.pct),
+        borderColor:'#2563eb',fill:true,
+        backgroundColor:'rgba(37,99,235,.08)',
+        tension:.3,pointRadius:4,pointBackgroundColor:'#2563eb'
+      },{
+        label:'Meta 7%',
+        data: semanas.map(()=>7),
+        borderColor:'#dc2626',borderDash:[5,5],borderWidth:1.5,
+        pointRadius:0,fill:false
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}
+  });
+
+  // Pontualidade
+  const base = document.getElementById('filtroBase').value;
+  const vi = dados.filter(d=>d.tipo==='viagem'&&d.pontualidade);
+  const pt = {adiantado:0,no_prazo:0,atrasado:0};
+  vi.forEach(v => { if(v.pontualidade) pt[v.pontualidade]=(pt[v.pontualidade]||0)+1; });
+
+  if (chartPont) chartPont.destroy();
+  const ctx2 = document.getElementById('chartPontualidade').getContext('2d');
+  chartPont = new Chart(ctx2, {
+    type:'doughnut',
+    data:{
+      labels:['Adiantado','No Prazo','Atrasado'],
+      datasets:[{data:[pt.adiantado,pt.no_prazo,pt.atrasado],backgroundColor:['#16a34a','#ca8a04','#dc2626'],borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}
+  });
+}
+
+// ===================== SUBTÍTULO =====================
+function atualizarSubtitulo(dados) {
+  const periodo = document.getElementById('filtroPeriodo');
+  const base = document.getElementById('filtroBase');
+  const opts = {semana:'Esta Semana',ultima_semana:'Semana Passada',mes:'Este Mês',tudo:'Todo o Período'};
+  document.getElementById('topbarSub').textContent = `${opts[periodo.value]} · ${base.value==='todas'?'Todas as Bases':base.value} · ${dados.length} registro(s)`;
+}
+
+// ===================== TELAS =====================
+function mostrarTela(tela) {
+  telaAtiva = tela;
+  ['kpis','viagens','frota'].forEach(t => document.getElementById('tela'+t.charAt(0).toUpperCase()+t.slice(1)).style.display = t===tela?'block':'none');
+  document.querySelectorAll('.nav-item').forEach((el,i) => el.classList.toggle('ativo', i===['kpis','viagens','frota'].indexOf(tela)));
+  const titulos = {kpis:'KPIs da Semana',viagens:'Viagens',frota:'Frota'};
+  document.getElementById('topbarTitulo').textContent = titulos[tela];
+}
+
+// ===================== RELATÓRIO TEXTO =====================
+function gerarRelatorio() {
+  const dados = filtrarDados(carregarDados());
+  const kpis = calcularKPIs(dados);
+  const base = document.getElementById('filtroBase').value;
+  const periodo = {semana:'Esta Semana',ultima_semana:'Semana Passada',mes:'Este Mês',tudo:'Todo o Período'}[document.getElementById('filtroPeriodo').value];
+  const txt = [
+    `📊 RELATÓRIO LOGÍSTICO — EM VIDROS`,
+    `${periodo} · ${base==='todas'?'Todas as Bases':base} · ${new Date().toLocaleDateString('pt-BR')}`,
+    ``,
+    `🚛 VIAGENS: ${kpis.viagens.length} | Carga: R$ ${kpis.totalCarga.toLocaleString('pt-BR',{minimumFractionDigits:2})} | Custo: R$ ${kpis.totalCustoV.toLocaleString('pt-BR',{minimumFractionDigits:2})}`,
+    kpis.pctCustoRota!==null ? `   % Custo/Carga: ${kpis.pctCustoRota.toFixed(2)}% ${kpis.pctCustoRota<7?'✅':'⚠️'} (meta < 7%)` : '',
+    ``,
+    `🔧 MANUTENÇÕES: R$ ${kpis.totalManut.toLocaleString('pt-BR',{minimumFractionDigits:2})}`,
+    kpis.pctManutProd!==null ? `   % Manut/Produção: ${kpis.pctManutProd.toFixed(2)}% ${kpis.pctManutProd<2?'✅':'⚠️'} (meta < 2%)` : '',
+    ``,
+    `⛽ ABASTECIMENTO: R$ ${kpis.totalAbast.toLocaleString('pt-BR',{minimumFractionDigits:2})}`,
+    ``,
+    kpis.pctQuebra!==null ? `📦 QUEBRA: ${kpis.pctQuebra.toFixed(2)}% ${kpis.pctQuebra<1?'✅':'⚠️'} (meta < 1%)` : '📦 QUEBRA: sem registros',
+    ``,
+    kpis.pont.total > 0 ? `⏱️ PONTUALIDADE (${kpis.pont.total} viagens com status):` : '⏱️ PONTUALIDADE: sem dados',
+    kpis.pont.total > 0 ? `   Adiantado: ${Math.round(kpis.pont.adiantado/kpis.pont.total*100)}% | No Prazo: ${Math.round(kpis.pont.no_prazo/kpis.pont.total*100)}% | Atrasado: ${Math.round(kpis.pont.atrasado/kpis.pont.total*100)}% (meta ≤ 5%)` : '',
+  ].filter(l=>l!==undefined).join('\n');
+
+  const blob = new Blob([txt],{type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `relatorio-${new Date().toISOString().split('T')[0]}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ===================== COPIAR WHATSAPP =====================
+function copiarWhatsApp() {
+  const dados = filtrarDados(carregarDados());
+  const kpis  = calcularKPIs(dados);
+  const base  = document.getElementById('filtroBase').value;
+  const periodo = {semana:'Esta Semana',ultima_semana:'Semana Passada',mes:'Este Mês',tudo:'Todo o Período'}[document.getElementById('filtroPeriodo').value];
+  const data  = new Date().toLocaleDateString('pt-BR');
+
+  const semaforo = (val, meta, inv) => {
+    if (val === null) return '⚪';
+    return (inv ? val <= meta : val < meta) ? '🟢' : val < meta * 1.3 ? '🟡' : '🔴';
+  };
+
+  const fmtBRL = v => v > 0 ? 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}) : '—';
+  const fmtPct = v => v !== null ? v.toFixed(2) + '%' : '—';
+
+  const pt = kpis.pont;
+  const ptTxt = pt.total > 0
+    ? `✅ ${Math.round(pt.adiantado/pt.total*100)}% adiant. | 🟡 ${Math.round(pt.no_prazo/pt.total*100)}% prazo | 🔴 ${Math.round(pt.atrasado/pt.total*100)}% atraso`
+    : 'Sem dados';
+
+  // Rotas críticas
+  const rotas = {};
+  kpis.viagens.forEach(v => {
+    if (!v.rota) return;
+    if (!rotas[v.rota]) rotas[v.rota] = {n:0,carga:0,custo:0};
+    rotas[v.rota].n++; rotas[v.rota].carga += v.valor_carga||0; rotas[v.rota].custo += v.custo_viagem||0;
+  });
+  const rotasCrit = Object.entries(rotas)
+    .map(([r,d]) => ({rota:r, pct: d.carga>0?d.custo/d.carga*100:0}))
+    .filter(r => r.pct >= 7)
+    .sort((a,b) => b.pct - a.pct)
+    .slice(0,3);
+
+  const linhasRotas = rotasCrit.length > 0
+    ? rotasCrit.map(r => `   • ${r.rota}: ${r.pct.toFixed(1)}% ${r.pct<10?'⚠️':'🔴'}`).join('\n')
+    : '   ✅ Todas as rotas dentro da meta';
+
+  const txt = [
+    `📊 *LOGÍSTICA EM VIDROS — ${base==='todas'?'TODAS AS BASES':base.toUpperCase()}*`,
+    `_${periodo} · ${data}_`,
+    ``,
+    `🚛 *VIAGENS*: ${kpis.viagens.length} viagem(ns)`,
+    `   Carga: ${fmtBRL(kpis.totalCarga)}`,
+    `   Custo: ${fmtBRL(kpis.totalCustoV)}`,
+    kpis.pctCustoRota !== null ? `   ${semaforo(kpis.pctCustoRota,7,false)} % Custo/Carga: *${fmtPct(kpis.pctCustoRota)}* (meta < 7%)` : `   ⚪ % Custo/Carga: —`,
+    ``,
+    `📍 *ROTAS ACIMA DA META:*`,
+    linhasRotas,
+    ``,
+    `⏱️ *PONTUALIDADE*:`,
+    `   ${ptTxt}`,
+    `   Meta: ≤ 5% atraso`,
+    ``,
+    `🔧 *MANUTENÇÃO*: ${fmtBRL(kpis.totalManut)}`,
+    kpis.pctManutProd !== null ? `   ${semaforo(kpis.pctManutProd,2,false)} % Manut/Produção: *${fmtPct(kpis.pctManutProd)}* (meta < 2%)` : `   ⚪ % Manut/Produção: —`,
+    ``,
+    `⛽ *ABASTECIMENTO*: ${fmtBRL(kpis.totalAbast)}`,
+    ``,
+    kpis.pctQuebra !== null
+      ? `📦 *QUEBRA EXPEDIÇÃO*: ${semaforo(kpis.pctQuebra,1,false)} *${fmtPct(kpis.pctQuebra)}* (meta < 1%)`
+      : `📦 *QUEBRA EXPEDIÇÃO*: ⚪ sem registros`,
+    ``,
+    `_Gerado pelo Sistema de Indicadores EM Vidros_`,
+  ].join('\n');
+
+  navigator.clipboard.writeText(txt).then(() => {
+    const btn = document.getElementById('btnWpp');
+    btn.textContent = '✅ Copiado!';
+    btn.style.background = '#dcfce7';
+    btn.style.borderColor = '#16a34a';
+    btn.style.color = '#166534';
+    setTimeout(() => {
+      btn.textContent = '📱 Copiar p/ WhatsApp';
+      btn.style = '';
+    }, 3000);
+  }).catch(() => {
+    alert(txt);
+  });
+}
+
+async function atualizarDados() {
+  await carregarDadosRemoto();
+  atualizar();
+}
+
+// ===================== INIT =====================
+document.addEventListener('DOMContentLoaded', atualizarDados);
+</script>
+</body>
+</html>

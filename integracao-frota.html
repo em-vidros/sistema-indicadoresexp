@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integração de Frota — EM Vidros</title>
+<style>
+/* ===================== TELA ===================== */
+:root{
+  --bg-app:#f5f7fa;--bg-side:#1a1d2e;--bg-side-hover:#2a2f47;
+  --bg-card:#fff;--txt-main:#1a1d2e;--txt-dim:#6b7280;--txt-muted:#9ca3af;
+  --border:#e5e7eb;--accent:#2563eb;--accent-soft:#dbeafe;
+  --green:#16a34a;--green-soft:#dcfce7;
+  --orange:#ea580c;--orange-soft:#ffedd5;
+  --shadow:0 1px 3px rgba(0,0,0,.06);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(--txt-main);font-size:13px;display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--bg-side);color:#c8ccd6;display:flex;flex-direction:column;position:fixed;height:100vh;left:0;top:0;z-index:10;}
+.brand{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.08);}
+.brand-name{font-weight:700;font-size:1rem;color:#fff;}
+.brand-sub{font-size:.72rem;color:#7a8194;margin-top:3px;}
+.nav{flex:1;padding:12px 0;overflow-y:auto;}
+.nav-label{padding:8px 20px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:#7a8194;font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:.86rem;color:#c8ccd6;transition:.12s;border-left:3px solid transparent;}
+.nav-item:hover{background:var(--bg-side-hover);color:#fff;}
+.nav-item.ativo{background:var(--bg-side-hover);color:#fff;border-left-color:var(--accent);}
+.sidebar-bottom{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:.72rem;color:#7a8194;}
+
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;}
+.topbar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.topbar h1{font-size:1.05rem;font-weight:700;}
+.content{padding:24px 28px;flex:1;max-width:960px;}
+
+/* ABAS FUNÇÃO */
+.funcao-tabs{display:flex;gap:10px;margin-bottom:20px;}
+.funcao-btn{background:var(--bg-card);border:1.5px solid var(--border);border-radius:10px;padding:12px 24px;font-size:.92rem;font-weight:600;cursor:pointer;font-family:inherit;color:var(--txt-dim);transition:.12s;}
+.funcao-btn.ativo{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+/* CARDS */
+.card{background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px;box-shadow:var(--shadow);}
+.card-titulo{font-size:.82rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-group.full{grid-column:1/-1;}
+.form-group label{font-size:.72rem;font-weight:600;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.4px;}
+.form-group input,.form-group select{background:var(--bg-app);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:.9rem;color:var(--txt-main);font-family:inherit;width:100%;}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--accent);}
+
+/* SEMANAS */
+.semana{background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}
+.semana-header{background:var(--bg-side);color:#fff;padding:11px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.semana-num{background:var(--accent);color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0;}
+.semana-titulo{font-weight:700;font-size:.88rem;flex:1;}
+.semana-prog{font-size:.75rem;opacity:.7;}
+.semana-body{padding:14px 18px;display:flex;flex-direction:column;gap:8px;}
+
+/* ATIVIDADES */
+.atividade{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-app);transition:.12s;}
+.atividade.feita{background:var(--green-soft);border-color:#bbf7d0;}
+.atividade input[type=checkbox]{width:17px;height:17px;flex-shrink:0;margin-top:1px;cursor:pointer;accent-color:var(--green);}
+.atividade-texto{flex:1;font-size:.86rem;line-height:1.5;}
+.atividade-titulo{font-weight:700;font-size:.84rem;display:block;margin-bottom:2px;}
+.atividade-data{font-size:.75rem;color:var(--txt-dim);margin-left:auto;flex-shrink:0;}
+.atividade-data input{background:transparent;border:none;border-bottom:1.5px solid var(--border);padding:2px 4px;font-size:.75rem;font-family:inherit;width:100px;color:var(--txt-dim);}
+.atividade-data input:focus{outline:none;border-color:var(--accent);}
+
+/* MATRIZ */
+.matriz-table{width:100%;border-collapse:collapse;font-size:.83rem;}
+.matriz-table th{background:var(--bg-side);color:#fff;padding:9px 12px;text-align:left;font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:.4px;}
+.matriz-table td{padding:9px 12px;border-bottom:1px solid var(--border);}
+.matriz-table tr:last-child td{border-bottom:none;}
+.badge-freq{background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:2px 8px;font-size:.72rem;font-weight:700;}
+
+/* BOTÕES */
+.btn-gerar{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:11px 26px;font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;transition:.12s;}
+.btn-gerar:hover{opacity:.9;}
+.btn-salvar{background:var(--green-soft);color:var(--green);border:1.5px solid #bbf7d0;border-radius:10px;padding:11px 22px;font-size:.88rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;transition:.12s;}
+.btn-salvar:hover{background:var(--green);color:#fff;border-color:var(--green);}
+.acoes{display:flex;gap:10px;flex-wrap:wrap;}
+
+/* HISTÓRICO */
+.hist-item{background:var(--bg-card);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:8px;box-shadow:var(--shadow);}
+.hist-ico{font-size:1.4rem;}
+.hist-info{flex:1;}
+.hist-nome{font-weight:700;font-size:.9rem;}
+.hist-sub{font-size:.75rem;color:var(--txt-dim);}
+.hist-prog{font-size:.75rem;font-weight:700;}
+.hist-prog.completo{color:var(--green);}
+.hist-prog.parcial{color:var(--orange);}
+.btn-carregar{background:var(--accent-soft);color:var(--accent);border:none;border-radius:7px;padding:6px 14px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;transition:.12s;}
+.btn-carregar:hover{background:var(--accent);color:#fff;}
+
+/* ===================== IMPRESSÃO ===================== */
+@media print {
+  @page { size: A4; margin: 15mm 18mm 15mm 18mm; }
+  body { background:#fff; font-family:Arial,sans-serif; font-size:10pt; color:#000; display:block; }
+  .sidebar,.topbar,.no-print { display:none !important; }
+  .main { margin-left:0; }
+  .content { max-width:100%; padding:0; }
+
+  .print-doc { display:block !important; }
+
+  /* CABEÇALHO */
+  .ph { text-align:center; border-bottom:2pt solid #000; padding-bottom:10pt; margin-bottom:12pt; }
+  .ph .empresa { font-size:14pt; font-weight:700; text-transform:uppercase; letter-spacing:2px; }
+  .ph .doc-tipo { font-size:11pt; font-weight:700; margin-top:4pt; }
+  .ph .doc-sub { font-size:9pt; color:#555; margin-top:2pt; }
+
+  /* DADOS COLABORADOR */
+  .pd { margin-bottom:14pt; }
+  .pd-row { display:flex; gap:14pt; margin-bottom:5pt; }
+  .pd-field { flex:1; }
+  .pd-field .lbl { font-size:7.5pt; font-weight:700; text-transform:uppercase; color:#555; }
+  .pd-field .val { font-size:10pt; border-bottom:1pt solid #000; padding-bottom:2pt; min-height:13pt; }
+
+  /* SEMANAS */
+  .ps { page-break-inside:avoid; margin-bottom:14pt; }
+  .ps-header { background:#1a1d2e; color:#fff; padding:7pt 10pt; margin-bottom:6pt; }
+  .ps-header span { font-weight:700; font-size:9.5pt; }
+  .ps-item { display:flex; align-items:flex-start; gap:8pt; margin-bottom:5pt; padding:5pt 8pt; border:0.5pt solid #ccc; border-radius:3pt; }
+  .ps-check { width:14pt; height:14pt; border:1.5pt solid #000; border-radius:2pt; flex-shrink:0; display:flex; align-items:center; justify-content:center; margin-top:1pt; font-size:11pt; }
+  .ps-texto { flex:1; font-size:9pt; line-height:1.4; }
+  .ps-titulo { font-weight:700; display:block; }
+  .ps-data { font-size:8pt; color:#555; margin-left:8pt; flex-shrink:0; min-width:70pt; text-align:right; }
+
+  /* MATRIZ */
+  .pm { margin-bottom:14pt; }
+  .pm-titulo { font-weight:700; font-size:10pt; border-bottom:1.5pt solid #000; padding-bottom:4pt; margin-bottom:8pt; }
+  .pm-table { width:100%; border-collapse:collapse; font-size:9pt; }
+  .pm-table th { background:#1a1d2e; color:#fff; padding:7pt 8pt; text-align:left; font-size:8pt; text-transform:uppercase; }
+  .pm-table td { padding:6pt 8pt; border-bottom:0.5pt solid #ccc; }
+
+  /* ASSINATURAS */
+  .passin { page-break-before:auto; margin-top:20pt; border-top:1.5pt solid #000; padding-top:14pt; }
+  .passin-titulo { font-weight:700; font-size:10pt; margin-bottom:16pt; }
+  .passin-grid { display:grid; grid-template-columns:1fr 1fr; gap:20pt; }
+  .passin-item { }
+  .passin-linha { border-top:1pt solid #000; padding-top:4pt; margin-top:28pt; }
+  .passin-nome { font-weight:700; font-size:9.5pt; }
+  .passin-cargo { font-size:8pt; color:#555; }
+
+  /* OCULTAR TELA */
+  .card,.semana,.funcao-tabs,.acoes,.hist-item,.btn-carregar { display:none !important; }
+  .print-doc { display:block !important; }
+}
+.print-doc { display:none; }
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="brand">
+    <div class="brand-name"><img src="docs/logo-emvidros.svg" alt="EM Vidros" style="height:56px;width:auto;display:block;"></div>
+    <div class="brand-sub">Integração de Frota</div>
+  </div>
+  <div class="nav">
+    <div class="nav-label">Módulos</div>
+    <div class="nav-item" onclick="window.location='formulario-registro.html'">✏️ Registro Diário</div>
+    <div class="nav-item" onclick="window.location='dashboard-semanal.html'">📊 Dashboard</div>
+    <div class="nav-item" onclick="window.location='manutencao-frota.html'">🔧 Manutenção Frota</div>
+    <div class="nav-item" onclick="window.location='documentos-frota.html'">📂 Documentos</div>
+    <div class="nav-item" onclick="window.location='ata-reuniao.html'">📝 Ata de Reunião</div>
+    <div class="nav-item ativo">🧑‍🏫 Integração</div>
+  </div>
+  <div class="sidebar-bottom">v1.0 · Ago 2026</div>
+</nav>
+
+<main class="main">
+  <div class="topbar">
+    <div><h1>Ficha de Integração — 45 dias</h1></div>
+    <div class="acoes no-print">
+      <button class="btn-salvar" onclick="salvarProgresso()">💾 Salvar Progresso</button>
+      <button class="btn-gerar" onclick="gerarPDF()">🖨️ Imprimir para Assinatura</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- SELEÇÃO DE FUNÇÃO -->
+    <div class="no-print" style="margin-bottom:20px;">
+      <div style="font-size:.82rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">Função</div>
+      <div class="funcao-tabs">
+        <button class="funcao-btn ativo" id="btnMotorista" onclick="selecionarFuncao('motorista')">🚛 Motorista</button>
+        <button class="funcao-btn" id="btnAjudante" onclick="selecionarFuncao('ajudante')">📦 Ajudante</button>
+      </div>
+    </div>
+
+    <!-- DADOS DO COLABORADOR -->
+    <div class="card no-print">
+      <div class="card-titulo">👤 Dados do Colaborador</div>
+      <div class="form-grid-3">
+        <div class="form-group full">
+          <label>Selecionar Colaborador</label>
+          <select id="f_select_colab" onchange="selecionarColaborador(this.value)">
+            <option value="">— Selecione ou preencha manualmente —</option>
+          </select>
+        </div>
+        <div class="form-group full"><label>Nome Completo</label><input type="text" id="f_nome" placeholder="Nome completo do colaborador"></div>
+        <div class="form-group"><label>Cargo</label><input type="text" id="f_cargo" placeholder="Cargo"></div>
+        <div class="form-group"><label>Data de Admissão</label><input type="date" id="f_admissao"></div>
+        <div class="form-group"><label>Data de Início da Integração</label><input type="date" id="f_inicio"></div>
+        <div class="form-group"><label>Coordenador Responsável</label><input type="text" id="f_coord" value="Raimundo Pontes Pereira"></div>
+        <div class="form-group"><label>Gerente de Logística</label><input type="text" id="f_gerente" value="Lívia Maria de Castro Cutrim Lima"></div>
+        <div class="form-group"><label>Responsável RH</label><input type="text" id="f_rh" placeholder="Nome do responsável RH"></div>
+      </div>
+    </div>
+
+    <!-- SEMANAS -->
+    <div id="semanasContainer"></div>
+
+    <!-- MATRIZ DE AVALIAÇÃO -->
+    <div class="card no-print">
+      <div class="card-titulo">📊 Matriz de Avaliação Contínua</div>
+      <table class="matriz-table" id="tabelaMatriz"></table>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div class="card no-print" id="historico" style="margin-top:24px;">
+      <div class="card-titulo">📁 Histórico de Integrações</div>
+      <div id="listaHistorico"></div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- ===================== ELEMENTO DE IMPRESSÃO ===================== -->
+<div class="print-doc" id="printDoc"></div>
+
+<script>
+// ===================== COLABORADORES =====================
+const COLABORADORES = {
+  motorista: [
+    { nome:'Adinaldo de Souza de Jesus',      cargo:'Motorista Carreteiro', admissao:'2026-04-01' },
+    { nome:'Anderson Penha Dos Anjos',         cargo:'Motorista I',          admissao:'2023-11-29' },
+    { nome:'Gabriel Reis Costa',               cargo:'Motorista I',          admissao:'2026-02-12' },
+    { nome:'Leandro do Nascimento Brito',      cargo:'Motorista II',         admissao:'2020-07-17' },
+    { nome:'Raimundo Correia Ferreira',        cargo:'Motorista I',          admissao:'2026-04-24' },
+    { nome:'Raimundo Nonato da Silva Divino',  cargo:'Motorista II',         admissao:'2022-10-03' },
+    { nome:'Saturnino Assumpção Dias Filho',   cargo:'Motorista I',          admissao:'2026-04-07' },
+    { nome:'Silio Vinicius Cruz Castro',       cargo:'Motorista I',          admissao:'2024-04-08' },
+    { nome:'Victor Gonçalves Vasconcelos',     cargo:'Motorista I',          admissao:'2025-10-15' },
+  ],
+  ajudante: [
+    { nome:'Alejandro Marques Alves',          cargo:'Ajudante de Entrega I',  admissao:'2026-05-27' },
+    { nome:'Carlos Augusto Ferreira',          cargo:'Ajudante de Entrega I',  admissao:'2023-10-13' },
+    { nome:'Edmilson Fonseca Ribeiro',         cargo:'Ajudante de Entrega IV', admissao:'2015-01-05' },
+    { nome:'Emerson Hugo Silva Rodrigues',     cargo:'Ajudante de Entrega I',  admissao:'2026-08-17' },
+    { nome:'Erizelton Abreu Ferreira',         cargo:'Ajudante de Entrega I',  admissao:'2026-06-22' },
+    { nome:'Esteves Gabriel de Sousa de Assis',cargo:'Ajudante de Entrega I',  admissao:'2025-04-16' },
+    { nome:'Josenilson Pereira da Silva',      cargo:'Ajudante de Entrega IV', admissao:'2020-08-24' },
+    { nome:'Kleryson Cleber Pereira Isaias',   cargo:'Ajudante de Entrega I',  admissao:'2026-05-06' },
+    { nome:'Laurenilson Pereira Dias',         cargo:'Ajudante de Entrega II', admissao:'2021-08-25' },
+    { nome:'Terles Sousa Dias',                cargo:'Ajudante de Entrega I',  admissao:'2018-08-22' },
+  ]
+};
+
+function popularSelectColaborador(funcao) {
+  const sel = document.getElementById('f_select_colab');
+  sel.innerHTML = '<option value="">— Selecione ou preencha manualmente —</option>';
+  (COLABORADORES[funcao]||[]).forEach((c,i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = c.nome + ' — ' + c.cargo;
+    sel.appendChild(opt);
+  });
+}
+
+function selecionarColaborador(idx) {
+  if (idx === '') return;
+  const c = COLABORADORES[funcaoAtual][parseInt(idx)];
+  if (!c) return;
+  document.getElementById('f_nome').value    = c.nome;
+  document.getElementById('f_cargo').value   = c.cargo;
+  document.getElementById('f_admissao').value = c.admissao;
+}
+
+// ===================== DADOS =====================
+const INTEGRACOES = {
+  motorista: {
+    funcao: 'Motorista de Entrega / Transporte Logístico',
+    semanas: [
+      {
+        titulo: 'Semana 1 — Integração, Segurança (EPIs), Checklist Veicular, Leitura de Etiquetas e Tipos de Vidro',
+        atividades: [
+          { id:'m1a', titulo:'Boas-vindas e Regulamento Interno', desc:'Apresentação da equipe de logística e RH, normas da empresa, jornada de trabalho, políticas de frota e conduta profissional.' },
+          { id:'m1b', titulo:'Segurança e EPIs', desc:'Treinamento obrigatório sobre o uso de Luvas de Proteção, Botina de Aço/Compósito, Óculos de Proteção e Protetor Auricular, bem como posturas ergométricas para o transporte e condução.' },
+          { id:'m1c', titulo:'Conhecimento dos Materiais (Tipos de Vidro)', desc:'Apresentação detalhada dos tipos de produto transportados, entendendo a fragilidade, comportamento da carga durante o transporte e diferenças entre vidro comum, temperado e laminado.' },
+          { id:'m1d', titulo:'Sistema de Leitura e Conferência de Etiquetas', desc:'Treinamento no sistema de conferência e leitura de etiquetas para identificação de dimensões, quantidades e destino dos materiais na expedição.' },
+          { id:'m1e', titulo:'Checklist Veicular Obrigatório', desc:'Instrução sobre a rotina diária de verificação dos itens de segurança e funcionamento do veículo (pneus, freios, luzes, fluidos, equipamentos obrigatórios e conservação dos cavaletes).' },
+          { id:'m1f', titulo:'Prática Orientada com Motorista Experiente', desc:'Acompanhamento e atuação prática junto a um motorista sênior na rotina de pátio, forragem de peças, inspeção de veículos e movimentação interna na fábrica/depósito, sem atuação direta em rotas longas.' },
+        ]
+      },
+      {
+        titulo: 'Semana 2 — Carregamento, Amarração, Distribuição de Carga e Transferências entre Filiais',
+        atividades: [
+          { id:'m2a', titulo:'Foco em Carregamento e Distribuição de Peso', desc:'Instrução e prática na correta disposição das peças de vidro nos cavaletes e carrinhos móveis do veículo, respeitando os limites de peso e estabilidade.' },
+          { id:'m2b', titulo:'Técnicas de Amarração e Proteção de Carga', desc:'Aplicação prática de cantoneiras, proteções de borracha, cintas e catracas para travamento seguro dos vidros, eliminando folgas e riscos de avarias durante a movimentação.' },
+          { id:'m2c', titulo:'Separação, Leitura e Romaneios de Entrega', desc:'Treinamento no manuseio de romaneios de carga, leitura das notas fiscais e conferência do manifesto de transporte.' },
+          { id:'m2d', titulo:'Rotas de Transferência entre Filiais', desc:'Execução supervisionada de viagens de transferência de carga e insumos entre as filiais Angelim e Guajajaras, aplicando a lógica LIFO de arrumação por ordem de descarregamento.' },
+        ]
+      },
+      {
+        titulo: 'Semana 3 — Roteiros de Rotas Urbanas, Condução e Documentação',
+        atividades: [
+          { id:'m3a', titulo:'Primeiras Saídas em Rotas Urbanas', desc:'Acompanhamento e condução do veículo dentro da cidade sob supervisão direta de um motorista experiente e suporte da coordenação.' },
+          { id:'m3b', titulo:'Planejamento e Otimização de Roteiros', desc:'Leitura e interpretação dos roteiros de rota diários, análise de itinerários, rotas permitidas para veículos pesados/médios e gestão do tempo de viagem.' },
+          { id:'m3c', titulo:'Procedimentos no Cliente', desc:'Validação dos romaneios/etiquetas e coordenação da descarga junto à equipe de ajudantes, garantindo o manuseio seguro no local de entrega.' },
+          { id:'m3d', titulo:'Conferência de Documentação e Canhotos', desc:'Coleta correta de assinaturas, nomes legíveis e documento (RG/CPF) nos canhotos de notas fiscais e comprovantes digitais de entrega.' },
+        ]
+      },
+      {
+        titulo: 'Semana 4 — Gestão de Ocorrências em Rota, Devoluções e Postura Profissional',
+        atividades: [
+          { id:'m4a', titulo:'Postura Profissional e Dirigibilidade Defensiva', desc:'Prática de condução defensiva, respeito às leis de trânsito e postura adequada no atendimento presencial ao cliente.' },
+          { id:'m4b', titulo:'Gestão de Ocorrências no Trânsito e Entregas', desc:'Procedimento operacional para reporte imediato à coordenação em casos de avarias em trajeto, divergências no pedido, cliente ausente ou recusa de mercadorias.' },
+          { id:'m4c', titulo:'Comunicação com a Central/Logística', desc:'Reporte contínuo do status do roteiro, ocorrências em rota e previsão de retorno à base.' },
+          { id:'m4d', titulo:'Acondicionamento e Retorno de Devoluções', desc:'Procedimento para amarração e proteção de produtos recusados ou avariados para transporte seguro de volta à fábrica.' },
+        ]
+      },
+      {
+        titulo: 'Semana 5 — Autonomia Progressiva na Condução e Cumprimento de Roteiros',
+        atividades: [
+          { id:'m5a', titulo:'Gestão de Tempo e Eficiência na Rota', desc:'Cumprimento da programação de entregas previstas no roteiro mantendo a segurança e integridade do veículo e da carga.' },
+          { id:'m5b', titulo:'Encerramento de Rota e Checklist de Retorno', desc:'Organização do veículo no final do expediente, limpeza da área de carga, organização de cintas/cantoneiras e registro de divergências no checklist final.' },
+        ]
+      },
+      {
+        titulo: 'Semana 6 — Consolidação de Processos e Avaliação do Período (45 dias)',
+        atividades: [
+          { id:'m6a', titulo:'Revisão Geral do Desempenho Operacional', desc:'Execução autônoma da rotina completa de checklist veicular, carregamento, amarração, condução por roteiro e entregas.' },
+          { id:'m6b', titulo:'Avaliação Formal de Desempenho', desc:'Reunião conjunta com a coordenação de logística, gerência e Recursos Humanos (RH) para análise dos 45 dias de experiência.' },
+          { id:'m6c', titulo:'Decisão de Renovação/Efetivação', desc:'Feedback estruturado com definição sobre a continuidade do contrato de trabalho.' },
+        ]
+      },
+    ],
+    matriz: [
+      { criterio:'Segurança, EPIs e Condução Defensiva', padrao:'Uso 100% correto de EPIs e cumprimento rigoroso das normas de trânsito e segurança.', freq:'Diária' },
+      { criterio:'Checklist e Conservação do Veículo', padrao:'Execução diária do checklist pré-saída e manutenção do veículo em perfeitas condições de uso.', freq:'Diária' },
+      { criterio:'Cuidado no Carregamento e Amarração', padrao:'Zero avarias ou acidentes causados por má distribuição de peso ou amarração inadequada.', freq:'Semanal' },
+      { criterio:'Acurácia de Rotas e Documentação', padrao:'Cumprimento dos roteiros planejados e 100% dos canhotos/romaneios devidamente conferidos e assinados.', freq:'Diária' },
+      { criterio:'Assiduidade e Pontualidade', padrao:'Cumprimento rigoroso dos horários de apresentação, carregamento e saídas de rota.', freq:'Semanal' },
+    ]
+  },
+  ajudante: {
+    funcao: 'Ajudante de Entrega / Carga e Descarga',
+    semanas: [
+      {
+        titulo: 'Semana 1 — Integração, Segurança (EPIs), Leitura de Etiquetas, Tipos de Vidro e Balcão',
+        atividades: [
+          { id:'a1a', titulo:'Boas-vindas e Regulamento Interno', desc:'Apresentação da equipe de logística e RH, normas da empresa, horários, uso correto do uniforme e conduta.' },
+          { id:'a1b', titulo:'Segurança e EPIs', desc:'Treinamento obrigatório sobre uso de Luvas de Proteção, Botina de Aço/Compósito, Óculos de Proteção e Protetor Auricular. Orientação sobre ergonomia ao levantar peso.' },
+          { id:'a1c', titulo:'Conhecimento dos Materiais (Tipos de Vidro)', desc:'Introdução aos produtos movimentados, compreendendo as especificidades, particularidades de manuseio, fragilidade e diferenças entre vidro comum, temperado e laminado.' },
+          { id:'a1d', titulo:'Sistema de Leitura e Conferência de Etiquetas', desc:'Treinamento prático no sistema de leitura de etiquetas para identificação de dimensões, tamanhos, especificações técnicas e conferência precisa dos materiais.' },
+          { id:'a1e', titulo:'Prática Orientada', desc:'Acompanhamento e atuação prática junto a uma equipe experiente, com supervisão direta da coordenação na forragem de peças e início do manuseio de peças temperadas no depósito/expedição, sem atuação direta em rotas ou carregamentos.' },
+          { id:'a1f', titulo:'Acompanhamento no Balcão da Fábrica', desc:'Acompanhamento presencial no atendimento a clientes em retiradas no balcão da fábrica, observando a rotina de conferência com o cliente, postura de atendimento e liberação de mercadorias.' },
+        ]
+      },
+      {
+        titulo: 'Semana 2 — Separação, Romaneios, Transferência entre Filiais e Carregamento',
+        atividades: [
+          { id:'a2a', titulo:'Separação e Leitura de Carga', desc:'Acompanhamento prático da rotina de separação de mercadorias no depósito, leitura de etiquetas e conferência de materiais para expedição.' },
+          { id:'a2b', titulo:'Romaneios de Entrega e Transferência', desc:'Treinamento no manuseio e conferência de romaneios de entrega e documentação de carga para o transporte de transferência entre as filiais Angelim e Guajajaras.' },
+          { id:'a2c', titulo:'Checklist de Saída e Arrumação', desc:'Aprendizado do processo de conferência visual de itens antes da amarração, prática na disposição dos produtos nos carrinhos móveis e cavalete do veículo para evitar deslocamentos e avarias.' },
+          { id:'a2d', titulo:'Amarração, Proteção e Lógica LIFO', desc:'Uso de cantoneiras e proteções de borracha, além da organização do carregamento pela ordem de entrega.' },
+        ]
+      },
+      {
+        titulo: 'Semana 3 — Rotina de Rota, Conferência de Mercadoria e Documentação',
+        atividades: [
+          { id:'a3a', titulo:'Primeiras Saídas em Rota', desc:'Acompanhamento presencial no transporte e entregas sob supervisão direta da coordenação e acompanhamento de equipe experiente.' },
+          { id:'a3b', titulo:'Conferência no Cliente', desc:'Validação das quantidades, etiquetas e especificações de cada nota fiscal/pedido antes de descarregar a mercadoria no cliente.' },
+          { id:'a3c', titulo:'Manuseio na Descarga', desc:'Técnicas corretas para descarregar o material de forma segura até o local de depósito indicado pelo cliente.' },
+          { id:'a3d', titulo:'Assinatura e Recebimento', desc:'Coleta de assinaturas, nomes legíveis e RG/CPF no canhoto da nota fiscal ou comprovante digital de entrega.' },
+        ]
+      },
+      {
+        titulo: 'Semana 4 — Atendimento ao Cliente, Ocorrências e Devoluções',
+        atividades: [
+          { id:'a4a', titulo:'Postura Profissional', desc:'Cordialidade, comunicação clara com os responsáveis pelo recebimento e respeito às regras internas do cliente.' },
+          { id:'a4b', titulo:'Gestão de Ocorrências', desc:'Procedimento padrão em caso de avaria detectada, ausência do cliente, recusa de mercadoria ou divergência de pedido.' },
+          { id:'a4c', titulo:'Comunicação com a Central', desc:'Reporte imediato à coordenação/expedição antes de deixar o local caso haja problemas no recebimento.' },
+          { id:'a4d', titulo:'Acondicionamento de Devoluções', desc:'Organização do material recusado ou avariado no veículo para retornar em segurança à fábrica/depósito.' },
+        ]
+      },
+      {
+        titulo: 'Semana 5 — Autonomia Progressiva e Agilidade Operacional',
+        atividades: [
+          { id:'a5a', titulo:'Atuação Direta', desc:'Execução das tarefas de carga, amarração, conferência e descarga com acompanhamento periódico da coordenação.' },
+          { id:'a5b', titulo:'Gestão de Tempo', desc:'Foco no ritmo de descarregamento e cumprimento de prazos de rotas programadas.' },
+          { id:'a5c', titulo:'Organização do Veículo no Retorno', desc:'Limpeza do espaço de carga ao final do expediente, recolhimento de fitas, proteções e sobras de embalagens.' },
+        ]
+      },
+      {
+        titulo: 'Semana 6 — Consolidação de Processos e Avaliação do Período (45 dias)',
+        atividades: [
+          { id:'a6a', titulo:'Revisão Geral', desc:'Execução completa e autônoma da rotina semanal de entregas.' },
+          { id:'a6b', titulo:'Avaliação de Desempenho', desc:'Reunião conjunta com a coordenação de logística e Recursos Humanos (RH) para analisar os primeiros 45 dias.' },
+          { id:'a6c', titulo:'Decisão de Renovação/Efetivação', desc:'Feedback estruturado sobre pontos fortes e oportunidades de melhoria para a continuidade do contrato de experiência.' },
+        ]
+      },
+    ],
+    matriz: [
+      { criterio:'Segurança e EPIs', padrao:'Uso 100% correto de botas, luvas e óculos durante carga/descarga.', freq:'Diária' },
+      { criterio:'Cuidado com a Carga', padrao:'Zero avarias por manuseio inadequado ou amarração incorreta dos tipos de vidro.', freq:'Semanal' },
+      { criterio:'Conferência de Etiquetas e Romaneios', padrao:'100% de precisão na leitura das etiquetas/romaneios e divergência zero nas transferências entre filiais e entregas.', freq:'Diária' },
+      { criterio:'Assiduidade e Pontualidade', padrao:'Cumprimento rigoroso dos horários de carregamento e saída.', freq:'Semanal' },
+    ]
+  }
+};
+
+// ===================== ESTADO =====================
+let funcaoAtual = 'motorista';
+let progresso = {};
+const KEY = 'emvidros_integracoes';
+
+// ===================== INIT =====================
+document.addEventListener('DOMContentLoaded', () => {
+  const hoje = new Date().toISOString().split('T')[0];
+  document.getElementById('f_admissao').value = hoje;
+  document.getElementById('f_inicio').value = hoje;
+  popularSelectColaborador('motorista');
+  renderFuncao('motorista');
+  renderHistorico();
+});
+
+// ===================== FUNÇÃO =====================
+function selecionarFuncao(f) {
+  funcaoAtual = f;
+  document.getElementById('btnMotorista').classList.toggle('ativo', f==='motorista');
+  document.getElementById('btnAjudante').classList.toggle('ativo', f==='ajudante');
+  progresso = {};
+  popularSelectColaborador(f);
+  document.getElementById('f_nome').value  = '';
+  document.getElementById('f_cargo').value = '';
+  renderFuncao(f);
+}
+
+function renderFuncao(f) {
+  const cfg = INTEGRACOES[f];
+  renderSemanas(cfg);
+  renderMatriz(cfg);
+}
+
+// ===================== SEMANAS =====================
+function renderSemanas(cfg) {
+  const c = document.getElementById('semanasContainer');
+  c.innerHTML = '';
+  cfg.semanas.forEach((sem, si) => {
+    const total = sem.atividades.length;
+    const feitas = sem.atividades.filter(a => progresso[a.id]?.feito).length;
+    const div = document.createElement('div');
+    div.className = 'semana no-print';
+    div.innerHTML = `
+      <div class="semana-header">
+        <div class="semana-num">${si+1}</div>
+        <div class="semana-titulo">${sem.titulo}</div>
+        <div class="semana-prog">${feitas}/${total}</div>
+      </div>
+      <div class="semana-body" id="sem_body_${si}">
+        ${sem.atividades.map(a => `
+          <div class="atividade ${progresso[a.id]?.feito?'feita':''}" id="atv_${a.id}">
+            <input type="checkbox" id="chk_${a.id}" ${progresso[a.id]?.feito?'checked':''} onchange="toggleAtividade('${a.id}', ${si})">
+            <div class="atividade-texto">
+              <span class="atividade-titulo">${a.titulo}</span>
+              ${a.desc}
+            </div>
+            <div class="atividade-data">
+              <input type="date" id="dt_${a.id}" value="${progresso[a.id]?.data||''}" placeholder="Data">
+            </div>
+          </div>`).join('')}
+      </div>`;
+    c.appendChild(div);
+  });
+}
+
+function toggleAtividade(id, si) {
+  const chk = document.getElementById('chk_'+id);
+  const dt  = document.getElementById('dt_'+id);
+  const el  = document.getElementById('atv_'+id);
+  if (chk.checked) {
+    if (!dt.value) dt.value = new Date().toISOString().split('T')[0];
+    el.classList.add('feita');
+  } else {
+    el.classList.remove('feita');
+  }
+  if (!progresso[id]) progresso[id] = {};
+  progresso[id].feito = chk.checked;
+  progresso[id].data  = dt.value;
+  // atualizar contador da semana
+  const cfg = INTEGRACOES[funcaoAtual];
+  const sem = cfg.semanas[si];
+  const total = sem.atividades.length;
+  const feitas = sem.atividades.filter(a => progresso[a.id]?.feito).length;
+  const header = document.querySelector(`#sem_body_${si}`).previousElementSibling;
+  header.querySelector('.semana-prog').textContent = `${feitas}/${total}`;
+}
+
+// ===================== MATRIZ =====================
+function renderMatriz(cfg) {
+  const t = document.getElementById('tabelaMatriz');
+  t.innerHTML = `<thead><tr><th>Critério</th><th>Padrão Esperado</th><th>Frequência</th></tr></thead>
+    <tbody>${cfg.matriz.map(m=>`<tr><td><b>${m.criterio}</b></td><td>${m.padrao}</td><td><span class="badge-freq">${m.freq}</span></td></tr>`).join('')}</tbody>`;
+}
+
+// ===================== SALVAR =====================
+function salvarProgresso() {
+  coletarProgresso();
+  const id = Date.now().toString();
+  let db; try { db = JSON.parse(localStorage.getItem(KEY))||{}; } catch { db={}; }
+  const nome = document.getElementById('f_nome').value.trim() || 'Sem nome';
+  const key = funcaoAtual + '_' + nome.replace(/\s+/g,'_');
+  const cfg = INTEGRACOES[funcaoAtual];
+  const totalAtv = cfg.semanas.reduce((s,sem)=>s+sem.atividades.length,0);
+  const feitasAtv = Object.values(progresso).filter(p=>p.feito).length;
+  db[key] = {
+    funcao: funcaoAtual,
+    nome,
+    cargo:    document.getElementById('f_cargo').value,
+    admissao: document.getElementById('f_admissao').value,
+    inicio:   document.getElementById('f_inicio').value,
+    coord:    document.getElementById('f_coord').value,
+    gerente:  document.getElementById('f_gerente').value,
+    rh:       document.getElementById('f_rh').value,
+    progresso: {...progresso},
+    total: totalAtv,
+    feitas: feitasAtv,
+    salvo_em: new Date().toISOString()
+  };
+  try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {}
+  renderHistorico();
+  alert('Progresso salvo com sucesso!');
+}
+
+function coletarProgresso() {
+  const cfg = INTEGRACOES[funcaoAtual];
+  cfg.semanas.forEach(sem => {
+    sem.atividades.forEach(a => {
+      const chk = document.getElementById('chk_'+a.id);
+      const dt  = document.getElementById('dt_'+a.id);
+      if (chk) progresso[a.id] = { feito: chk.checked, data: dt?.value||'' };
+    });
+  });
+}
+
+// ===================== HISTÓRICO =====================
+function renderHistorico() {
+  let db; try { db = JSON.parse(localStorage.getItem(KEY))||{}; } catch { db={}; }
+  const el = document.getElementById('listaHistorico');
+  const entries = Object.entries(db);
+  if (entries.length === 0) {
+    el.innerHTML = '<div style="color:var(--txt-muted);font-size:.85rem;">Nenhuma integração salva ainda.</div>';
+    return;
+  }
+  el.innerHTML = entries.sort((a,b)=>b[1].salvo_em?.localeCompare(a[1].salvo_em)).map(([k,v]) => {
+    const pct = Math.round((v.feitas/v.total)*100);
+    const completo = pct === 100;
+    return `<div class="hist-item">
+      <div class="hist-ico">${v.funcao==='motorista'?'🚛':'📦'}</div>
+      <div class="hist-info">
+        <div class="hist-nome">${v.nome}</div>
+        <div class="hist-sub">${v.funcao==='motorista'?'Motorista':'Ajudante'} · Início: ${fmtData(v.inicio)} · Coord: ${v.coord||'—'}</div>
+      </div>
+      <div class="hist-prog ${completo?'completo':'parcial'}">${pct}% (${v.feitas}/${v.total})</div>
+      <button class="btn-carregar" onclick="carregarRegistro('${k}')">Carregar</button>
+    </div>`;
+  }).join('');
+}
+
+function carregarRegistro(key) {
+  let db; try { db = JSON.parse(localStorage.getItem(KEY))||{}; } catch { db={}; }
+  const v = db[key]; if (!v) return;
+  funcaoAtual = v.funcao;
+  progresso = {...v.progresso};
+  document.getElementById('btnMotorista').classList.toggle('ativo', v.funcao==='motorista');
+  document.getElementById('btnAjudante').classList.toggle('ativo', v.funcao==='ajudante');
+  document.getElementById('f_nome').value    = v.nome||'';
+  document.getElementById('f_cargo').value   = v.cargo||'';
+  document.getElementById('f_admissao').value = v.admissao||'';
+  document.getElementById('f_inicio').value  = v.inicio||'';
+  document.getElementById('f_coord').value   = v.coord||'';
+  document.getElementById('f_gerente').value = v.gerente||'';
+  document.getElementById('f_rh').value      = v.rh||'';
+  renderFuncao(v.funcao);
+}
+
+// ===================== GERAR PDF =====================
+function gerarPDF() {
+  coletarProgresso();
+  const cfg = INTEGRACOES[funcaoAtual];
+  const nome    = document.getElementById('f_nome').value    || '___________________________';
+  const cargo   = document.getElementById('f_cargo').value   || cfg.funcao;
+  const admissao= document.getElementById('f_admissao').value;
+  const inicio  = document.getElementById('f_inicio').value;
+  const coord   = document.getElementById('f_coord').value;
+  const gerente = document.getElementById('f_gerente').value;
+  const rh      = document.getElementById('f_rh').value      || '___________________________';
+
+  let html = `
+    <div class="ph">
+      <div class="empresa">EM Vidros Indústria e Comércio de Vidros Ltda</div>
+      <div class="doc-tipo">Programa de Integração e Período de Experiência — 45 Dias</div>
+      <div class="doc-sub">${cfg.funcao}</div>
+    </div>
+    <div class="pd">
+      <div class="pd-row">
+        <div class="pd-field"><div class="lbl">Colaborador</div><div class="val">${e(nome)}</div></div>
+        <div class="pd-field"><div class="lbl">Cargo</div><div class="val">${e(cargo)}</div></div>
+      </div>
+      <div class="pd-row">
+        <div class="pd-field"><div class="lbl">Data de Admissão</div><div class="val">${fmtData(admissao)}</div></div>
+        <div class="pd-field"><div class="lbl">Início da Integração</div><div class="val">${fmtData(inicio)}</div></div>
+      </div>
+      <div class="pd-row">
+        <div class="pd-field"><div class="lbl">Coordenador Responsável</div><div class="val">${e(coord)}</div></div>
+        <div class="pd-field"><div class="lbl">Gerente de Logística</div><div class="val">${e(gerente)}</div></div>
+        <div class="pd-field"><div class="lbl">Responsável RH</div><div class="val">${e(rh)}</div></div>
+      </div>
+    </div>`;
+
+  cfg.semanas.forEach((sem, si) => {
+    html += `<div class="ps">
+      <div class="ps-header"><span>Semana ${si+1} — ${sem.titulo.split('—')[1]?.trim()||sem.titulo}</span></div>`;
+    sem.atividades.forEach(a => {
+      const p = progresso[a.id]||{};
+      const check = p.feito ? '✓' : '';
+      const data  = p.feito && p.data ? fmtData(p.data) : '';
+      html += `<div class="ps-item">
+        <div class="ps-check">${check}</div>
+        <div class="ps-texto"><span class="ps-titulo">${e(a.titulo)}</span>${e(a.desc)}</div>
+        <div class="ps-data">${data}</div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+
+  html += `<div class="pm">
+    <div class="pm-titulo">Matriz de Avaliação Contínua</div>
+    <table class="pm-table">
+      <thead><tr><th>Critério</th><th>Padrão Esperado</th><th>Frequência</th></tr></thead>
+      <tbody>${cfg.matriz.map(m=>`<tr><td><b>${e(m.criterio)}</b></td><td>${e(m.padrao)}</td><td>${e(m.freq)}</td></tr>`).join('')}</tbody>
+    </table>
+  </div>`;
+
+  html += `<div class="passin">
+    <div class="passin-titulo">Termo de Ciente e Assinaturas</div>
+    <div style="font-size:9pt;margin-bottom:16pt;line-height:1.5;">
+      Declaro que recebi o plano de integração para o período de experiência de 45 dias e estou ciente das atividades, treinamentos e responsabilidades descritas.<br><br>
+      Data: ______ / ______ / __________
+    </div>
+    <div class="passin-grid">
+      <div class="passin-item">
+        <div class="passin-linha">
+          <div class="passin-nome">${e(nome)}</div>
+          <div class="passin-cargo">Colaborador (${funcaoAtual==='motorista'?'Motorista':'Ajudante'})</div>
+        </div>
+      </div>
+      <div class="passin-item">
+        <div class="passin-linha">
+          <div class="passin-nome">${e(coord)}</div>
+          <div class="passin-cargo">Coordenação Logística</div>
+        </div>
+      </div>
+      <div class="passin-item">
+        <div class="passin-linha">
+          <div class="passin-nome">${e(gerente)}</div>
+          <div class="passin-cargo">Gerência Logística</div>
+        </div>
+      </div>
+      <div class="passin-item">
+        <div class="passin-linha">
+          <div class="passin-nome">${e(rh)}</div>
+          <div class="passin-cargo">Recursos Humanos (RH)</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById('printDoc').innerHTML = html;
+  window.print();
+}
+
+// ===================== HELPERS =====================
+function fmtData(d) {
+  if (!d) return '';
+  const [a,m,dia] = d.split('-');
+  return `${dia}/${m}/${a}`;
+}
+function e(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

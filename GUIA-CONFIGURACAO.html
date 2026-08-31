@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guia de Configuração — Sistema EM Vidros</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--side:#1a1d2e;--accent:#2563eb;--green:#16a34a;--green-soft:#dcfce7;--orange:#ea580c;--orange-soft:#ffedd5;--border:#e5e7eb;--txt:#1a1d2e;--dim:#6b7280;--muted:#9ca3af;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;line-height:1.6;}
+.header{background:var(--side);color:#fff;padding:28px 40px;}
+.header h1{font-size:1.4rem;font-weight:700;margin-bottom:4px;}
+.header .sub{opacity:.65;font-size:.9rem;}
+.content{max-width:860px;margin:0 auto;padding:32px 24px 60px;}
+.fase{margin-bottom:36px;}
+.fase-title{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid var(--border);}
+.fase-num{width:32px;height:32px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0;}
+.fase-title h2{font-size:1.05rem;font-weight:700;}
+.fase-title .tag{font-size:.72rem;font-weight:600;padding:2px 10px;border-radius:10px;background:var(--green-soft);color:var(--green);}
+.fase-title .tag.pend{background:var(--orange-soft);color:var(--orange);}
+.passo{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start;}
+.passo-num{width:24px;height:24px;background:var(--bg);border:2px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.76rem;color:var(--dim);flex-shrink:0;margin-top:1px;}
+.passo-body{flex:1;}
+.passo-title{font-weight:600;margin-bottom:4px;}
+.passo-desc{font-size:.86rem;color:var(--dim);line-height:1.5;}
+code{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-family:monospace;font-size:.84rem;color:var(--accent);}
+pre{background:#1a1d2e;color:#c8ccd6;border-radius:8px;padding:14px 16px;font-size:.82rem;overflow-x:auto;margin-top:8px;line-height:1.6;}
+.alerta{background:var(--orange-soft);border-left:4px solid var(--orange);border-radius:0 8px 8px 0;padding:10px 14px;font-size:.86rem;margin-top:8px;color:#7c2d12;}
+.ok-box{background:var(--green-soft);border-left:4px solid var(--green);border-radius:0 8px 8px 0;padding:10px 14px;font-size:.86rem;margin-top:8px;color:#14532d;}
+.link-btn{display:inline-block;background:var(--accent);color:#fff;border-radius:6px;padding:7px 16px;font-size:.84rem;font-weight:600;text-decoration:none;margin-top:8px;}
+.check{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-radius:4px;cursor:pointer;vertical-align:middle;margin-right:6px;background:#fff;transition:.1s;}
+.check:checked{background:var(--green);border-color:var(--green);}
+.checklist{list-style:none;margin-top:8px;}
+.checklist li{padding:5px 0;font-size:.88rem;display:flex;align-items:center;gap:8px;}
+.checklist .dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚙️ Guia de Configuração — Sistema de Indicadores EM Vidros</h1>
+  <div class="sub">Siga as fases abaixo para ativar a sincronização automática com Google Sheets e o resumo semanal</div>
+</div>
+
+<div class="content">
+
+  <!-- FASE 1 -->
+  <div class="fase">
+    <div class="fase-title">
+      <div class="fase-num">1</div>
+      <h2>API Key do n8n</h2>
+      <span class="tag pend">Pendente</span>
+    </div>
+
+    <div class="passo">
+      <div class="passo-num">1</div>
+      <div class="passo-body">
+        <div class="passo-title">Abra o n8n no navegador</div>
+        <div class="passo-desc">Acesse <code>https://170.247.31.241:9002</code> e faça login com seu usuário e senha.</div>
+        <div class="alerta">O navegador vai mostrar aviso de certificado — clique em "Avançado" e "Continuar para o site".</div>
+      </div>
+    </div>
+
+    <div class="passo">
+      <div class="passo-num">2</div>
+      <div class="passo-body">
+        <div class="passo-title">Gere uma nova API Key</div>
+        <div class="passo-desc">No menu lateral esquerdo: <strong>Settings → API → Create API Key</strong>. Dê o nome "Claude Code" e clique em <strong>Create</strong>.</div>
+      </div>
+    </div>
+
+    <div class="passo">
+      <div class="passo-num">3</div>
+      <div class="passo-body">
+        <div class="passo-title">Salve a key no arquivo de configuração do Claude</div>
+        <div class="passo-desc">Copie a key gerada e peça ao Claude para salvar no settings.json — ou abra o arquivo e substitua o valor atual:</div>
+        <pre>C:\Users\Livia.Lima\.claude\settings.json
+→ campo "N8N_API_KEY": "COLE_A_NOVA_KEY_AQUI"</pre>
+        <div class="ok-box">A nova key começa com <code>n8n_api_...</code> — se começar com <code>eyJ</code>, não é a key certa (é o token de sessão).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FASE 2 -->
+  <div class="fase">
+    <div class="fase-title">
+      <div class="fase-num">2</div>
+      <h2>Planilha Google Sheets</h2>
+      <span class="tag pend">Pendente</span>
+    </div>
+
+    <div class="passo">
+      <div class="passo-num">1</div>
+      <div class="passo-body">
+        <div class="passo-title">Crie a planilha no Google Drive</div>
+        <div class="passo-desc">Acesse <a href="https://sheets.google.com" target="_blank" style="color:var(--accent)">sheets.google.com</a> → <strong>+ Nova planilha</strong> → renomeie para <strong>"EM Vidros · Indicadores Diários"</strong>.</div>
+      </div>
+    </div>
+
+    <div class="passo">
+      <div class="passo-num">2</div>
+      <div class="passo-body">
+        <div class="passo-title">Crie as 4 abas com os nomes exatos</div>
+        <div class="passo-desc">Clique no <strong>+</strong> na parte inferior da planilha e crie as abas:</div>
+        <ul class="checklist">
+          <li><span class="dot"></span><code>Viagens</code></li>
+          <li><span class="dot"></span><code>Abastecimentos</code></li>
+          <li><span class="dot"></span><code>Manutencoes</code> (sem cedilha)</li>
+          <li><span class="dot"></span><code>Quebras</code></li>
+        </ul>
+        <div class="alerta">Os nomes das abas precisam ser idênticos (incluindo maiúsculas/minúsculas) ao que está configurado nos workflows do n8n.</div>
+      </div>
+    </div>
+
+    <div class="passo">
+      <div class="passo-num">3</div>
+      <div class="passo-body">
+        <div class="passo-title">Copie o ID da planilha</div>
+        <div class="passo-desc">A URL da planilha tem o formato:<br><code>https://docs.google.com/spreadsheets/d/<strong>ID_AQUI</strong>/edit</code><br>Copie o trecho entre <code>/d/</code> e <code>/edit</code> — esse é o ID da planilha.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FASE 3 -->
+  <div class="fase">
+    <div class="fase-title">
+      <div class="fase-num">3</div>
+      <h2>Importar Workflows no n8n</h2>
+      <span class="tag pend">Pendente</span>
+    </div>
+
+    <div class="passo">
+      <div class="passo-num">1</div>
+      <div class="passo-body">
+        <div class="passo-title">Configurar credencial Google no n8n</div>
+        <div class="passo-desc">No n8n: <strong>Credentials → Add Credential → Google Sheets OAuth2 API</strong>. Siga o fluxo de autenticação com sua conta Google.</div>
+      </div>
+    </div>
+
+    <div class="passo">
+      <div class="passo-num">2</div>
+      <div class="passo-body">
+        <div class="passo-title">Importar o Workflow de Registro</div>
+        <div class="passo-desc">No n8n: <strong>Workflows → Import from File</strong> → selecione o arquivo:</div>
+        <pre>G:\Meu Drive\LiviaOS\automacoes-compartilhadas\sistema-indicadores\n8n-workflow-registro.json</pre>
+        <div class="passo-desc" style="margin-top:8px;">Em cada nó do Google Sheets, substitua <code>COLE_AQUI_O_ID_DA_PLANILHA</code> pelo ID copiado na Fase 2. Ative o workflow.</div>
+      </div>
+    </div>
+
+    <div class="passo">
+      <div class="passo-num">3</div>
+      <div class="passo-body">
+        <div class="passo-title">Importar o Workflow de Resumo Semanal</div>
+        <div class="passo-desc">Mesmo processo com o arquivo:</div>
+        <pre>G:\Meu Drive\LiviaOS\automacoes-compartilhadas\sistema-indicadores\n8n-workflow-resumo-semanal.json</pre>
+        <div class="passo-desc" style="margin-top:8px;">Configure: ID da planilha, credencial Gmail (nó "Enviar E-mail"), e dados da API WhatsApp (nó "Enviar WhatsApp"). Ative o workflow.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FASE 4 -->
+  <div class="fase">
+    <div class="fase-title">
+      <div class="fase-num">4</div>
+      <h2>Testar e Ativar</h2>
+      <span class="tag pend">Pendente</span>
+    </div>
+
+    <div class="passo">
+      <div class="passo-num">1</div>
+      <div class="passo-body">
+        <div class="passo-title">Testar o formulário de registro</div>
+        <div class="passo-desc">Abra <code>formulario-registro.html</code>, preencha uma viagem de teste e clique "Registrar". Verifique se aparece "sincronizado com o servidor" (em vez de "dados salvos localmente").</div>
+      </div>
+    </div>
+
+    <div class="passo">
+      <div class="passo-num">2</div>
+      <div class="passo-body">
+        <div class="passo-title">Verificar a planilha</div>
+        <div class="passo-desc">Abra o Google Sheets e confirme que o registro de teste apareceu na aba "Viagens".</div>
+      </div>
+    </div>
+
+    <div class="passo">
+      <div class="passo-num">3</div>
+      <div class="passo-body">
+        <div class="passo-title">Executar o resumo semanal manualmente (teste)</div>
+        <div class="passo-desc">No n8n, abra o Workflow "Resumo Semanal" e clique em <strong>Execute Workflow</strong>. Verifique o recebimento no e-mail e WhatsApp.</div>
+        <div class="ok-box">✅ Tudo funcionando? O sistema está ativo. O resumo vai chegar automaticamente toda sexta às 17h.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:var(--side);color:#c8ccd6;border-radius:10px;padding:16px 20px;font-size:.84rem;margin-top:8px;">
+    <strong style="color:#fff;">Arquivos do sistema:</strong><br><br>
+    📋 <code style="color:#93c5fd;border:none;background:transparent;font-size:.82rem;">formulario-registro.html</code> — Formulário para o assistente<br>
+    📊 <code style="color:#93c5fd;border:none;background:transparent;font-size:.82rem;">dashboard-semanal.html</code> — Dashboard para Livia<br>
+    🔄 <code style="color:#93c5fd;border:none;background:transparent;font-size:.82rem;">n8n-workflow-registro.json</code> — Workflow de registro<br>
+    📩 <code style="color:#93c5fd;border:none;background:transparent;font-size:.82rem;">n8n-workflow-resumo-semanal.json</code> — Workflow resumo sexta<br>
+    📖 <code style="color:#93c5fd;border:none;background:transparent;font-size:.82rem;">GUIA-CONFIGURACAO.html</code> — Este guia
+  </div>
+
+</div>
+</body>
+</html>

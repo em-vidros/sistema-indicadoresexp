@@ -1,0 +1,137 @@
+{
+  "name": "Resumo Semanal — EM Vidros",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "cronExpression", "expression": "0 17 * * 5"}]
+        }
+      },
+      "id": "schedule",
+      "name": "Schedule — Sexta 17h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [260, 300],
+      "notes": "Dispara toda sexta-feira às 17h"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {"__rl": true, "mode": "list", "value": "COLE_AQUI_O_ID_DA_PLANILHA"},
+        "sheetName": {"__rl": true, "mode": "list", "value": "Viagens"},
+        "options": {}
+      },
+      "id": "ler-viagens",
+      "name": "Ler Viagens",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [480, 200]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {"__rl": true, "mode": "list", "value": "COLE_AQUI_O_ID_DA_PLANILHA"},
+        "sheetName": {"__rl": true, "mode": "list", "value": "Abastecimentos"},
+        "options": {}
+      },
+      "id": "ler-abast",
+      "name": "Ler Abastecimentos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [480, 320]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {"__rl": true, "mode": "list", "value": "COLE_AQUI_O_ID_DA_PLANILHA"},
+        "sheetName": {"__rl": true, "mode": "list", "value": "Manutencoes"},
+        "options": {}
+      },
+      "id": "ler-manut",
+      "name": "Ler Manutenções",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [480, 440]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {"__rl": true, "mode": "list", "value": "COLE_AQUI_O_ID_DA_PLANILHA"},
+        "sheetName": {"__rl": true, "mode": "list", "value": "Quebras"},
+        "options": {}
+      },
+      "id": "ler-quebras",
+      "name": "Ler Quebras",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [480, 560]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calcular KPIs da semana atual (seg-sex)\nconst agora = new Date();\nconst seg = new Date(agora);\nseg.setDate(agora.getDate() - agora.getDay() + (agora.getDay()===0 ? -6 : 1));\nseg.setHours(0,0,0,0);\n\nconst emSemana = (dataStr) => {\n  if (!dataStr) return false;\n  const d = new Date(dataStr);\n  return d >= seg && d <= agora;\n};\n\nconst viagens = ($('Ler Viagens').all() || []).map(i=>i.json).filter(v=>emSemana(v.data_saida));\nconst abasts  = ($('Ler Abastecimentos').all() || []).map(i=>i.json).filter(v=>emSemana(v.data));\nconst manuts  = ($('Ler Manutenções').all() || []).map(i=>i.json).filter(v=>emSemana(v.data));\nconst quebras = ($('Ler Quebras').all() || []).map(i=>i.json).filter(v=>emSemana(v.data));\n\nconst soma = (arr, campo) => arr.reduce((s,x)=>s+(parseFloat(x[campo])||0),0);\nconst totalCarga  = soma(viagens, 'valor_carga');\nconst totalCusto  = soma(viagens, 'custo_viagem');\nconst totalManut  = soma(manuts, 'valor');\nconst totalAbast  = soma(abasts, 'valor_total');\nconst m2Exp       = soma(quebras, 'm2_expedido');\nconst m2Qbr       = soma(quebras, 'm2_quebrado');\n\nconst pctRota   = totalCarga>0 ? (totalCusto/totalCarga*100).toFixed(2) : null;\nconst pctQuebra = m2Exp>0 ? (m2Qbr/m2Exp*100).toFixed(2) : null;\nconst pctManut  = totalCarga>0 ? (totalManut/totalCarga*100).toFixed(2) : null;\n\nconst pontCount = {adiantado:0,no_prazo:0,atrasado:0};\nviagens.forEach(v=>{ if(v.pontualidade) pontCount[v.pontualidade] = (pontCount[v.pontualidade]||0)+1; });\nconst totalPont = pontCount.adiantado+pontCount.no_prazo+pontCount.atrasado;\n\n// Agrupar rotas\nconst rotas = {};\nviagens.forEach(v=>{\n  if(!v.rota) return;\n  if(!rotas[v.rota]) rotas[v.rota]={n:0,carga:0,custo:0};\n  rotas[v.rota].n++; rotas[v.rota].carga+=parseFloat(v.valor_carga)||0; rotas[v.rota].custo+=parseFloat(v.custo_viagem)||0;\n});\nconst rotasCrit = Object.entries(rotas)\n  .map(([r,d])=>({rota:r,pct:d.carga>0?d.custo/d.carga*100:0}))\n  .filter(r=>r.pct>=7).sort((a,b)=>b.pct-a.pct).slice(0,3);\n\n// Montar texto do resumo (formato WhatsApp)\nconst semaforo = (val,meta) => val===null?'⚪':parseFloat(val)<meta?'🟢':parseFloat(val)<meta*1.3?'🟡':'🔴';\nconst fmtBRL = v => v>0 ? 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0}) : '—';\nconst fmtPct = v => v!==null ? v+'%' : '—';\nconst ptTxt = totalPont>0\n  ? `✅ ${Math.round(pontCount.adiantado/totalPont*100)}% adiant. | 🟡 ${Math.round(pontCount.no_prazo/totalPont*100)}% prazo | 🔴 ${Math.round(pontCount.atrasado/totalPont*100)}% atraso`\n  : 'Sem dados';\nconst linhasRotas = rotasCrit.length>0\n  ? rotasCrit.map(r=>`   • ${r.rota}: ${r.pct.toFixed(1)}% ${r.pct<10?'⚠️':'🔴'}`).join('\\n')\n  : '   ✅ Todas dentro da meta';\n\nconst dataFmt = agora.toLocaleDateString('pt-BR');\nconst texto = [\n  `📊 *LOGÍSTICA EM VIDROS — RESUMO SEMANAL*`,\n  `_Semana ${seg.toLocaleDateString('pt-BR')} a ${dataFmt}_`,\n  ``,\n  `🚛 *VIAGENS*: ${viagens.length} viagem(ns)`,\n  `   Carga: ${fmtBRL(totalCarga)} | Custo: ${fmtBRL(totalCusto)}`,\n  `   ${semaforo(pctRota,7)} % Custo/Carga: *${fmtPct(pctRota)}* (meta < 7%)`,\n  ``,\n  `📍 *ROTAS ACIMA DA META:*`,\n  linhasRotas,\n  ``,\n  `⏱️ *PONTUALIDADE*: ${ptTxt}`,\n  `   Meta: ≤ 5% atraso`,\n  ``,\n  `🔧 *MANUTENÇÃO*: ${fmtBRL(totalManut)}`,\n  `   ${semaforo(pctManut,2)} % Manut/Produção: *${fmtPct(pctManut)}* (meta < 2%)`,\n  ``,\n  `⛽ *ABASTECIMENTO*: ${fmtBRL(totalAbast)}`,\n  ``,\n  `📦 *QUEBRA EXPEDIÇÃO*: ${semaforo(pctQuebra,1)} ${fmtPct(pctQuebra)} (meta < 1%)`,\n  ``,\n  `_Gerado automaticamente — EM Vidros Logística_`,\n].join('\\n');\n\nreturn [{\n  json: {\n    texto_resumo: texto,\n    semana_inicio: seg.toISOString().split('T')[0],\n    viagens_count: viagens.length,\n    total_carga: totalCarga,\n    total_custo: totalCusto,\n    pct_custo_rota: pctRota,\n    pct_quebra: pctQuebra,\n    pct_manut_prod: pctManut\n  }\n}];"
+      },
+      "id": "calcular-kpis",
+      "name": "Calcular KPIs da Semana",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 380]
+    },
+    {
+      "parameters": {
+        "sendTo": "livia.mcc97@gmail.com",
+        "subject": "=📊 Resumo Semanal Logística — {{$now.format('DD/MM/YYYY')}}",
+        "emailType": "text",
+        "message": "={{ $json.texto_resumo.replace(/\\*/g,'').replace(/_/g,'') }}",
+        "options": {}
+      },
+      "id": "enviar-email",
+      "name": "Enviar E-mail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [940, 280],
+      "notes": "Configura credencial Gmail OAuth no n8n antes de ativar"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=COLE_AQUI_URL_API_WHATSAPP",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"},
+            {"name": "Authorization", "value": "Bearer COLE_AQUI_TOKEN_WHATSAPP"}
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {"name": "phone", "value": "55DDDNUMERO@c.us"},
+            {"name": "message", "value": "={{ $json.texto_resumo }}"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "enviar-whatsapp",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [940, 420],
+      "notes": "Ajusta URL e token conforme a API WhatsApp ativa (Evolution, Z-API, etc.)"
+    }
+  ],
+  "connections": {
+    "Schedule — Sexta 17h": {"main": [[
+      {"node": "Ler Viagens", "type": "main", "index": 0},
+      {"node": "Ler Abastecimentos", "type": "main", "index": 0},
+      {"node": "Ler Manutenções", "type": "main", "index": 0},
+      {"node": "Ler Quebras", "type": "main", "index": 0}
+    ]]},
+    "Ler Quebras": {"main": [[{"node": "Calcular KPIs da Semana", "type": "main", "index": 0}]]},
+    "Calcular KPIs da Semana": {"main": [[
+      {"node": "Enviar E-mail", "type": "main", "index": 0},
+      {"node": "Enviar WhatsApp", "type": "main", "index": 0}
+    ]]}
+  },
+  "settings": {"executionOrder": "v1"},
+  "notes": "CONFIGURAÇÃO NECESSÁRIA:\n1. Substituir 'COLE_AQUI_O_ID_DA_PLANILHA' pelo ID do Google Sheets em todos os nós\n2. Configurar credencial Gmail OAuth no nó 'Enviar E-mail'\n3. No nó 'Enviar WhatsApp': substituir URL, token e número pelo da sua API ativa\n4. Ativar o workflow para disparar toda sexta às 17h"
+}

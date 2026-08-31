@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro Diário — EM Vidros</title>
+<style>
+:root{
+  --bg-app:#f5f7fa;
+  --bg-side:#1a1d2e;
+  --bg-side-hover:#2a2f47;
+  --bg-side-active:#2563eb;
+  --txt-side:#c8ccd6;
+  --txt-side-dim:#7a8194;
+  --txt-side-bright:#fff;
+  --bg-card:#fff;
+  --txt-main:#1a1d2e;
+  --txt-dim:#6b7280;
+  --txt-muted:#9ca3af;
+  --border:#e5e7eb;
+  --accent:#2563eb;
+  --accent-soft:#dbeafe;
+  --green:#16a34a;
+  --green-soft:#dcfce7;
+  --orange:#ea580c;
+  --orange-soft:#ffedd5;
+  --red:#dc2626;
+  --red-soft:#fee2e2;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(--txt-main);font-size:13px;display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--bg-side);color:var(--txt-side);display:flex;flex-direction:column;position:fixed;height:100vh;left:0;top:0;z-index:10;}
+.brand{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.08);}
+.brand-name{font-weight:700;font-size:1rem;color:#fff;display:flex;align-items:center;gap:8px;}
+.brand-sub{font-size:.72rem;color:var(--txt-side-dim);margin-top:3px;}
+.nav{flex:1;padding:12px 0;}
+.nav-label{padding:8px 20px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--txt-side-dim);font-weight:600;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:.86rem;color:var(--txt-side);transition:.12s;border-left:3px solid transparent;}
+.nav-item:hover{background:var(--bg-side-hover);color:#fff;}
+.nav-item.ativo{background:var(--bg-side-hover);color:#fff;border-left-color:var(--accent);}
+.nav-item .ico{width:18px;text-align:center;font-size:1rem;}
+.sidebar-bottom{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:.72rem;color:var(--txt-side-dim);}
+.n8n-status{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:.72rem;}
+.dot{width:7px;height:7px;border-radius:50%;background:#4ade80;}
+.dot.off{background:#ef4444;}
+
+/* MAIN */
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.topbar h1{font-size:1.05rem;font-weight:700;}
+.topbar .dia{font-size:.8rem;color:var(--txt-dim);}
+.content{padding:28px;flex:1;}
+
+/* CARD */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.card-header h2{font-size:.95rem;font-weight:700;flex:1;}
+.card-body{padding:20px;}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-grid.single{grid-template-columns:1fr;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+label{font-size:.78rem;font-weight:600;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.4px;}
+input,select,textarea{background:var(--bg-app);border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.9rem;color:var(--txt-main);font-family:inherit;transition:.12s;width:100%;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);background:#fff;}
+textarea{resize:vertical;min-height:70px;}
+.required{color:var(--red);}
+.hint-field{font-size:.72rem;color:var(--txt-muted);margin-top:2px;}
+
+/* TIPO SELECTOR */
+.tipo-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.tipo-btn{border:2px solid var(--border);background:var(--bg-card);border-radius:10px;padding:14px 8px;cursor:pointer;text-align:center;transition:.15s;font-family:inherit;}
+.tipo-btn:hover{border-color:var(--accent);background:var(--accent-soft);}
+.tipo-btn.ativo{border-color:var(--accent);background:var(--accent-soft);}
+.tipo-btn .tipo-ico{font-size:1.6rem;display:block;margin-bottom:4px;}
+.tipo-btn .tipo-nome{font-size:.78rem;font-weight:600;color:var(--txt-main);}
+.tipo-btn.ativo .tipo-nome{color:var(--accent);}
+
+/* BASE SELECTOR */
+.base-selector{display:flex;gap:8px;margin-bottom:20px;}
+.base-btn{flex:1;border:2px solid var(--border);background:var(--bg-card);border-radius:8px;padding:10px;cursor:pointer;text-align:center;font-size:.85rem;font-weight:600;transition:.15s;font-family:inherit;}
+.base-btn:hover{border-color:var(--accent);background:var(--accent-soft);}
+.base-btn.ativo{color:#fff!important;}
+#btnRaposa.ativo{background:#2563eb;border-color:#2563eb;}
+#btnImperatriz.ativo{background:#16a34a;border-color:#16a34a;}
+#btnBelem.ativo{background:#ea580c;border-color:#ea580c;}
+
+/* BTN */
+.btn-registrar{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:14px;font-size:1rem;font-weight:600;cursor:pointer;transition:.15s;font-family:inherit;margin-top:8px;}
+.btn-registrar:hover{background:#1d4ed8;}
+.btn-registrar:disabled{opacity:.6;cursor:wait;}
+
+/* FEEDBACK */
+.feedback{border-radius:8px;padding:12px 16px;font-size:.88rem;font-weight:500;display:none;margin-top:12px;text-align:center;}
+.feedback.ok{background:var(--green-soft);color:#166534;display:block;}
+.feedback.erro{background:var(--red-soft);color:#991b1b;display:block;}
+
+/* HISTÓRICO */
+.historico-lista{margin-top:0;}
+.hist-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
+.hist-item:last-child{border-bottom:none;}
+.hist-tipo{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.hist-tipo.viagem{background:var(--accent-soft);}
+.hist-tipo.abastecimento{background:#fef9c3;}
+.hist-tipo.manutencao{background:var(--orange-soft);}
+.hist-tipo.quebra{background:var(--red-soft);}
+.hist-info{flex:1;min-width:0;}
+.hist-titulo{font-weight:600;font-size:.86rem;margin-bottom:2px;}
+.hist-detalhe{font-size:.78rem;color:var(--txt-dim);}
+.hist-hora{font-size:.72rem;color:var(--txt-muted);white-space:nowrap;}
+.hist-vazio{padding:20px;text-align:center;color:var(--txt-muted);font-size:.85rem;}
+
+/* LAYOUT 2 COL */
+.layout-dois{display:grid;grid-template-columns:3fr 2fr;gap:20px;align-items:start;}
+@media(max-width:900px){.layout-dois,.tipo-grid,.form-grid{grid-template-columns:1fr!important;}}
+
+.seção-titulo{font-size:.88rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.hoje-chip{display:inline-block;background:var(--accent-soft);color:var(--accent);font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:8px;}
+
+/* LOGIN */
+.login-overlay{position:fixed;inset:0;background:var(--bg-side);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.login-box{background:#fff;border-radius:16px;padding:36px 40px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.login-logo{background:var(--bg-side);border-radius:10px;padding:12px 20px;margin-bottom:8px;text-align:center;}
+.login-sub{font-size:.82rem;color:var(--txt-dim);margin-bottom:28px;}
+.login-box label{font-size:.75rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px;}
+.login-box input{width:100%;background:var(--bg-app);border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;font-size:.95rem;color:var(--txt-main);font-family:inherit;margin-bottom:16px;}
+.login-box input:focus{outline:none;border-color:var(--accent);background:#fff;}
+.btn-login{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn-login:hover{background:#1d4ed8;}
+.login-erro{background:var(--red-soft);color:#991b1b;border-radius:8px;padding:10px 14px;font-size:.84rem;margin-top:12px;display:none;}
+.user-chip{display:flex;align-items:center;gap:8px;padding:10px 20px;border-top:1px solid rgba(255,255,255,.08);margin-top:auto;}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#fff;flex-shrink:0;}
+.user-info{flex:1;min-width:0;}
+.user-nome{font-size:.8rem;color:#fff;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.user-base{font-size:.7rem;color:var(--txt-side-dim);}
+.btn-logout{background:none;border:none;color:var(--txt-side-dim);cursor:pointer;font-size:.78rem;padding:4px 6px;border-radius:4px;font-family:inherit;}
+.btn-logout:hover{color:#fff;background:rgba(255,255,255,.08);}
+.base-locked{pointer-events:none;opacity:.6;}
+
+/* MODAL USUÁRIOS */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;display:none;align-items:center;justify-content:center;}
+.modal-overlay.aberto{display:flex;}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;}
+.modal-header{background:var(--bg-side);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;}
+.modal-header h3{font-size:.95rem;font-weight:700;}
+.modal-close{background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;opacity:.7;line-height:1;}
+.modal-close:hover{opacity:1;}
+.modal-body{padding:16px 20px;max-height:70vh;overflow-y:auto;}
+.user-card{border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:12px;}
+.user-card-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.user-badge{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;}
+.user-card-header .info{flex:1;}
+.user-login{font-weight:700;font-size:.88rem;}
+.user-base-tag{font-size:.72rem;color:var(--txt-muted);}
+.user-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.user-fields label{font-size:.72rem;font-weight:600;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:3px;}
+.user-fields input{width:100%;background:var(--bg-app);border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:.85rem;color:var(--txt-main);font-family:inherit;}
+.user-fields input:focus{outline:none;border-color:var(--accent);}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.btn-salvar{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:inherit;}
+.btn-salvar:hover{background:#1d4ed8;}
+.btn-cancelar{background:var(--bg-app);color:var(--txt-dim);border:1.5px solid var(--border);border-radius:8px;padding:9px 16px;font-size:.88rem;cursor:pointer;font-family:inherit;}
+.nav-admin{border-top:1px solid rgba(255,255,255,.08);margin-top:4px;padding-top:4px;}
+.ab-slot-titulo{font-size:.8rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 8px;padding-bottom:6px;border-bottom:2px solid var(--accent-soft);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo"><img src="docs/logo-emvidros.svg" alt="EM Vidros" style="height:64px;width:auto;display:block;margin:0 auto;"></div>
+    <div class="login-sub">Registro Diário · Logística</div>
+    <div>
+      <label>Usuário</label>
+      <input type="text" id="loginUsuario" placeholder="Seu usuário" autocomplete="username" onkeydown="if(event.key==='Enter')fazerLogin()">
+      <label>Senha</label>
+      <input type="password" id="loginSenha" placeholder="Sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()">
+      <div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px;font-size:.85rem;color:var(--dim);">
+        <input type="checkbox" id="lembrarMe" style="width:16px;height:16px;cursor:pointer;" checked>
+        <label for="lembrarMe" style="cursor:pointer;margin:0;">Lembrar de mim</label>
+      </div>
+      <button class="btn-login" onclick="fazerLogin()">Entrar</button>
+      <div class="login-erro" id="loginErro">Usuário ou senha incorretos.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="brand">
+    <div class="brand-name"><img src="docs/logo-emvidros.svg" alt="EM Vidros" style="height:56px;width:auto;display:block;"></div>
+    <div class="brand-sub">Registro Diário · Logística</div>
+  </div>
+  <div class="nav">
+    <div class="nav-label">Registro</div>
+    <div class="nav-item ativo"><span class="ico">✏️</span> Registrar Rota</div>
+    <div class="nav-label" style="margin-top:8px;">Acesso rápido</div>
+    <div class="nav-item" onclick="window.location='dashboard-semanal.html'"><span class="ico">📊</span> Ver Dashboard</div>
+    <div class="nav-item" onclick="window.location='manutencao-frota.html'" style="position:relative;"><span class="ico">🔧</span> Manutenção Frota <span id="badgeManutencao" style="display:none;background:var(--red);color:#fff;font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:auto;">0</span></div>
+    <div class="nav-item" onclick="window.location='documentos-frota.html'" style="position:relative;"><span class="ico">📂</span> Documentos <span id="badgeDocumentos" style="display:none;background:var(--red);color:#fff;font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:auto;">0</span></div>
+    <div class="nav-item" onclick="window.location='ata-reuniao.html'"><span class="ico">📝</span> Ata de Reunião</div>
+    <div class="nav-item" onclick="window.location='integracao-frota.html'"><span class="ico">🧑‍🏫</span> Integração</div>
+    <div class="nav-item" onclick="exportarDados()"><span class="ico">💾</span> Exportar dados</div>
+    <div class="nav-item" onclick="limparHoje()"><span class="ico">🗑️</span> Limpar histórico</div>
+    <div class="nav-admin" id="menuAdmin" style="display:none;">
+      <div class="nav-label">Administração</div>
+      <div class="nav-item" onclick="abrirGerenciarUsuarios()"><span class="ico">👥</span> Gerenciar usuários</div>
+    </div>
+  </div>
+  <div class="sidebar-bottom">
+    <div id="statusN8n">
+    </div>
+    <div style="margin-top:8px;opacity:.6;">v1.0 · Ago 2026</div>
+  </div>
+  <div class="user-chip">
+    <div class="user-avatar" id="userAvatar">?</div>
+    <div class="user-info">
+      <div class="user-nome" id="userNome">—</div>
+      <div class="user-base" id="userBaseLabel">—</div>
+    </div>
+    <button class="btn-logout" onclick="fazerLogout()" title="Sair">↩</button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div>
+      <h1>Registrar Rota</h1>
+      <div class="dia" id="diaAtual"></div>
+    </div>
+    <div style="font-size:.8rem;color:var(--txt-dim);" id="contadorHoje"></div>
+  </div>
+
+  <div class="content">
+    <div class="layout-dois">
+
+      <!-- FORMULÁRIO -->
+      <div>
+        <!-- BASE (sempre visível) -->
+        <div class="seção-titulo" id="labelBase">Base <span class="required">*</span></div>
+        <div class="base-selector" style="margin-bottom:20px;" id="baseSelector">
+          <button class="base-btn" id="btnRaposa" onclick="selecionarBase('Raposa',this)" style="border-color:#2563eb;color:#2563eb;">📍 Raposa</button>
+          <button class="base-btn" id="btnImperatriz" onclick="selecionarBase('Imperatriz',this)" style="border-color:#16a34a;color:#16a34a;">📍 Imperatriz</button>
+          <button class="base-btn" id="btnBelem" onclick="selecionarBase('Belém',this)" style="border-color:#ea580c;color:#ea580c;">📍 Belém</button>
+        </div>
+
+        <!-- AVISO ADMIN -->
+        <div id="adminAviso" style="display:none;background:var(--accent-soft);border:2px solid var(--accent);border-radius:10px;padding:20px;text-align:center;margin-bottom:20px;">
+          <div style="font-size:.88rem;color:var(--txt-dim);">Selecione uma base acima para começar o registro</div>
+        </div>
+
+        <div id="formArea">
+        <!-- TIPO -->
+        <div class="seção-titulo">Tipo de Registro <span class="required">*</span></div>
+        <div class="tipo-grid">
+          <button class="tipo-btn ativo" onclick="selecionarTipo('viagem',this)">
+            <span class="tipo-ico">🚛</span>
+            <span class="tipo-nome">Viagem</span>
+          </button>
+          <button class="tipo-btn" onclick="selecionarTipo('abastecimento',this)">
+            <span class="tipo-ico">⛽</span>
+            <span class="tipo-nome">Abastecimento</span>
+          </button>
+          <button class="tipo-btn" onclick="selecionarTipo('manutencao',this)">
+            <span class="tipo-ico">🔧</span>
+            <span class="tipo-nome">Manutenção</span>
+          </button>
+          <button class="tipo-btn" onclick="selecionarTipo('quebra',this)">
+            <span class="tipo-ico">📦</span>
+            <span class="tipo-nome">Quebra</span>
+          </button>
+        </div>
+
+        <!-- FORMULÁRIO DINÂMICO -->
+        <div id="formViagem" class="card">
+          <div class="card-header"><h2>🚛 Dados da Viagem</h2></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Data de Saída <span class="required">*</span></label>
+                <input type="date" id="v_data_saida" required>
+              </div>
+              <div class="form-group">
+                <label>Hora de Saída</label>
+                <input type="time" id="v_hora_saida">
+              </div>
+              <div class="form-group">
+                <label>Data de Chegada <span class="required">*</span></label>
+                <input type="date" id="v_data_chegada">
+              </div>
+              <div class="form-group">
+                <label>Hora Prevista Chegada <span class="required">*</span></label>
+                <input type="time" id="v_hora_prevista" placeholder="Para calcular pontualidade">
+              </div>
+              <div class="form-group">
+                <label>Hora Real de Chegada</label>
+                <input type="time" id="v_hora_chegada">
+                <div class="hint-field">Preencher quando o veículo retornar</div>
+              </div>
+              <div class="form-group">
+                <label>Status de Pontualidade</label>
+                <select id="v_pontualidade">
+                  <option value="">-- Selecionar --</option>
+                  <option value="adiantado">✅ Adiantado</option>
+                  <option value="no_prazo">🟡 No Prazo</option>
+                  <option value="atrasado">🔴 Atrasado</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Motorista <span class="required">*</span></label>
+                <input type="text" id="v_motorista" placeholder="Nome do motorista" list="lista-motoristas">
+                <datalist id="lista-motoristas"></datalist>
+              </div>
+              <div class="form-group">
+                <label>Veículo / Placa <span class="required">*</span></label>
+                <input type="text" id="v_veiculo" placeholder="Ex: NXB2H55" list="lista-veiculos" style="text-transform:uppercase;">
+                <datalist id="lista-veiculos"></datalist>
+              </div>
+              <div class="form-group full">
+                <label>Rota / Destino <span class="required">*</span></label>
+                <input type="text" id="v_rota" placeholder="Ex: Salinópolis, Balsas, Pres. Dutra..." list="lista-rotas">
+                <datalist id="lista-rotas"></datalist>
+              </div>
+              <div class="form-group">
+                <label>km Saída (odômetro)</label>
+                <input type="number" id="v_km_saida" placeholder="Ex: 48520">
+              </div>
+              <div class="form-group">
+                <label>km Chegada (odômetro)</label>
+                <input type="number" id="v_km_chegada" placeholder="Ex: 49821">
+              </div>
+              <div class="form-group">
+                <label>Valor da Carga (R$) <span class="required">*</span></label>
+                <input type="number" id="v_valor_carga" placeholder="0,00" step="0.01" min="0">
+              </div>
+              <div class="form-group">
+                <label>m² Total da Carga</label>
+                <input type="number" id="v_m2" placeholder="0,00" step="0.01" min="0">
+              </div>
+              <div class="form-group">
+                <label>Peso da Carga (kg)</label>
+                <input type="number" id="v_peso" placeholder="0,00" step="0.01" min="0">
+              </div>
+              <div class="form-group full">
+                <label>Observação</label>
+                <textarea id="v_obs" placeholder="Ocorrências, avarias, atrasos, informações adicionais..."></textarea>
+              </div>
+              <div class="form-group">
+                <label>Combustível (R$) <span class="required">*</span></label>
+                <input type="number" id="v_combustivel" placeholder="0,00" step="0.01" min="0" oninput="calcularCustoViagem()">
+              </div>
+              <div class="form-group">
+                <label>Diárias (R$) <span class="required">*</span></label>
+                <input type="number" id="v_diarias" placeholder="0,00" step="0.01" min="0" oninput="calcularCustoViagem()">
+              </div>
+              <div class="form-group full">
+                <label>Total Custo da Viagem (R$)</label>
+                <input type="number" id="v_custo_viagem" placeholder="Calculado automaticamente" step="0.01" min="0" readonly style="background:#f0f4ff;color:var(--accent);font-weight:700;cursor:default;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="formAbastecimento" class="card" style="display:none;">
+          <div class="card-header"><h2>⛽ Dados do Abastecimento</h2></div>
+          <div class="card-body">
+            <!-- Data + Placa + Rota -->
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Data <span class="required">*</span></label>
+                <input type="date" id="a_data">
+              </div>
+              <div class="form-group">
+                <label>Placa <span class="required">*</span></label>
+                <input type="text" id="a_placa" placeholder="Ex: NXB2H55" list="lista-veiculos2" style="text-transform:uppercase;">
+                <datalist id="lista-veiculos2"></datalist>
+              </div>
+              <div class="form-group full">
+                <label>Rota Vinculada</label>
+                <select id="a_rota" onchange="onRotaAbastecimentoChange()">
+                  <option value="">-- Sem rota --</option>
+                </select>
+                <div class="hint-field">Vincula o custo ao indicador de rota correto</div>
+              </div>
+            </div>
+            <!-- Toggle viagem longa -->
+            <div style="display:flex;align-items:center;gap:10px;margin:14px 0 6px;padding:12px 14px;background:var(--bg-app);border-radius:8px;border:1.5px solid var(--border);">
+              <input type="checkbox" id="a_viagem_longa" style="width:17px;height:17px;cursor:pointer;accent-color:var(--accent);" onchange="onToggleViagemLonga()">
+              <label for="a_viagem_longa" style="cursor:pointer;font-size:.88rem;font-weight:600;color:var(--txt-main);margin:0;">Viagem longa (interior) — múltiplos abastecimentos</label>
+            </div>
+            <!-- SLOT 1 -->
+            <div id="a_slot_1">
+              <div class="ab-slot-titulo" id="a_slot_1_titulo" style="display:none;">1º Abastecimento <span style="font-size:.72rem;font-weight:400;color:var(--txt-muted);">· saída / início</span></div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Litros <span class="required">*</span></label>
+                  <input type="number" id="a_litros_1" placeholder="0,00" step="0.01" min="0" oninput="calcularTotaisAbastecimento()">
+                </div>
+                <div class="form-group">
+                  <label>Valor R$/Litro <span class="required">*</span></label>
+                  <input type="number" id="a_vl_litro_1" placeholder="0,000" step="0.001" min="0" oninput="calcularTotaisAbastecimento()">
+                </div>
+                <div class="form-group">
+                  <label>km Odômetro</label>
+                  <input type="number" id="a_km_1" placeholder="Ex: 48750" oninput="calcularTotaisAbastecimento()">
+                </div>
+                <div class="form-group">
+                  <label>Posto / Fornecedor</label>
+                  <input type="text" id="a_posto_1" placeholder="Nome do posto">
+                </div>
+              </div>
+            </div>
+            <!-- SLOT 2 -->
+            <div id="a_slot_2" style="display:none;">
+              <div class="ab-slot-titulo">2º Abastecimento <span style="font-size:.72rem;font-weight:400;color:var(--txt-muted);">· interior</span></div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Litros</label>
+                  <input type="number" id="a_litros_2" placeholder="0,00" step="0.01" min="0" oninput="calcularTotaisAbastecimento()">
+                </div>
+                <div class="form-group">
+                  <label>Valor R$/Litro</label>
+                  <input type="number" id="a_vl_litro_2" placeholder="0,000" step="0.001" min="0" oninput="calcularTotaisAbastecimento()">
+                </div>
+                <div class="form-group">
+                  <label>km Odômetro</label>
+                  <input type="number" id="a_km_2" placeholder="Ex: 49300" oninput="calcularTotaisAbastecimento()">
+                </div>
+                <div class="form-group">
+                  <label>Posto / Fornecedor</label>
+                  <input type="text" id="a_posto_2" placeholder="Nome do posto">
+                </div>
+              </div>
+            </div>
+            <!-- SLOT 3 -->
+            <div id="a_slot_3" style="display:none;">
+              <div class="ab-slot-titulo">3º Abastecimento <span style="font-size:.72rem;font-weight:400;color:var(--txt-muted);">· chegada</span></div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Litros</label>
+                  <input type="number" id="a_litros_3" placeholder="0,00" step="0.01" min="0" oninput="calcularTotaisAbastecimento()">
+                </div>
+                <div class="form-group">
+                  <label>Valor R$/Litro</label>
+                  <input type="number" id="a_vl_litro_3" placeholder="0,000" step="0.001" min="0" oninput="calcularTotaisAbastecimento()">
+                </div>
+                <div class="form-group">
+                  <label>km Odômetro</label>
+                  <input type="number" id="a_km_3" placeholder="Ex: 50100" oninput="calcularTotaisAbastecimento()">
+                </div>
+                <div class="form-group">
+                  <label>Posto / Fornecedor</label>
+                  <input type="text" id="a_posto_3" placeholder="Nome do posto">
+                </div>
+              </div>
+            </div>
+            <!-- Botão adicionar + totais -->
+            <div id="a_btn_adicionar_container" style="display:none;margin-top:10px;">
+              <button type="button" onclick="adicionarSlotAbastecimento()" id="a_btn_adicionar" style="background:var(--accent-soft);color:var(--accent);border:1.5px dashed var(--accent);border-radius:8px;padding:9px 18px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit;width:100%;">+ Adicionar abastecimento</button>
+            </div>
+            <div id="a_totais" style="display:none;margin-top:14px;background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:8px;padding:12px 16px;">
+              <div style="font-size:.72rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Totais da Viagem</div>
+              <div style="display:flex;gap:20px;flex-wrap:wrap;">
+                <div><span style="font-size:.75rem;color:var(--txt-dim);">Total Litros</span><br><strong id="a_total_litros" style="font-size:1rem;color:var(--txt-main);">—</strong></div>
+                <div><span style="font-size:.75rem;color:var(--txt-dim);">Total R$</span><br><strong id="a_total_valor" style="font-size:1rem;color:var(--txt-main);">—</strong></div>
+                <div><span style="font-size:.75rem;color:var(--txt-dim);">Média km/L</span><br><strong id="a_media_km" style="font-size:1rem;color:var(--green);">—</strong></div>
+                <div><span style="font-size:.75rem;color:var(--txt-dim);">km Rodados</span><br><strong id="a_km_rodados" style="font-size:1rem;color:var(--txt-main);">—</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="formManutencao" class="card" style="display:none;">
+          <div class="card-header"><h2>🔧 Dados da Manutenção</h2></div>
+          <div class="card-body">
+            <!-- Tipo de manutenção -->
+            <div class="seção-titulo" style="margin-bottom:10px;">Tipo <span class="required">*</span></div>
+            <div style="display:flex;gap:10px;margin-bottom:16px;">
+              <button type="button" class="tipo-manut-btn ativo" id="btnPreventiva" onclick="selecionarTipoManutencao('preventiva',this)" style="flex:1;border:2px solid var(--green);background:var(--green-soft);border-radius:8px;padding:10px;cursor:pointer;font-size:.85rem;font-weight:700;color:var(--green);font-family:inherit;">🛡️ Preventiva</button>
+              <button type="button" class="tipo-manut-btn" id="btnCorretiva" onclick="selecionarTipoManutencao('corretiva',this)" style="flex:1;border:2px solid var(--border);background:var(--bg-card);border-radius:8px;padding:10px;cursor:pointer;font-size:.85rem;font-weight:700;color:var(--txt-dim);font-family:inherit;">🔨 Corretiva</button>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Data Programada (envio ao fornecedor)</label>
+                <input type="date" id="m_data_programada">
+                <div class="hint-field">Data planejada para enviar o veículo</div>
+              </div>
+              <div class="form-group">
+                <label>Placa <span class="required">*</span></label>
+                <input type="text" id="m_placa" placeholder="Ex: NXB2H55" list="lista-veiculos3" style="text-transform:uppercase;">
+                <datalist id="lista-veiculos3"></datalist>
+              </div>
+              <div class="form-group">
+                <label>Data de Entrada na Oficina (realizada) <span class="required">*</span></label>
+                <input type="date" id="m_data_entrada">
+              </div>
+              <div class="form-group">
+                <label>Hora de Entrada</label>
+                <input type="time" id="m_hora_entrada">
+              </div>
+              <div class="form-group">
+                <label>Data de Saída da Oficina</label>
+                <input type="date" id="m_data_saida">
+                <div class="hint-field">Preencher quando o veículo retornar</div>
+              </div>
+              <div class="form-group">
+                <label>Hora de Saída</label>
+                <input type="time" id="m_hora_saida">
+              </div>
+              <div class="form-group">
+                <label>km do Veículo (odômetro)</label>
+                <input type="number" id="m_km" placeholder="Ex: 48520">
+              </div>
+              <div class="form-group">
+                <label>Fornecedor / Oficina</label>
+                <input type="text" id="m_fornecedor" placeholder="Nome da oficina">
+              </div>
+              <div class="form-group full">
+                <label>Serviço / Descrição <span class="required">*</span></label>
+                <input type="text" id="m_servico" placeholder="Ex: Troca de óleo, revisão de freios...">
+              </div>
+              <div class="form-group">
+                <label>Valor (R$) <span class="required">*</span></label>
+                <input type="number" id="m_valor" placeholder="0,00" step="0.01" min="0">
+              </div>
+            </div>
+            <!-- Documentos obrigatórios -->
+            <div style="margin-top:14px;padding:12px 14px;background:var(--bg-app);border:1.5px solid var(--border);border-radius:8px;">
+              <div style="font-size:.72rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📎 Documentos (anexar após realização)</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:200px;">
+                  <label style="font-size:.72rem;font-weight:600;color:var(--txt-dim);display:block;margin-bottom:4px;">Orçamento (PDF)</label>
+                  <input type="file" id="m_doc_orcamento" accept=".pdf,image/*" style="width:100%;font-size:.8rem;">
+                </div>
+                <div style="flex:1;min-width:200px;">
+                  <label style="font-size:.72rem;font-weight:600;color:var(--txt-dim);display:block;margin-bottom:4px;">Ordem de Serviço assinada (PDF)</label>
+                  <input type="file" id="m_doc_os" accept=".pdf,image/*" style="width:100%;font-size:.8rem;">
+                </div>
+              </div>
+              <div style="font-size:.72rem;color:var(--txt-muted);margin-top:6px;">Sem documentos: registro fica como 📎 Pendente de Documento</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="formQuebra" class="card" style="display:none;">
+          <div class="card-header"><h2>📦 Dados da Quebra de Expedição</h2></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Data <span class="required">*</span></label>
+                <input type="date" id="q_data">
+              </div>
+              <div class="form-group">
+                <label>m² Expedido <span class="required">*</span></label>
+                <input type="number" id="q_m2_expedido" placeholder="Total expedido no dia" step="0.01" min="0">
+              </div>
+              <div class="form-group">
+                <label>m² com Quebra <span class="required">*</span></label>
+                <input type="number" id="q_m2_quebrado" placeholder="m² danificado/devolvido" step="0.01" min="0">
+              </div>
+              <div class="form-group full">
+                <label>Observação</label>
+                <textarea id="q_obs" placeholder="Motivo, NF, cliente afetado..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-registrar" onclick="registrar()">✅ Registrar</button>
+        <div class="feedback" id="feedback"></div>
+        </div><!-- /formArea -->
+      </div>
+
+      <!-- HISTÓRICO DO DIA -->
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <h2>Histórico <span class="hoje-chip" id="chipBase">Raposa</span></h2>
+            <span style="font-size:.78rem;color:var(--txt-dim);" id="labelHoje">Hoje</span>
+          </div>
+          <div class="card-body" style="padding:12px 16px;max-height:520px;overflow-y:auto;">
+            <div class="historico-lista" id="historicoLista">
+              <div class="hist-vazio">Nenhum registro hoje.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- MODAL GERENCIAR USUÁRIOS -->
+<div class="modal-overlay" id="modalUsuarios">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>👥 Gerenciar Usuários</h3>
+      <button class="modal-close" onclick="fecharModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalUsuariosBody"></div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarUsuarios()">💾 Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== CONFIG =====================
+const N8N_URL = 'https://170.247.31.241:9002';
+const N8N_WEBHOOK = N8N_URL + '/webhook/registro-indicadores';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUXXAoZeuvTYm3s9Buj3ocnPH9vNitZ30XBcM696qp0r0wkiUE-Ubsr7uPde0X0l_spA/exec';
+const STORAGE_KEY = 'emvidros_indicadores';
+const SESSION_KEY = 'emvidros_sessao';
+
+// Usuários do sistema — altere senhas aqui se necessário
+const _d = s => atob(s);
+let USUARIOS = {
+  'livia':       { senha: _d('bGl2aWFAMjAyNg=='),      base: null,          nome: 'Livia (Admin)', admin: true,
+                   bases: ['Raposa','Imperatriz','Belém'], tipos: ['viagem','abastecimento','manutencao','quebra'] },
+  'andreina':    { senha: _d('cmFwb3NhQDIwMjY='),     base: 'Raposa',      nome: 'Andreina',
+                   bases: ['Raposa'], tipos: ['viagem','abastecimento','manutencao','quebra'] },
+  'lucascunha':  { senha: _d('aW1wQDIwMjY='),        base: 'Imperatriz',  nome: 'Lucas Cunha',
+                   bases: ['Imperatriz'], tipos: ['viagem','abastecimento','manutencao','quebra'] },
+  'belem':       { senha: _d('YmVsZW1AMjAyNg=='),      base: 'Belém',       nome: 'Victor',
+                   bases: ['Belém'], tipos: ['viagem','abastecimento','manutencao','quebra'] },
+};
+
+// ===================== ESTADO =====================
+let tipoAtual = 'viagem';
+let baseAtual = 'Raposa';
+let tipoManutencaoAtual = 'preventiva';
+let sessaoAtual = null; // { usuario, nome, base }
+
+// ===================== CARREGAR CUSTOMIZAÇÕES DE USUÁRIOS =====================
+(function carregarCustomUsuarios() {
+  try {
+    const custom = JSON.parse(localStorage.getItem('emvidros_usuarios_config'));
+    if (custom) {
+      Object.entries(custom).forEach(([login, dados]) => {
+        if (USUARIOS[login]) Object.assign(USUARIOS[login], dados);
+      });
+    }
+  } catch {}
+})();
+
+// ===================== LOGIN =====================
+function fazerLogin() {
+  const usuario = document.getElementById('loginUsuario').value.trim().toLowerCase();
+  const senha   = document.getElementById('loginSenha').value;
+  const u = USUARIOS[usuario];
+  if (!u || u.senha !== senha) {
+    const erroEl = document.getElementById('loginErro');
+    erroEl.style.display = 'block';
+    setTimeout(() => erroEl.style.display='none', 3000);
+    return;
+  }
+  const sessao = { usuario, nome: u.nome, base: u.base, admin: u.admin || false };
+  const lembrar = document.getElementById('lembrarMe')?.checked !== false;
+  if (lembrar) {
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify(sessao)); } catch(e) {}
+  }
+  aplicarSessao(sessao);
+}
+
+function fazerLogout() {
+  if (!confirm('Sair do sistema?')) return;
+  localStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+
+function aplicarSessao(sessao) {
+  sessaoAtual = sessao;
+  // Ocultar overlay de login
+  document.getElementById('loginOverlay').style.display = 'none';
+  // Atualizar chip de usuário na sidebar
+  document.getElementById('userAvatar').textContent = sessao.nome.charAt(0).toUpperCase();
+  document.getElementById('userNome').textContent = sessao.nome;
+  document.getElementById('userBaseLabel').textContent = sessao.base;
+  // Definir e travar base
+  baseAtual = sessao.base || 'Raposa';
+  const isAdmin = !!sessao.admin;
+  const u = USUARIOS[sessao.usuario] || {};
+  const basesPermitidas = u.bases || ['Raposa','Imperatriz','Belém'];
+  const tiposPermitidos = u.tipos || ['viagem','abastecimento','manutencao','quebra'];
+  const selector = document.getElementById('baseSelector');
+  selector.classList.remove('base-locked');
+  // Mostrar/ocultar botões de base conforme permissão
+  document.getElementById('btnRaposa').style.display     = basesPermitidas.includes('Raposa')     ? '' : 'none';
+  document.getElementById('btnImperatriz').style.display = basesPermitidas.includes('Imperatriz') ? '' : 'none';
+  document.getElementById('btnBelem').style.display      = basesPermitidas.includes('Belém')      ? '' : 'none';
+  // Mostrar/ocultar botões de tipo conforme permissão
+  const tipoMap = { viagem:0, abastecimento:1, manutencao:2, quebra:3 };
+  document.querySelectorAll('.tipo-btn').forEach((btn, i) => {
+    const tipo = Object.keys(tipoMap)[i];
+    btn.style.display = tiposPermitidos.includes(tipo) ? '' : 'none';
+  });
+  if (!isAdmin) {
+    selector.classList.add('base-locked');
+    document.getElementById('btnRaposa').classList.toggle('ativo', sessao.base==='Raposa');
+    document.getElementById('btnImperatriz').classList.toggle('ativo', sessao.base==='Imperatriz');
+    document.getElementById('btnBelem').classList.toggle('ativo', sessao.base==='Belém');
+  } else {
+    // Admin: nenhuma base pré-selecionada — usuário escolhe antes de preencher
+    document.getElementById('labelBase').innerHTML = 'Base <span style="font-size:.68rem;color:var(--accent);font-weight:600;">● Admin</span>';
+    baseAtual = null;
+    document.getElementById('formArea').style.display = 'none';
+    document.getElementById('adminAviso').style.display = 'block';
+    document.getElementById('chipBase').textContent = '—';
+    document.getElementById('menuAdmin').style.display = 'block';
+  }
+  if (baseAtual) {
+    document.getElementById('chipBase').textContent = baseAtual;
+    setDataHoje();
+    atualizarDataAtual();
+    popularAutocompletistas();
+    renderizarHistorico();
+    verificarN8n();
+    atualizarContador();
+  } else {
+    verificarN8n();
+  }
+}
+
+// ===================== INIT =====================
+document.addEventListener('DOMContentLoaded', () => {
+  // Verificar sessão salva
+  try {
+    const s = JSON.parse(localStorage.getItem(SESSION_KEY));
+    if (s && USUARIOS[s.usuario]) {
+      s.admin = USUARIOS[s.usuario].admin || false;
+      s.base  = USUARIOS[s.usuario].base;
+      s.nome  = USUARIOS[s.usuario].nome;
+      aplicarSessao(s);
+      return;
+    }
+  } catch {}
+  // Sem sessão — focar no campo usuário
+  setTimeout(() => {
+    const el = document.getElementById('loginUsuario');
+    if (el) el.focus();
+  }, 100);
+});
+
+function setDataHoje() {
+  const hoje = new Date().toISOString().split('T')[0];
+  ['v_data_saida','v_data_chegada','a_data','m_data_entrada','q_data'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = hoje;
+  });
+}
+
+function atualizarDataAtual() {
+  const agora = new Date();
+  const opts = {weekday:'long',year:'numeric',month:'long',day:'numeric'};
+  document.getElementById('diaAtual').textContent = agora.toLocaleDateString('pt-BR', opts);
+  document.getElementById('labelHoje').textContent = agora.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+}
+
+// ===================== TIPO / BASE =====================
+function selecionarTipo(tipo, btn) {
+  tipoAtual = tipo;
+  document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('ativo'));
+  btn.classList.add('ativo');
+  ['formViagem','formAbastecimento','formManutencao','formQuebra'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  const mapa = {viagem:'formViagem',abastecimento:'formAbastecimento',manutencao:'formManutencao',quebra:'formQuebra'};
+  document.getElementById(mapa[tipo]).style.display = 'block';
+  esconderFeedback();
+}
+
+function calcularCustoViagem() {
+  const comb = parseFloat(document.getElementById('v_combustivel').value) || 0;
+  const diar = parseFloat(document.getElementById('v_diarias').value) || 0;
+  document.getElementById('v_custo_viagem').value = (comb + diar).toFixed(2);
+}
+
+function selecionarBase(base, btn) {
+  baseAtual = base;
+  document.querySelectorAll('.base-btn').forEach(b => b.classList.remove('ativo'));
+  btn.classList.add('ativo');
+  document.getElementById('chipBase').textContent = base;
+  // Admin: revelar formulário ao escolher base
+  if (sessaoAtual && sessaoAtual.admin) {
+    document.getElementById('adminAviso').style.display = 'none';
+    document.getElementById('formArea').style.display = 'block';
+    popularAutocompletistas();
+    setDataHoje();
+  }
+  renderizarHistorico();
+  atualizarContador();
+}
+
+// ===================== COLETA DE DADOS =====================
+function coletarDados() {
+  const base = baseAtual;
+  const agora = new Date().toISOString();
+
+  if (tipoAtual === 'viagem') {
+    const ds = document.getElementById('v_data_saida').value;
+    const mot = document.getElementById('v_motorista').value.trim();
+    const vei = document.getElementById('v_veiculo').value.trim().toUpperCase();
+    const rot = document.getElementById('v_rota').value.trim();
+    const vc   = parseFloat(document.getElementById('v_valor_carga').value) || 0;
+    const comb = parseFloat(document.getElementById('v_combustivel').value) || 0;
+    const diar = parseFloat(document.getElementById('v_diarias').value) || 0;
+    const cv   = comb + diar;
+    if (!ds || !mot || !vei || !rot || !vc || !cv) return {erro:'Preencha os campos obrigatórios: Data Saída, Motorista, Veículo, Rota, Valor da Carga, Combustível e Diárias.'};
+    const kms = parseInt(document.getElementById('v_km_saida').value) || 0;
+    const kmc = parseInt(document.getElementById('v_km_chegada').value) || 0;
+    return {
+      tipo:'viagem', base, registrado_em: agora,
+      data_saida: ds,
+      hora_saida: document.getElementById('v_hora_saida').value,
+      data_chegada: document.getElementById('v_data_chegada').value,
+      hora_prevista: document.getElementById('v_hora_prevista').value,
+      hora_chegada: document.getElementById('v_hora_chegada').value,
+      pontualidade: document.getElementById('v_pontualidade').value,
+      motorista: mot, veiculo: vei, rota: rot,
+      km_saida: kms, km_chegada: kmc,
+      km_rodados: kmc > kms ? kmc - kms : 0,
+      valor_carga: vc, combustivel: comb, diarias: diar, custo_viagem: cv,
+      m2: parseFloat(document.getElementById('v_m2').value) || 0,
+      peso_kg: parseFloat(document.getElementById('v_peso').value) || 0,
+      observacao: document.getElementById('v_obs').value.trim(),
+      pct_custo: vc > 0 ? Math.round(cv/vc*10000)/100 : 0
+    };
+  }
+  if (tipoAtual === 'abastecimento') {
+    const dt = document.getElementById('a_data').value;
+    const pl = document.getElementById('a_placa').value.trim().toUpperCase();
+    const rota = document.getElementById('a_rota').value;
+    const viagemLonga = document.getElementById('a_viagem_longa').checked;
+    if (!dt || !pl) return {erro:'Preencha: Data e Placa.'};
+
+    if (!viagemLonga) {
+      // Abastecimento simples
+      const lt = parseFloat(document.getElementById('a_litros_1').value) || 0;
+      const vl = parseFloat(document.getElementById('a_vl_litro_1').value) || 0;
+      if (!lt || !vl) return {erro:'Preencha: Litros e Valor/Litro.'};
+      return [{
+        tipo:'abastecimento', base, registrado_em: agora,
+        data: dt, placa: pl, rota: rota || null,
+        litros: lt, vl_litro: vl,
+        valor_total: Math.round(lt*vl*100)/100,
+        km: parseInt(document.getElementById('a_km_1').value) || null,
+        posto: document.getElementById('a_posto_1').value.trim(),
+        slot: null, viagem_longa: false
+      }];
+    }
+
+    // Múltiplos abastecimentos
+    const slots = [];
+    const labels = ['Saída','Interior','Chegada'];
+    let kmInicial = null, kmFinal = null;
+    for (let i = 1; i <= 3; i++) {
+      const lt = parseFloat(document.getElementById('a_litros_' + i)?.value) || 0;
+      const vl = parseFloat(document.getElementById('a_vl_litro_' + i)?.value) || 0;
+      if (lt === 0) continue;
+      const km = parseInt(document.getElementById('a_km_' + i)?.value) || null;
+      if (km) { if (kmInicial === null) kmInicial = km; kmFinal = km; }
+      slots.push({
+        tipo:'abastecimento', base, registrado_em: agora,
+        data: dt, placa: pl, rota: rota || null,
+        litros: lt, vl_litro: vl,
+        valor_total: Math.round(lt*vl*100)/100,
+        km: km,
+        posto: document.getElementById('a_posto_' + i)?.value.trim() || '',
+        slot: labels[i-1], viagem_longa: true
+      });
+    }
+    if (slots.length === 0) return {erro:'Preencha pelo menos um abastecimento.'};
+    const totalLt = slots.reduce((s,r)=>s+r.litros,0);
+    const totalR = slots.reduce((s,r)=>s+r.valor_total,0);
+    const kmRodados = (kmInicial&&kmFinal&&kmFinal>kmInicial) ? kmFinal-kmInicial : null;
+    const media = (totalLt>0&&kmRodados) ? Math.round(kmRodados/totalLt*100)/100 : null;
+    slots.forEach(s => { s.total_litros_viagem=totalLt; s.total_valor_viagem=Math.round(totalR*100)/100; s.km_rodados_viagem=kmRodados; s.media_kmL=media; });
+    return slots;
+  }
+  if (tipoAtual === 'manutencao') {
+    const de = document.getElementById('m_data_entrada').value;
+    const pl = document.getElementById('m_placa').value.trim().toUpperCase();
+    const sv = document.getElementById('m_servico').value.trim();
+    const vl = parseFloat(document.getElementById('m_valor').value) || 0;
+    if (!de || !pl || !sv || !vl) return {erro:'Preencha: Data de Entrada, Placa, Serviço e Valor.'};
+    const ds = document.getElementById('m_data_saida').value;
+    let diasOficina = null;
+    if (de && ds) {
+      diasOficina = Math.round((new Date(ds) - new Date(de)) / 86400000);
+    }
+    const temOrcamento  = !!document.getElementById('m_doc_orcamento')?.files?.length;
+    const temOS         = !!document.getElementById('m_doc_os')?.files?.length;
+    return [{
+      tipo:'manutencao', base, registrado_em: agora,
+      tipo_manutencao: tipoManutencaoAtual,
+      data: de,
+      data_programada: document.getElementById('m_data_programada').value || null,
+      data_entrada: de,
+      hora_entrada: document.getElementById('m_hora_entrada').value,
+      data_saida: ds,
+      hora_saida: document.getElementById('m_hora_saida').value,
+      dias_oficina: diasOficina,
+      placa: pl, servico: sv, valor: vl,
+      km_odometro: parseInt(document.getElementById('m_km').value) || null,
+      fornecedor: document.getElementById('m_fornecedor').value.trim(),
+      status_documental: (temOrcamento && temOS) ? 'concluido' : 'pendente',
+      link_orcamento: null,
+      link_os: null
+    }];
+  }
+  if (tipoAtual === 'quebra') {
+    const dt = document.getElementById('q_data').value;
+    const me = parseFloat(document.getElementById('q_m2_expedido').value) || 0;
+    const mq = parseFloat(document.getElementById('q_m2_quebrado').value) || 0;
+    if (!dt || !me) return {erro:'Preencha: Data e m² Expedido.'};
+    return {
+      tipo:'quebra', base, registrado_em: agora,
+      data: dt, m2_expedido: me, m2_quebrado: mq,
+      pct_quebra: me > 0 ? Math.round(mq/me*10000)/100 : 0,
+      observacao: document.getElementById('q_obs').value.trim()
+    };
+  }
+}
+
+// ===================== REGISTRAR =====================
+async function registrar() {
+  const resultado = coletarDados();
+  if (!resultado) return;
+  if (resultado.erro) { mostrarFeedback(resultado.erro, 'erro'); return; }
+
+  // coletarDados sempre retorna array
+  const lista = Array.isArray(resultado) ? resultado : [resultado];
+
+  const btn = document.querySelector('.btn-registrar');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  let syncOk = false;
+  try {
+    for (const dados of lista) {
+      salvarLocal(dados);
+      await fetch(APPS_SCRIPT_URL, { method:'POST', mode:'no-cors', body: JSON.stringify(dados) });
+    }
+    syncOk = true;
+  } catch(e) { /* sem conexão */ }
+
+  limparFormulario();
+  renderizarHistorico();
+  atualizarContador();
+  popularAutocompletistas();
+
+  const n = lista.length;
+  const msg = syncOk
+    ? `✅ ${n > 1 ? n + ' abastecimentos registrados' : 'Registrado'} e sincronizado com a planilha!`
+    : `✅ ${n > 1 ? n + ' abastecimentos registrados' : 'Registrado'} localmente! (sem conexão)`;
+  mostrarFeedback(msg, 'ok');
+
+  btn.disabled = false;
+  btn.textContent = '✅ Registrar';
+  setTimeout(() => esconderFeedback(), 5000);
+}
+
+// ===================== LOCAL STORAGE (com fallback em memória) =====================
+let _dadosMemoria = null;
+
+function carregarDados() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch {
+    return _dadosMemoria || [];
+  }
+}
+
+function salvarLocal(dado) {
+  const dados = carregarDados();
+  dados.push(dado);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+  } catch {
+    _dadosMemoria = dados;
+  }
+}
+
+function dadosDeHoje() {
+  const hoje = new Date().toISOString().split('T')[0];
+  return carregarDados().filter(d => {
+    const data = d.data_saida || d.data || d.registrado_em?.split('T')[0];
+    return data === hoje && d.base === baseAtual;
+  });
+}
+
+// ===================== HISTÓRICO =====================
+function renderizarHistorico() {
+  const lista = document.getElementById('historicoLista');
+  const dados = dadosDeHoje().reverse();
+  if (dados.length === 0) {
+    lista.innerHTML = '<div class="hist-vazio">Nenhum registro hoje para ' + baseAtual + '.</div>';
+    return;
+  }
+  const icos = {viagem:'🚛',abastecimento:'⛽',manutencao:'🔧',quebra:'📦'};
+  lista.innerHTML = dados.map(d => {
+    const hora = new Date(d.registrado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    let titulo = '', detalhe = '';
+    if (d.tipo==='viagem') { titulo=`${d.rota} · ${d.motorista}`; const detCusto = d.combustivel!=null ? `⛽R$${d.combustivel?.toLocaleString('pt-BR',{minimumFractionDigits:0})} + 🏨R$${d.diarias?.toLocaleString('pt-BR',{minimumFractionDigits:0})}` : `R$${d.custo_viagem?.toLocaleString('pt-BR',{minimumFractionDigits:0})}`; detalhe=`${d.veiculo} · R$${d.valor_carga?.toLocaleString('pt-BR',{minimumFractionDigits:0})} carga · ${detCusto} · ${d.pct_custo}%`; }
+    else if (d.tipo==='abastecimento') { titulo=`${d.placa} · ${d.litros}L`; detalhe=`R$${d.vl_litro?.toFixed(3)}/L · Total R$${d.valor_total?.toFixed(2)}`; }
+    else if (d.tipo==='manutencao') { titulo=`${d.placa} · ${d.servico}`; detalhe=`R$${d.valor?.toLocaleString('pt-BR',{minimumFractionDigits:2})} · ${d.fornecedor||'—'}${d.dias_oficina!==null&&d.dias_oficina!==undefined?' · '+d.dias_oficina+'d oficina':''}`; }
+    else if (d.tipo==='quebra') { titulo=`${d.m2_expedido} m² expedido · ${d.m2_quebrado} m² quebrado`; detalhe=`${d.pct_quebra}% quebra`; }
+    return `<div class="hist-item">
+      <div class="hist-tipo ${d.tipo}">${icos[d.tipo]||'📝'}</div>
+      <div class="hist-info"><div class="hist-titulo">${titulo}</div><div class="hist-detalhe">${detalhe}</div></div>
+      <div class="hist-hora">${hora}</div>
+    </div>`;
+  }).join('');
+}
+
+function atualizarContador() {
+  const total = carregarDados().filter(d => d.base === baseAtual);
+  const hoje = dadosDeHoje().length;
+  document.getElementById('contadorHoje').textContent = `${hoje} registro${hoje!==1?'s':''} hoje · ${total.length} total`;
+}
+
+// ===================== FROTAS PRÉ-CADASTRADAS =====================
+const VEICULOS_RAPOSA = ['PTV0006','PTT0004','ROW3A87','SMW0B96','SM02J13','SMP6F86','SMQ2I80'];
+const VEICULOS_IMPERATRIZ = ['DMG9D41','NXD4H26','NXB2H55','ROW4J37','SMR2H61','SND9C34','SMM4A02'];
+const VEICULOS_BELEM = ['SMP2F01'];
+
+// ===================== MOTORISTAS PRÉ-CADASTRADOS =====================
+const MOTORISTAS_RAPOSA = [
+  'Anderson Penha Dos Anjos',
+  'Gabriel Reis Costa',
+  'Leandro do Nascimento Brito',
+  'Raimundo Correia Ferreira',
+  'Raimundo Nonato da Silva Divino',
+  'Saturnino Assumpção Dias Filho',
+  'Silio Vinicius Cruz Castro',
+  'Victor Gonçalves Vasconcelos',
+];
+const MOTORISTAS_IMPERATRIZ = [
+  'Nataniel Pereira Rocha',
+  'Francisco Pereira dos Santos',
+  'Evandro de Oliveira Cardim',
+  'Francisco de Sousa Cabral',
+  'Adriel da Silva Santos',
+  'Sebastiao de Brito Matos',
+  'Italo Melo Sales',
+  'Railton da Silva Batista',
+];
+const MOTORISTAS_BELEM = ['Severino Manoel Barata do Nascimento'];
+
+// ===================== ROTAS PRÉ-CADASTRADAS =====================
+const ROTAS_RAPOSA = [
+  'PINHEIRO',
+  'SANTA INÊS / BACABAL - EXTRA PINHEIRO',
+  'CAXIAS / TERESINA',
+  'SANTA INÊS / BACABAL - EXTRA CAXIAS',
+  'ITAPECURU',
+  'PARNAÍBA / TERESINA',
+  'PARNAÍBA',
+  'SÃO LUÍS',
+  'LOJA GUAJAJARAS',
+  'LOJA ANGELIM',
+];
+const ROTAS_IMPERATRIZ = [
+  'PARAUAPEBAS',
+  'BURITICUPU',
+  'BALSAS',
+  'BELÉM',
+  'LOJA BELÉM',
+  'FLORIANO',
+  'IMPERATRIZ',
+  'SALINÓPOLIS',
+  'LOJA SANTA INÊS',
+];
+const ROTAS_BELEM = ['BARCARENA', 'BELÉM', 'SALINÓPOLIS'];
+
+// Rotas locais/curtas: não exibem toggle de viagem longa
+const ROTAS_LOCAIS = ['IMPERATRIZ', 'SÃO LUÍS', 'LOJA GUAJAJARAS', 'LOJA ANGELIM', 'LOJA BELÉM', 'LOJA SANTA INÊS', 'BARCARENA'];
+
+// ===================== AUTOCOMPLETE =====================
+function popularAutocompletistas() {
+  const dados = carregarDados();
+  const base = sessaoAtual ? sessaoAtual.base : baseAtual;
+  const isAdmin = sessaoAtual && sessaoAtual.admin;
+  const motoresPre  = isAdmin ? [...MOTORISTAS_RAPOSA,...MOTORISTAS_IMPERATRIZ,...MOTORISTAS_BELEM]
+                              : base==='Raposa' ? MOTORISTAS_RAPOSA : base==='Imperatriz' ? MOTORISTAS_IMPERATRIZ : MOTORISTAS_BELEM;
+  const veiculosPre = isAdmin ? [...VEICULOS_RAPOSA,...VEICULOS_IMPERATRIZ,...VEICULOS_BELEM]
+                              : base==='Raposa' ? VEICULOS_RAPOSA   : base==='Imperatriz' ? VEICULOS_IMPERATRIZ   : VEICULOS_BELEM;
+  const rotasPre    = isAdmin ? [...ROTAS_RAPOSA,...ROTAS_IMPERATRIZ,...ROTAS_BELEM]
+                              : base==='Raposa' ? ROTAS_RAPOSA : base==='Imperatriz' ? ROTAS_IMPERATRIZ : ROTAS_BELEM;
+  const motoresHistorico  = dados.filter(d=>d.motorista).map(d=>d.motorista);
+  const veiculosHistorico = dados.filter(d=>d.veiculo||d.placa).map(d=>d.veiculo||d.placa);
+  const rotasHistorico    = dados.filter(d=>d.rota).map(d=>d.rota);
+  const motoristas = [...new Set([...motoresPre, ...motoresHistorico])].sort();
+  const veiculos   = [...new Set([...veiculosPre, ...veiculosHistorico])].sort();
+  const rotas      = [...new Set([...rotasPre, ...rotasHistorico])].sort();
+
+  ['lista-motoristas'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = motoristas.map(m=>`<option value="${m}">`).join('');
+  });
+  ['lista-veiculos','lista-veiculos2','lista-veiculos3'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = veiculos.map(v=>`<option value="${v}">`).join('');
+  });
+  const lr = document.getElementById('lista-rotas');
+  if(lr) lr.innerHTML = rotas.map(r=>`<option value="${r}">`).join('');
+  // Select de rota no abastecimento
+  const ar = document.getElementById('a_rota');
+  if (ar) {
+    const rotasAb = isAdmin ? [...ROTAS_RAPOSA,...ROTAS_IMPERATRIZ,...ROTAS_BELEM] : rotasPre;
+    ar.innerHTML = '<option value="">-- Sem rota --</option>' + [...new Set(rotasAb)].sort().map(r=>`<option value="${r}">${r}</option>`).join('');
+  }
+}
+
+// ===================== LIMPAR FORMULÁRIO =====================
+function limparFormulario() {
+  document.querySelectorAll('input[type=text],input[type=number],textarea').forEach(el => el.value='');
+  document.querySelectorAll('select').forEach(el => el.value='');
+  document.querySelectorAll('input[type=time]').forEach(el => el.value='');
+  // Resetar tipo de manutenção
+  tipoManutencaoAtual = 'preventiva';
+  const btnP = document.getElementById('btnPreventiva');
+  const btnC = document.getElementById('btnCorretiva');
+  if (btnP) { btnP.style.borderColor='var(--green)'; btnP.style.background='var(--green-soft)'; btnP.style.color='var(--green)'; }
+  if (btnC) { btnC.style.borderColor='var(--border)'; btnC.style.background='var(--bg-card)'; btnC.style.color='var(--txt-dim)'; }
+  // Resetar slots de abastecimento
+  document.getElementById('a_viagem_longa').checked = false;
+  document.getElementById('a_slot_1_titulo').style.display = 'none';
+  document.getElementById('a_slot_2').style.display = 'none';
+  document.getElementById('a_slot_3').style.display = 'none';
+  document.getElementById('a_btn_adicionar_container').style.display = 'none';
+  document.getElementById('a_totais').style.display = 'none';
+  slotsAtivos = 1;
+  setDataHoje();
+}
+
+// ===================== FEEDBACK =====================
+function mostrarFeedback(msg, tipo) {
+  const el = document.getElementById('feedback');
+  el.textContent = msg;
+  el.className = 'feedback ' + tipo;
+}
+function esconderFeedback() {
+  const el = document.getElementById('feedback');
+  el.className = 'feedback';
+  el.textContent = '';
+}
+
+// ===================== EXPORTAR =====================
+function exportarDados() {
+  const dados = carregarDados();
+  if(dados.length===0){alert('Nenhum dado para exportar.');return;}
+  const blob = new Blob([JSON.stringify(dados,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `emvidros-indicadores-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function limparHoje() {
+  if(!confirm('Apagar registros de hoje de ' + baseAtual + '?')) return;
+  const hoje = new Date().toISOString().split('T')[0];
+  const dados = carregarDados().filter(d => {
+    const data = d.data_saida || d.data || d.registrado_em?.split('T')[0];
+    return !(data === hoje && d.base === baseAtual);
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+  renderizarHistorico();
+  atualizarContador();
+}
+
+// ===================== GERENCIAR USUÁRIOS (admin) =====================
+function abrirGerenciarUsuarios() {
+  const body = document.getElementById('modalUsuariosBody');
+  const baseLabel = { Raposa:'📍 Raposa', Imperatriz:'📍 Imperatriz', 'Belém':'📍 Belém', null:'🔑 Admin' };
+  const todasBases = ['Raposa','Imperatriz','Belém'];
+  const todosTipos = [
+    { id:'viagem',        ico:'🚛', label:'Viagem' },
+    { id:'abastecimento', ico:'⛽', label:'Abast.' },
+    { id:'manutencao',    ico:'🔧', label:'Manut.' },
+    { id:'quebra',        ico:'📦', label:'Quebra' },
+  ];
+  body.innerHTML = Object.entries(USUARIOS).map(([login, u]) => {
+    const isAdmin = !!u.admin;
+    const basesUser  = u.bases  || todasBases;
+    const tiposUser  = u.tipos  || todosTipos.map(t=>t.id);
+    const basesHtml = todasBases.map(b => `
+      <label style="display:flex;align-items:center;gap:5px;font-size:.8rem;font-weight:500;text-transform:none;color:var(--txt-main);cursor:pointer;">
+        <input type="checkbox" id="edit_base_${login}_${b.replace(/[^a-z]/gi,'')}"
+          style="width:15px;height:15px;cursor:pointer;accent-color:var(--accent);"
+          ${basesUser.includes(b)?'checked':''} ${isAdmin?'disabled':''}>
+        ${b}
+      </label>`).join('');
+    const tiposHtml = todosTipos.map(t => `
+      <label style="display:flex;align-items:center;gap:5px;font-size:.8rem;font-weight:500;text-transform:none;color:var(--txt-main);cursor:pointer;">
+        <input type="checkbox" id="edit_tipo_${login}_${t.id}"
+          style="width:15px;height:15px;cursor:pointer;accent-color:var(--accent);"
+          ${tiposUser.includes(t.id)?'checked':''} ${isAdmin?'disabled':''}>
+        ${t.ico} ${t.label}
+      </label>`).join('');
+    return `
+    <div class="user-card">
+      <div class="user-card-header">
+        <div class="user-badge">${u.nome.charAt(0).toUpperCase()}</div>
+        <div class="info">
+          <div class="user-login">${login}</div>
+          <div class="user-base-tag">${baseLabel[u.base] || '🔑 Admin'}</div>
+        </div>
+      </div>
+      <div class="user-fields">
+        <div>
+          <label>Nome exibido</label>
+          <input type="text" id="edit_nome_${login}" value="${u.nome}">
+        </div>
+        <div>
+          <label>Senha</label>
+          <input type="text" id="edit_senha_${login}" value="${u.senha}" placeholder="Nova senha">
+        </div>
+      </div>
+      ${isAdmin ? '' : `
+      <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <div style="font-size:.72rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px;">Bases liberadas</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">${basesHtml}</div>
+        </div>
+        <div>
+          <div style="font-size:.72rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px;">Tipos liberados</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">${tiposHtml}</div>
+        </div>
+      </div>`}
+    </div>`;
+  }).join('');
+  document.getElementById('modalUsuarios').classList.add('aberto');
+}
+
+function fecharModal() {
+  document.getElementById('modalUsuarios').classList.remove('aberto');
+}
+
+function salvarUsuarios() {
+  const todasBases = ['Raposa','Imperatriz','Belém'];
+  const todosTipos = ['viagem','abastecimento','manutencao','quebra'];
+  const custom = {};
+  Object.keys(USUARIOS).forEach(login => {
+    const novoNome  = document.getElementById('edit_nome_' + login)?.value.trim();
+    const novaSenha = document.getElementById('edit_senha_' + login)?.value;
+    if (novoNome)  USUARIOS[login].nome  = novoNome;
+    if (novaSenha) USUARIOS[login].senha = novaSenha;
+    if (!USUARIOS[login].admin) {
+      USUARIOS[login].bases = todasBases.filter(b =>
+        document.getElementById('edit_base_' + login + '_' + b.replace(/[^a-z]/gi,''))?.checked);
+      USUARIOS[login].tipos = todosTipos.filter(t =>
+        document.getElementById('edit_tipo_' + login + '_' + t)?.checked);
+    }
+    custom[login] = { nome: USUARIOS[login].nome, senha: USUARIOS[login].senha,
+                      bases: USUARIOS[login].bases, tipos: USUARIOS[login].tipos };
+  });
+  try { localStorage.setItem('emvidros_usuarios_config', JSON.stringify(custom)); } catch {}
+  fecharModal();
+  // Atualizar nome do usuário atual no chip se foi editado
+  if (sessaoAtual) {
+    sessaoAtual.nome = USUARIOS[sessaoAtual.usuario]?.nome || sessaoAtual.nome;
+    document.getElementById('userNome').textContent = sessaoAtual.nome;
+  }
+  alert('✅ Usuários atualizados com sucesso!');
+}
+
+// ===================== TIPO DE MANUTENÇÃO =====================
+function selecionarTipoManutencao(tipo, btn) {
+  tipoManutencaoAtual = tipo;
+  document.querySelectorAll('.tipo-manut-btn').forEach(b => {
+    b.style.borderColor = 'var(--border)';
+    b.style.background = 'var(--bg-card)';
+    b.style.color = 'var(--txt-dim)';
+  });
+  if (tipo === 'preventiva') {
+    btn.style.borderColor = 'var(--green)';
+    btn.style.background = 'var(--green-soft)';
+    btn.style.color = 'var(--green)';
+  } else {
+    btn.style.borderColor = 'var(--orange)';
+    btn.style.background = 'var(--orange-soft)';
+    btn.style.color = 'var(--orange)';
+  }
+}
+
+// ===================== ABASTECIMENTO MULTI-SLOT =====================
+let slotsAtivos = 1;
+
+function onRotaAbastecimentoChange() {
+  const rota = document.getElementById('a_rota').value;
+  const isLocal = ROTAS_LOCAIS.includes(rota);
+  const toggleRow = document.getElementById('a_viagem_longa').parentElement;
+  if (isLocal) {
+    // Rota local: oculta toggle e reseta para single
+    toggleRow.style.display = 'none';
+    document.getElementById('a_viagem_longa').checked = false;
+    onToggleViagemLonga();
+  } else {
+    toggleRow.style.display = 'flex';
+  }
+}
+
+function onToggleViagemLonga() {
+  const checked = document.getElementById('a_viagem_longa').checked;
+  document.getElementById('a_slot_1_titulo').style.display = checked ? 'block' : 'none';
+  document.getElementById('a_slot_2').style.display = 'none';
+  document.getElementById('a_slot_3').style.display = 'none';
+  document.getElementById('a_btn_adicionar_container').style.display = checked ? 'block' : 'none';
+  document.getElementById('a_totais').style.display = checked ? 'block' : 'none';
+  slotsAtivos = 1;
+  calcularTotaisAbastecimento();
+}
+
+function adicionarSlotAbastecimento() {
+  if (slotsAtivos >= 3) return;
+  slotsAtivos++;
+  document.getElementById('a_slot_' + slotsAtivos).style.display = 'block';
+  if (slotsAtivos >= 3) {
+    document.getElementById('a_btn_adicionar_container').style.display = 'none';
+  }
+}
+
+function calcularTotaisAbastecimento() {
+  if (!document.getElementById('a_viagem_longa').checked) return;
+  let totalLt = 0, totalVal = 0, kmInicial = null, kmFinal = null;
+  for (let i = 1; i <= 3; i++) {
+    const lt = parseFloat(document.getElementById('a_litros_' + i)?.value) || 0;
+    const vl = parseFloat(document.getElementById('a_vl_litro_' + i)?.value) || 0;
+    const km = parseInt(document.getElementById('a_km_' + i)?.value) || 0;
+    if (lt > 0) { totalLt += lt; if (vl > 0) totalVal += lt * vl; }
+    if (km > 0) { if (kmInicial === null) kmInicial = km; kmFinal = km; }
+  }
+  const kmRod = (kmInicial && kmFinal && kmFinal > kmInicial) ? kmFinal - kmInicial : null;
+  const media = (totalLt > 0 && kmRod) ? (kmRod / totalLt).toFixed(2) : '—';
+  document.getElementById('a_total_litros').textContent = totalLt > 0 ? totalLt.toFixed(2) + ' L' : '—';
+  document.getElementById('a_total_valor').textContent = totalVal > 0 ? 'R$ ' + totalVal.toFixed(2) : '—';
+  document.getElementById('a_media_km').textContent = media !== '—' ? media + ' km/L' : '—';
+  document.getElementById('a_km_rodados').textContent = kmRod ? kmRod + ' km' : '—';
+}
+
+async function verificarN8n() {
+  try {
+    const r = await fetch(N8N_URL + '/healthz', {signal: AbortSignal.timeout(3000)});
+    return r.ok;
+  } catch { return false; }
+}
+</script>
+</body>
+</html>
