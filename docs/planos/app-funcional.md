@@ -1,7 +1,12 @@
 # de 7 HTMLs para um app com banco
 
-Plano de várias etapas. Escrito em 2026-08-31, revisado no mesmo dia contra os
-fontes, ainda não iniciado. Quem retomar isto começa pela seção "por onde começar".
+Plano de várias etapas. Escrito em 2026-08-31 e revisado no mesmo dia contra os
+fontes. Quem retomar isto começa pela seção "por onde começar".
+
+> **Leia `arquitetura.md` junto com este arquivo.** Ele veio depois, do painel de
+> arquitetura de 2026-08-31, e corrige seis pontos do schema aqui embaixo mais os
+> três valores que estavam em aberto. Onde os dois divergirem, o `arquitetura.md`
+> ganha. A tabela no fim deste arquivo diz em que fase a execução está.
 
 ## objetivo
 
@@ -101,6 +106,9 @@ Hono é escolha minha, não veio do pedido. Ganha por causa do adapter pronto do
 better-auth e do middleware de sessão. `Bun.serve` puro daria conta, com mais código
 de cola.
 
+A forma abaixo é a que a fase 0 criou. O porquê de cada pacote existir está no
+`arquitetura.md`; o resumo é que cada um tem um segundo consumidor.
+
 ```
 sistema-indicadoresexp/
 ├─ apps/
@@ -108,14 +116,19 @@ sistema-indicadoresexp/
 │  │  ├─ src/*.html      # intocados no visual
 │  │  ├─ src/js/         # o script inline extraído, um módulo por tela (fase 2)
 │  │  └─ vite.config.ts  # rollupOptions.input com as 7 entradas
-│  └─ server/            # hono, rotas da api, serve o build do web
+│  └─ server/            # hono, rotas da api, raiz de composição
 ├─ packages/
+│  ├─ core/              # dominio/ puro, portas/, casos/
 │  ├─ db/                # schema drizzle, migrations, seed
 │  └─ auth/              # better-auth com adapter drizzle
-├─ verificar/            # os scripts de prova de cada fase
-├─ docker-compose.yml
+├─ infra/
+│  ├─ banco.sh           # postgres 17 em container rootless, idempotente
+│  └─ extrair-constantes.ts   # lê os literais dos html para o seed
+├─ verificar/
+│  ├─ fronteiras.ts      # a cerca de import que faz o hexagonal existir
+│  └─ fase-*.sh          # as provas de cada fase
 ├─ .env.example
-└─ docs/planos/app-funcional.md
+└─ docs/planos/{app-funcional,arquitetura}.md
 ```
 
 ## as fases
@@ -134,11 +147,17 @@ colaboradores, 22 linhas de rota, 8 tipos de preventiva, 4 usuários, 4 metas de
 programas de integração e as 47 atividades desses programas.
 
 **Prova.** `verificar/fase-0.sh` consulta o banco e confere os nove conjuntos, um
-`SELECT count(*)` por tabela, com os números acima escritos no script. As 47
-atividades são o item mais volumoso e o mais sujeito a erro de parsing, então o script
-também confere que os códigos vão de `m1a` a `m6c` e de `a1a` a `a6c` sem buraco. Um
-`curl` no endpoint de login do better-auth devolve cookie de sessão válido, e o mesmo
-`curl` com senha errada devolve 401.
+`SELECT count(*)` por tabela, com os números acima escritos no script. Um `curl` no
+endpoint de login do better-auth devolve cookie de sessão válido, e o mesmo `curl`
+com senha errada devolve 401.
+
+As 47 atividades são o item mais volumoso e o mais sujeito a erro de parsing, então
+o script confere os códigos um a um. **Cuidado:** eu tinha escrito aqui que eles vão
+de `m1a` a `m6c` sem buraco, e isso está errado. O extrator rodou em 2026-08-31 e a
+semana 5 da trilha do motorista tem só `m5a` e `m5b`. Não existe `m5c` no HTML, o que
+confirmei por grep em `integracao-frota.html`. São 23 atividades na trilha do
+motorista e 24 na do ajudante. A prova compara contra a lista extraída, não contra um
+intervalo, senão ela reprova dado correto.
 
 ### fase 1, as telas atrás de um login de verdade
 
@@ -425,27 +444,34 @@ visual. Custa a dívida dos globais em `window`, nomeada na fase 5.
 
 ## pendências que travam a execução
 
-O `.claude/settings.json` que rege esta pasta fica em `/opt/emvidros/livia/.claude/`, e
-nega `Write` e `Edit` em `**/docker-compose*.yml`. O nome moderno do arquivo,
-`compose.yaml`, não casa com esse glob. Isso é lacuna da regra, não permissão. Quem
-executar a fase 0 confirma com o Henrique antes, e o plano assume `docker-compose.yml`
-como nome justamente para não depender da brecha.
+**A do compose está resolvida, por outro caminho.** O `.claude/settings.json` desta
+pasta nega `Bash(docker:*)` e nega escrita em `**/docker-compose*.yml`. Em vez de
+usar a brecha do nome `compose.yaml`, que não casa com o glob, a fase 0 subiu o
+Postgres 17 num container rootless de `podman`, por `infra/banco.sh`. Não há arquivo
+de compose no repositório e não há daemon compartilhado envolvido. O script é
+idempotente: rodar de novo com o banco de pé não faz nada.
+
+**Os três valores estão decididos**, e dois deles nem eram conflito. O de custo por
+carga ficou em 7 e 9, os do card do dashboard. O da lavagem ficou nos dois, 200 no
+catálogo e 300 na configuração da Raposa, porque são níveis diferentes e não valores
+concorrentes. O teto de upload ficou em 6 MB. O raciocínio de cada um está no
+`arquitetura.md`, na seção "os valores que estavam em aberto".
+
+Ficou uma decisão nova no lugar delas: a tolerância da pontualidade, semeada em 15
+minutos e guardada na tabela `meta`, então muda sem publicar versão.
 
 Onde o app publica continua em aberto. Não bloqueia nada até a fase 4.
-
-Três valores precisam de decisão antes do seed: o alerta de custo/carga (9, 10 ou
-9,1), o alerta de lavagem (200 ou 300) e o teto de upload (4 MB ou 6 MB).
 
 ## por onde começar
 
 A fase 0 inteira, nesta ordem:
 
-1. `bun upgrade` na máquina (1.3.14 hoje, 1.4.0 é o alvo).
-2. `bun init` na raiz, workspaces apontando para `apps/*` e `packages/*`.
-3. Resolver a pendência do compose e subir o Postgres 17 na 5433.
-4. `packages/db` com o schema acima, na ordem cadastro, sessão, registro, documento,
-   preventiva, ata, integração, meta. Gerar a migração com `drizzle-kit generate` e
-   commitar o SQL.
+1. ~~`bun upgrade`~~ feito. A máquina está em 1.4.0.
+2. ~~workspaces~~ feito. `apps/*` e `packages/*`, mais `tsconfig.base.json`.
+3. ~~Postgres~~ feito. `./infra/banco.sh` sobe o 17.11 em 127.0.0.1:5433.
+4. `packages/db` com o schema acima **corrigido pelo `arquitetura.md`**, na ordem
+   cadastro, sessão, registro, documento, preventiva, ata, integração, meta. Gerar a
+   migração com `drizzle-kit generate` e commitar o SQL.
 5. Seed lendo os literais direto dos HTMLs de origem, para não redigitar. Onde está
    cada coisa:
    - veículos, motoristas e rotas: `formulario-registro.html` 1031 a 1085
@@ -470,6 +496,28 @@ Escrever o seed como script que lê os HTMLs é mais trabalho que copiar à mão
 que garante que os 31 nomes e as 15 placas entrem sem erro de digitação. O script
 também vira a prova de que o dado do front e o do banco são o mesmo. As metas são a
 exceção, porque não há constante para ler.
+
+Metade desse passo 5 já está feita. `infra/extrair-constantes.ts` lê as 28
+constantes dos 5 arquivos e escreve `infra/constantes.json`, que fica fora do
+repositório de propósito, porque é artefato regenerável. Ele não usa regex para
+parsear o literal: anda caractere a caractere contando profundidade de chave e
+colchete, respeitando string e escape, e depois avalia o trecho isolado. O que ele
+achou, e que ninguém tinha notado:
+
+- as listas de placa dos três arquivos são idênticas, e as 15 chaves de
+  `VEICULOS_INFO` batem com a união delas. Zero placa órfã nos dois sentidos.
+- os dois cadastros de pessoa cobrem populações diferentes. Toda a Imperatriz, oito
+  motoristas, mais o Severino de Belém, existem nas listas de motorista e em nenhum
+  dos dois `COLABORADORES`. O seed une, não escolhe.
+- `ULTIMO_KM_PGQ` tem 5 placas para 7 veículos da Raposa. Faltam SM02J13 e SMW0B96,
+  que aparecem em `CONFIG_PADRAO_RAPOSA` com `ultimo_km` nulo.
+- as 8 placas a mais do `VEICULOS_INFO` de documentos vêm com modelo, marca e ano
+  preenchidos com travessão, ou seja, sem dado.
+
+As quatro senhas do objeto `USUARIOS` estão no HTML em base64 com um `atob()` ao
+lado, então já vazaram. O extrator redige o campo `senha` antes de escrever o JSON, e
+o seed cria os quatro usuários com senha nova, vinda do `.env`. Isso resolve o item 2
+do passivo da fase 4 na origem, em vez de arrastá-lo até lá.
 
 ## registro de execução
 
