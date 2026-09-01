@@ -1,9 +1,11 @@
 # O Netlify publicava a raiz deste repositorio como site estatico. A fase 1 acabou
 # com isso: as telas foram para `apps/web/src/`, o build sai em `apps/web/dist/` e
-# quem serve e o Hono, atras da sessao do better-auth. A raiz nao tem mais nenhuma
-# pagina, e nada aqui pode continuar publico.
+# quem serve e o Hono, atras da sessao do better-auth.
 #
-# Ate a fase 4 escolher onde publicar, estas regras existem para o caso de o site
-# antigo ainda estar ligado: tudo devolve 404, inclusive `docs/`, que guarda as
-# apolices e os discos de tacografo dos 15 veiculos.
-/*  /404.html  404
+# A marca `!` no fim e o que faz esta regra valer. Sem ela o Netlify serve o
+# arquivo que existe e ignora o redirecionamento, entao `docs/apolice-*.pdf` e os
+# discos de tacografo dos 15 veiculos continuariam baixaveis por quem soubesse o
+# caminho. Com ela, todo caminho responde a pagina de aviso.
+#
+# A fase 4 troca isto pelo endereco definitivo.
+/*  /indisponivel.html  200!
