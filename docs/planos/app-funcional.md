@@ -102,6 +102,11 @@ Bun 1.4 (o servidor tem 1.3.14 hoje, `bun upgrade` resolve), Vite 8 em modo MPA,
 Hono no servidor, Postgres 17 em container próprio, Drizzle como ORM, better-auth
 para sessão, Zod na fronteira, Tailwind 4 e Motion para o que for novo.
 
+Em produção, desde a decisão de 2026-09-01, o Postgres do container vira Neon e a
+publicação é na Vercel, com o mesmo Hono rodando no runtime Bun. O container local
+continua sendo o banco de desenvolvimento e de teste. Os detalhes, e os dois riscos que
+o primeiro deploy tem que provar, estão na fase 4.
+
 Hono é escolha minha, não veio do pedido. Ganha por causa do adapter pronto do
 better-auth e do middleware de sessão. `Bun.serve` puro daria conta, com mais código
 de cola.
@@ -210,14 +215,12 @@ mostra antes de existir sessão.
 O JS de dados não mudou. As telas continuam lendo e escrevendo em localStorage, de
 propósito: eu queria login e servidor provados antes de mexer na persistência.
 
-**Prova.** `verificar/fase-1.sh`, 35 asserções. Ela se dividiu em duas comparações
-exatas no lugar do diff normalizado que eu tinha planejado, porque o build ser
-byte a byte permitiu isso. A primeira compara as oito telas construídas com os
-arquivos de origem. A segunda compara seis das sete com o commit `ca90d06`. Para o
-`formulario-registro.html`, `verificar/visual-formulario.ts` aplica no arquivo
-original as três mudanças declaradas fora do `<script>` e exige que o resultado
-bata byte a byte; qualquer quarta diferença de CSS ou de markup reprova. Depois
-disso, contra o servidor de pé: as sete telas redirecionam para o login, o que não é
+**Prova.** `verificar/fase-1.sh`. Ela nasceu com duas comparações byte a byte, que a
+fase 2 aposentou: com o script fora do HTML, comparar texto deixou de dizer alguma
+coisa. Quem prova o visual agora é `verificar/visual-telas.ts`, que a fase 1 chama, e
+que sabe o que mudou de propósito em cada tela. O `verificar/visual-formulario.ts`
+saiu, porque ele cobria uma tela só e a nova cobre as seis. Depois disso, contra o
+servidor de pé: as sete telas redirecionam para o login, o que não é
 navegação recebe 401 em vez de um 302 que o `fetch` leria como sucesso, a apólice
 abre com sessão, o plano em markdown não sai, nada escapa da pasta e a base da
 Andreina vem do servidor.
@@ -346,14 +349,63 @@ código:
 Os 11 MB de PDF continuam no histórico do git mesmo depois de apagados dos arquivos.
 Reescrever histórico é irreversível e passa pelo Henrique.
 
-Onde publica ainda é decisão dele. O padrão da casa para app novo é Cloudflare Workers
-com D1, e Postgres em Docker significa servidor próprio, com o Caddy e o Watchtower
-que os outros projetos usam. Nenhuma fase anterior depende dessa escolha.
+#### onde publica: Vercel, com o banco na Neon
+
+O Henrique decidiu em 2026-09-01, e isso fecha a pergunta que as fases anteriores
+deixaram em aberto. Não é o padrão Cloudflare da casa, e não é o servidor próprio com
+Caddy e Watchtower. É um terceiro caminho, e ele custa menos trabalho do que os dois:
+
+**O servidor continua sendo o mesmo Hono.** A Vercel roda Bun 1.4 como runtime de
+função desde agosto de 2026, com `Bun.serve()` como ponto de entrada, e Hono está entre
+os frameworks que ela detecta. Na prática o `apps/server/src/index.ts` de hoje vira um
+`server.ts` na raiz que chama `Bun.serve({ fetch: app.fetch })`, e o `vercel.json`
+declara `"bunVersion": "1.4.x"`. Nada de reescrever para Workers, e o `Bun.file` que
+serve as telas continua existindo.
+
+**O portão continua sendo o do app.** Servir o `dist` como estático da Vercel seria mais
+rápido e passaria por cima do portão, que é a única coisa entre a frota e sete telas que
+já foram públicas. Então tudo entra pela função, inclusive HTML e asset. O custo é uma
+função invocada por arquivo servido; o benefício é não ter duas listas de rota pública
+para manter em dia, uma delas fora do código.
+
+**O risco desta escolha, e ele é real:** `paginas.ts` lê `apps/web/dist/` por caminho
+relativo a `import.meta.url`. Bundle de função só carrega o que a Vercel resolve por
+análise estática, e leitura por caminho montado não é resolvida. Se o `dist` não entrar,
+as telas somem em produção e passam local, que é o pior formato de falha. `includeFiles`
+no `vercel.json` é a saída, e o primeiro deploy tem que provar isso antes de qualquer
+outra coisa.
+
+**O banco vira Neon, e são duas strings de conexão, não uma.** A pooled (o host tem
+`-pooler`) é a do runtime, e ela passa por PgBouncer em modo transação, que não suporta
+prepared statement. `postgres-js` os usa por padrão, então `prepare: false` no
+`criarDb` é obrigatório, e a falha sem ele aparece só sob concorrência em produção. A
+direta é a das migrações, porque `drizzle-kit` pela pooled dá erro. O `max` cai de 10
+para algo pequeno: com Fluid compute a instância é reusada, e pool grande por instância
+multiplica por instância.
+
+**Sobre "privado e seguro", com os números.** Vale dizer o que dá e o que não dá, porque
+os dois níveis têm preço diferente. O que existe no plano gratuito é TLS obrigatório
+(`sslmode=verify-full` mais `channel_binding=require`, não só `require`), senha gerada,
+e branch de produção marcada como protegida. O que **não** existe: IP allowlist, que é
+do plano Scale, e rede privada por AWS PrivateLink, que é de conta Organization. Ou
+seja, o banco fica exposto à internet com autenticação, e não atrás de uma rede fechada.
+Para o tamanho deste sistema isso é defensável, mas é escolha, não é o mesmo que privado.
+
+**O que sai do `.env` e vira segredo da Vercel:** `DATABASE_URL`, `DATABASE_URL_DIRETA`,
+`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` e as quatro senhas do seed.
+`BLOB_READ_WRITE_TOKEN` a Vercel injeta sozinha quando o Blob está ligado no projeto.
+
+**O adaptador de arquivo já existe e nunca rodou.** `apps/server/src/armazenamento.ts`
+tem `ArquivosVercel` sobre `@vercel/blob` 2.8 com `access: 'private'`, escolhido pelo
+env `VERCEL`. A API confere, mas os testes usam um adaptador em memória e o local usa
+disco, então esse caminho é código não exercitado. O primeiro deploy sobe um PDF e o
+baixa de volta conferindo o sha256, ou ele não está provado.
 
 **Prova.** `verificar/fase-4.sh` roda o grep dos cinco itens sobre os arquivos de
 código, com este documento excluído da varredura. Ele cita as cinco strings de
-propósito, então incluí-lo faria a prova nunca passar. O app responde no domínio final
-e o login funciona de fora da rede.
+propósito, então incluí-lo faria a prova nunca passar. Mais três coisas que só o deploy
+responde: as sete telas carregam do bundle da função (o risco do `includeFiles`), o PDF
+sobe e volta com o mesmo sha256 pelo Blob, e o login funciona de fora da rede.
 
 ### fase 5, o andaime que sai
 
@@ -652,3 +704,117 @@ data só, e supor que a viagem chega no dia previsto erra por 24 horas justament
 na viagem noturna, que é o padrão desta frota. A fase 2 vai mandar a data prevista
 igual à de chegada, reproduzindo a suposição de forma explícita, e a saída é
 acrescentar um campo de data ao lado de "Hora Prevista" quando o visual abrir.
+
+### o que a fase 2 aprendeu, e custou caro
+
+**Extrair `<script>` para módulo mata todo `onclick=` da tela, em silêncio.** Script
+inline roda no escopo global, então `onclick="salvar()"` acha `function salvar()` sem
+ninguém pensar no assunto. `<script type="module">` tem escopo próprio. No instante em
+que o script vira módulo, toda função chamada por atributo do HTML some do lugar onde o
+navegador a procura, e o que acontece é uma linha no console que ninguém lê. A tela
+abre, pinta certo, a lateral navega, e o botão Salvar não faz nada.
+
+Aconteceu em duas das seis telas, e a suíte inteira ficou verde: 232 testes passando,
+tipos limpos, markup idêntico, build fiel. Tipo não pega, porque `window.x` não é
+checado. Teste de API não pega, porque a API está certa. Comparação de markup não pega,
+porque o markup está certo. A prova que pega é `verificar/handlers.ts`, que cruza os
+`on*=` do HTML e do markup gerado contra o que o módulo põe em `window`. Ela entrou no
+`bun run verificar` e é a primeira coisa a rodar numa tela que vira módulo.
+
+**A prova de fidelidade visual teve que mudar de forma.** Até a fase 1 era `cmp` byte a
+byte, e funcionava porque o Vite não encosta em `<script>` inline. Com módulo, o Vite
+troca a tag, move ela do fim do body para o `<head>` e acrescenta o `modulepreload`.
+`verificar/visual-telas.ts` substituiu isso: compara o HTML sem script nenhum dos dois
+lados, e compara a lista de tags que o código gera, com a interpolação apagada. As duas
+comparações reprovaram mutação plantada (`gap` alterado num template, handler removido
+do `window`), então elas medem alguma coisa.
+
+**Refatorar markup durante a extração é mudança de visual disfarçada de limpeza.** Os
+quatro blocos de assinatura do passe de integração viraram um `.map`. O HTML gerado é
+equivalente e o `passin-grid` é `display:grid`, onde espaço em branco não conta, então
+ninguém veria diferença. Desfiz mesmo assim, e não por preciosismo: enquanto a origem é
+o critério, a prova é exata e uma diferença é uma diferença. Trocar isso por "diferença
+que eu julguei inofensiva" transfere para quem lê o relatório o trabalho de julgar de
+novo, toda vez.
+
+**Autorização não se herda de estar logado.** As rotas novas nasceram checando sessão e
+não checando de quem ela é. Só `registros` filtrava por base. Nas outras, um operador da
+Raposa lia o acervo das três bases, baixava o PDF de outra base mandando o id direto,
+sobrescrevia a apólice de um veículo alheio e apagava ata de qualquer base. A causa não
+foi descuido isolado: toda a suíte de ata, documento e integração logava com a Livia,
+que é admin e vê tudo, então nenhum teste jamais pediu nada com credencial de operador.
+Teste que só exercita quem pode tudo não prova permissão nenhuma.
+
+**"Quais bases este usuário alcança" tem que existir uma vez só.** A fase 2 escreveu
+essa leitura três vezes, em `registros.ts`, `atas.ts` e `integracoes.ts`, cada autor
+copiando porque a original era privada e o arquivo estava fora do escopo dele. Regra de
+autorização duplicada é a pior duplicação que existe: quando ela mudar, uma das cópias
+fica para trás, e o sintoma não é erro, é vazamento em silêncio. Agora ela mora em
+`packages/db/src/consultas/permissao.ts`, numa função só.
+
+O que **não** foi unificado, e a decisão é deliberada: os filtros de visibilidade de
+cada domínio. Eles parecem a mesma coisa e não são. A coluna que carrega a base muda em
+cada um, base nula significa coisas diferentes (ata da empresa, ficha de nome livre,
+documento sem dono), e o admin curto-circuita em ata e integração mas passa pela lista
+de ids em documento. Uma função cobrindo os três precisaria de três parâmetros de coluna
+e duas flags, e a flag errada é exatamente por onde o vazamento entra.
+
+**Teste de permissão que afirma `length > 0` não prova permissão.** O teste de que a
+Andreina continua vendo o acervo da base dela passava com o filtro trocado por
+`return []`, porque os manuais não têm base nenhuma e aparecem para todo mundo. Ele
+agora afirma sobre um documento de dono conhecido, e a mutação o derruba.
+
+**A base de um documento nem sempre está no documento.** O CHECK `documento_base_ck` só
+deixa `base_id` preenchido em `plano_pgq`; nos outros cinco tipos ele é NULL por
+obrigação. Filtrar por `documento.base_id` teria escondido o vazamento sem fechá-lo. A
+base real vem do veículo ou do colaborador, e o filtro é o `coalesce` dos três.
+
+**O que ficou fora da fase 2, de propósito.** Os KPIs do dashboard continuam agregados
+no cliente. O plano os mandava para o servidor, e eu adiei: trocar a fonte de dados e
+mover o cálculo no mesmo commit torna impossível saber qual dos dois mudou o número, e a
+tela não pode mudar. Fica para a fase 3, junto com a consolidação do CSS.
+
+**Uma duplicação nasceu nesta fase, e ela tem endereço.** O campo `pontualidade` era um
+select que o operador preenchia à mão, sem relação com o horário digitado. O banco
+guarda `atraso_min`, e a classificação passou a ser derivada. A tolerância de 15 minutos
+está no parâmetro `pontualidade_tolerancia_min` do seed **e** escrita de novo em
+`apps/web/src/js/dashboard-semanal.ts`, porque nenhuma rota entrega parâmetro. Mudar a
+tolerância no banco hoje não muda a tela. A saída é uma rota de parâmetros na fase 3, e
+até lá o número na tela pode divergir do que aparecia antes, o que é esperado: o valor
+antigo era escolha do operador, não medição.
+
+### o que a fase 2 mudou na tela, apesar da restrição
+
+A restrição era não mudar o visual, e o visual não mudou: as seis telas continuam
+fiéis ao commit de origem, tag por tag, e `verificar/visual-telas.ts` cobra isso a cada
+verificação. O que mudou foi comportamento em caminhos que antes não existiam, porque
+armazenamento no navegador nunca falha e rede falha. Está tudo listado aqui para quem
+for avisar a equipe.
+
+**Caminhos de erro que nasceram nesta fase.** Salvar plano preventivo, importar CSV e
+lançar registro agora podem recusar. Cada um ganhou uma frase começando com o aviso, e
+o modal deixou de fechar quando a gravação falha: fechar com o dado não gravado é a
+confirmação falsa que esta fase existe para acabar. O `limparHoje` do formulário é o
+caso mais claro do problema antigo: ele apagava os registros da tela, dava a confirmação
+e não apagava nada; recarregar trazia tudo de volta.
+
+**Regras do banco que a tela não tinha.** Tipo preventivo repetido no mesmo veículo é
+recusado, onde antes a tela aceitava e mostrava duas linhas. Ata sem data não entra, e
+na importação em lote as linhas recusadas são contadas na mensagem em vez de sumirem.
+Viagem com combustível e diárias zerados é recusada com 400, que é a mesma guarda que o
+formulário original tinha e que o banco agora também cobra.
+
+**Números que podem divergir do que aparecia antes.** A pontualidade era um select que
+o operador preenchia à mão, sem relação com o horário digitado; agora ela é derivada de
+`atraso_min`. Divergência aqui é a medição substituindo a opinião, não erro.
+
+**Ordem e latência.** Trocar de base virou uma leitura no servidor, então o chip muda
+antes dos números. A API ordena por nome, e as telas recolocam a ordem que a pessoa
+conhecia (a do PGQ na preventiva, a de data no histórico) antes de desenhar.
+
+**Uma dívida que a fase 2 cria e não paga: ninguém varre blob órfão.** Apagar ata é
+soft-delete e de propósito não leva o PDF junto, porque restaurar uma ata sem o
+documento assinado seria pior que guardar o arquivo. Trocar o PDF de um documento marca
+a linha antiga com `apagado_em` e deixa o blob no armazenamento. As duas escolhas estão
+certas uma a uma, e a soma é armazenamento que só cresce. Com 15 veículos e 4 usuários
+isso leva anos para importar, mas o coletor não existe e ninguém vai lembrar depois.
