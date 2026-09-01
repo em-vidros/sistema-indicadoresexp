@@ -1,16 +1,4 @@
 import type { ArquivoId } from '../dominio/ids.ts'
-import type { Instante } from '../dominio/tempo.ts'
-
-export type MetadadoArquivo = {
-  id: ArquivoId
-  nomeOriginal: string
-  mime: string
-  tamanho: number
-  sha256: string
-  caminho: string
-  enviadoEm: Instante
-}
-
 export type NovoArquivo = {
   id: ArquivoId
   nomeOriginal: string
@@ -18,10 +6,7 @@ export type NovoArquivo = {
   conteudo: Uint8Array
 }
 
-export type ArquivoLido = {
-  metadado: MetadadoArquivo
-  conteudo: Uint8Array
-}
+export type ArquivoGuardado = { caminho: string }
 
 /**
  * A unica porta com segundo adaptador ja anunciado: a fase 4 deixa em aberto se o
@@ -29,7 +14,7 @@ export type ArquivoLido = {
  * com objeto remoto. As duas APIs nao se parecem, e tres telas sobem PDF.
  */
 export interface ArmazenamentoArquivo {
-  guardar(novo: NovoArquivo): Promise<MetadadoArquivo>
-  ler(id: ArquivoId): Promise<ArquivoLido | null>
-  apagar(id: ArquivoId): Promise<void>
+  guardar(novo: NovoArquivo): Promise<ArquivoGuardado>
+  ler(caminho: string): Promise<Uint8Array | null>
+  apagar(caminho: string): Promise<void>
 }

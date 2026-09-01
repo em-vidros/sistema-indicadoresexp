@@ -37,6 +37,20 @@ function partesHora(bruto: string): { hora: number; minuto: number } | null {
   return { hora: Number(h), minuto: Number(m) }
 }
 
+/**
+ * A data existe no calendario, e nao so tem a forma de uma. `2026-02-31` e
+ * `2026-99-99` casam com `^\d{4}-\d{2}-\d{2}$` e nao existem.
+ *
+ * Isto e exportado sem a marca de `DataISO` de proposito: no boundary HTTP o valor
+ * segue como texto ate a coluna `date`, e o que se precisa la e um `refine`, nao um
+ * tipo novo. As quatro rotas da fase 2 escreveram o regex na mao e deixaram passar
+ * data inexistente, que o Postgres recusa com 22008 e o cliente recebe como 500.
+ */
+export const ehDataValida = (bruto: string): boolean => partesData(bruto) !== null
+
+/** O par do `ehDataValida`, para as colunas `time`. */
+export const ehHoraValida = (bruto: string): boolean => partesHora(bruto) !== null
+
 export const DataISO = z
   .string()
   .refine((v) => partesData(v) !== null, 'data invalida, use AAAA-MM-DD')

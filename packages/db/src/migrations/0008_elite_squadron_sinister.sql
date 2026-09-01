@@ -1,0 +1,2 @@
+ALTER TABLE "ata" ADD COLUMN "base_id" uuid;--> statement-breakpoint
+ALTER TABLE "ata" ADD CONSTRAINT "ata_base_id_base_id_fk" FOREIGN KEY ("base_id") REFERENCES "public"."base"("id") ON DELETE no action ON UPDATE no action;

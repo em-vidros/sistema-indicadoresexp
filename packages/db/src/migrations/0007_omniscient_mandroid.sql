@@ -1,0 +1,2 @@
+ALTER TABLE "documento" ADD COLUMN "contato_emergencia" text;--> statement-breakpoint
+ALTER TABLE "documento" ADD CONSTRAINT "documento_contato_emergencia_ck" CHECK ("documento"."contato_emergencia" IS NULL OR "documento"."tipo" = 'apolice');

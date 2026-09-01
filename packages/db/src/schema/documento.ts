@@ -47,6 +47,7 @@ export const documento = pgTable(
     colaboradorId: uuid('colaborador_id').references(() => colaborador.id),
     baseId: uuid('base_id').references(() => base.id),
     seguradora: text('seguradora'),
+    contatoEmergencia: text('contato_emergencia'),
     cnhNumero: text('cnh_numero'),
     cnhCategoria: text('cnh_categoria'),
     ...auditoria(),
@@ -105,6 +106,10 @@ export const documento = pgTable(
           OR COALESCE(${t.linkExterno}, '') ~ '^[^[:space:]:]+$'`,
     ),
     check('documento_seguradora_ck', sql`${t.seguradora} IS NULL OR ${t.tipo} = 'apolice'`),
+    check(
+      'documento_contato_emergencia_ck',
+      sql`${t.contatoEmergencia} IS NULL OR ${t.tipo} = 'apolice'`,
+    ),
   ],
 )
 

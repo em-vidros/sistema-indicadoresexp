@@ -28,10 +28,13 @@ import {
   account,
   base,
   colaborador,
+  documento,
+  documentoVeiculo,
   funcaoColaborador,
   itemPreventivo,
   meta,
   parametro,
+  politicaDocumento,
   programaAtividade,
   programaCriterio,
   programaIntegracao,
@@ -118,6 +121,27 @@ const Constantes = z.object({
     ),
   }),
   'documentos-frota.html': z.object({
+    DOCS_ESTATICOS: z.record(
+      z.string(),
+      z.object({
+        seguradora: z.string(),
+        apolice_url: z.string(),
+        apolice_venc: z.string(),
+        tacografo_url: z.string(),
+      }),
+    ),
+    MANUAIS_RAPOSA: z.array(
+      z.object({
+        titulo: z.string(),
+        marca: z.string(),
+        modelos: z.string(),
+        placas: z.string(),
+        url: z.string(),
+      }),
+    ),
+    PLANOS: z.array(
+      z.object({ titulo: z.string(), descricao: z.string(), url: z.string(), tipo: z.string() }),
+    ),
     VEICULOS_INFO: z.record(
       z.string(),
       z.object({ modelo: z.string(), marca: z.string(), ano: z.string() }),
@@ -379,6 +403,82 @@ export async function semearEm(db: Escritor, deps: DepsSeed, c: Constantes): Pro
         ativo: true,
       },
     })
+
+  // --- documentos que ja acompanham o sistema --------------------------
+  // Os caminhos continuam sob /docs e passam pelo mesmo portao de sessao das
+  // paginas. A fase 2 troca apenas os novos uploads por armazenamento privado.
+  const documentosOrigem = c['documentos-frota.html']
+  const documentosVeiculo = Object.entries(documentosOrigem.DOCS_ESTATICOS).flatMap(
+    ([placa, ficha]) => [
+      {
+        id: id('documento', 'apolice', placa),
+        tipo: 'apolice' as const,
+        titulo: `Apólice ${placa}`,
+        vencimento: ficha.apolice_venc,
+        linkExterno: ficha.apolice_url,
+        veiculoId: id('veiculo', placa),
+        seguradora: ficha.seguradora,
+      },
+      {
+        id: id('documento', 'tacografo', placa),
+        tipo: 'tacografo' as const,
+        titulo: `Tacógrafo ${placa}`,
+        linkExterno: ficha.tacografo_url,
+        veiculoId: id('veiculo', placa),
+      },
+    ],
+  )
+  const manuais = documentosOrigem.MANUAIS_RAPOSA.map((manual) => ({
+    id: id('documento', 'manual', manual.titulo),
+    tipo: 'manual' as const,
+    titulo: manual.titulo,
+    descricao: `${manual.marca} · ${manual.modelos}`,
+    linkExterno: manual.url,
+  }))
+  const planos = documentosOrigem.PLANOS.map((plano) => ({
+    id: id('documento', 'plano_pgq', plano.titulo),
+    tipo: 'plano_pgq' as const,
+    titulo: plano.titulo,
+    descricao: plano.descricao,
+    linkExterno: plano.url,
+    baseId: idBase(baseDoSufixo('RAPOSA')),
+  }))
+  const documentosIniciais = [...documentosVeiculo, ...manuais, ...planos]
+  await db
+    .insert(documento)
+    .values(documentosIniciais)
+    .onConflictDoUpdate({
+      target: documento.id,
+      set: {
+        titulo: sqlExcluded('titulo'),
+        descricao: sqlExcluded('descricao'),
+        vencimento: sqlExcluded('vencimento'),
+        linkExterno: sqlExcluded('link_externo'),
+        veiculoId: sqlExcluded('veiculo_id'),
+        baseId: sqlExcluded('base_id'),
+        seguradora: sqlExcluded('seguradora'),
+      },
+    })
+
+  const manuaisVeiculos = documentosOrigem.MANUAIS_RAPOSA.flatMap((manual) =>
+    manual.placas.split(',').map((placa) => ({
+      documentoId: id('documento', 'manual', manual.titulo),
+      tipo: 'manual' as const,
+      veiculoId: id('veiculo', placa.trim()),
+    })),
+  )
+  await db.insert(documentoVeiculo).values(manuaisVeiculos).onConflictDoNothing()
+  await db
+    .insert(politicaDocumento)
+    .values([
+      { tipo: 'apolice', alertaDias: 60 },
+      { tipo: 'crlv', alertaDias: 60 },
+      { tipo: 'tacografo', alertaDias: 30 },
+      { tipo: 'cnh', alertaDias: 60 },
+      { tipo: 'manual', alertaDias: 0 },
+      { tipo: 'plano_pgq', alertaDias: 0 },
+    ])
+    .onConflictDoNothing()
 
   // --- rotas -------------------------------------------------------------
   // 22 linhas para 20 nomes: BELEM e SALINOPOLIS existem em duas bases ao mesmo
