@@ -10,11 +10,19 @@
  * primeiro entre os que casam.
  */
 import { Hono } from 'hono'
+import type { ArmazenamentoArquivo } from '@ind/core'
 import { documentos } from './documentos.ts'
 import { paginas } from './paginas.ts'
 import { type Ambiente, PAGINA_PADRAO, portao } from './portao.ts'
-import { type Dependencias, rotasSessao } from './rotas-sessao.ts'
+import { type Dependencias as DependenciasSessao, rotasSessao } from './rotas-sessao.ts'
+import { rotasIntegracoes } from './rotas-integracoes.ts'
+import { rotasAtas } from './rotas-atas.ts'
+import { rotasDocumentos } from './rotas-documentos.ts'
+import { rotasPreventiva } from './rotas-preventiva.ts'
+import { rotasRegistros } from './rotas-registros.ts'
 import { rotasUsuarios } from './rotas-usuarios.ts'
+
+type Dependencias = DependenciasSessao & { arquivos: ArmazenamentoArquivo }
 
 export function montarRotas(app: Hono<Ambiente>, deps: Dependencias): Hono<Ambiente> {
   app.use('*', portao(deps.auth))
@@ -29,6 +37,11 @@ export function montarRotas(app: Hono<Ambiente>, deps: Dependencias): Hono<Ambie
 
   app.route('/api', rotasSessao(deps))
   app.route('/api', rotasUsuarios(deps))
+  app.route('/api', rotasIntegracoes(deps.db))
+  app.route('/api', rotasAtas(deps.db, deps.arquivos))
+  app.route('/api', rotasDocumentos(deps.db, deps.arquivos))
+  app.route('/api', rotasRegistros(deps.db))
+  app.route('/api', rotasPreventiva(deps.db))
 
   app.get('/docs/*', documentos)
 

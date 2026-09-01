@@ -12,13 +12,15 @@ import { Hono } from 'hono'
 import { logger } from 'hono/logger'
 import { montarRotas } from './app.ts'
 import type { Ambiente } from './portao.ts'
+import { armazenamentoDoAmbiente } from './armazenamento.ts'
 
 const { db } = criarDb()
 const auth = criarAuth(db)
+const arquivos = armazenamentoDoAmbiente()
 
 const app = new Hono<Ambiente>()
 app.use('*', logger())
-montarRotas(app, { auth, db })
+montarRotas(app, { auth, db, arquivos })
 
 const port = Number(opcional('PORTA_SERVIDOR', '3100'))
 

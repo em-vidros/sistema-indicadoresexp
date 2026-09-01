@@ -9,6 +9,7 @@
     "start": "bun src/index.ts"
   },
   "dependencies": {
+    "@vercel/blob": "^2.3.0",
     "hono": "^4.13.5",
     "zod": "^4.5.4"
   },

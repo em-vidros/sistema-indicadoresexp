@@ -65,8 +65,12 @@ const CAMADAS: Camada[] = [
   {
     nome: 'server',
     arquivos: 'apps/server/src/**/*.ts',
-    permite: [/^hono(\/|$)/, /^@ind\/(core|db|auth)/, /^zod$/, /^node:/],
-    motivo: 'raiz de composicao. web, pacotes da casa e stdlib, e nada alem disso.',
+    permite: [/^hono(\/|$)/, /^@ind\/(core|db|auth)/, /^zod$/, /^node:/, /^@vercel\/blob$/],
+    // `@vercel/blob` esta nomeado, nao coberto por um curinga de `@vercel/*`. E o
+    // adaptador de arquivo remoto que a publicacao na Vercel exige, e adaptador e
+    // exatamente o que a raiz de composicao pode conhecer. A porta que ele
+    // implementa vive em `core/portas`, que continua sem saber que ele existe.
+    motivo: 'raiz de composicao. web, pacotes da casa, stdlib e adaptador de saida.',
   },
 ]
 
