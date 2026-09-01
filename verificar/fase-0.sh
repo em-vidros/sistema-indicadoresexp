@@ -36,19 +36,26 @@ conferir 'atividades do programa'  47  "$(sql 'select count(*) from programa_ati
 
 echo
 echo "as atividades, uma a uma"
-# A trilha do motorista tem 23 e a do ajudante 24, e nao 24 cada. A semana 5 do
-# motorista so tem m5a e m5b: nao existe m5c em integracao-frota.html. Comparar
-# contra um intervalo de m1a a m6c reprovaria dado correto.
-conferir 'codigos distintos'       47  "$(sql "select count(distinct codigo) from programa_atividade")"
+# Contar 47 nao prova nada: prova que sao os 47 certos. A fonte e o extrator, nao
+# uma grade que eu invente aqui. A serie real nao e regular: a semana 1 vai ate `f`,
+# as semanas 2 a 4 vao ate `d`, a semana 5 do motorista para em `b` e nao existe m5c.
+if [ ! -f infra/constantes.json ]; then
+  printf '  FALHA %s\n' 'infra/constantes.json nao existe; rode bun infra/extrair-constantes.ts'
+  falhas=$((falhas + 1))
+else
+  esperados=$(bun -e '
+    const c = await Bun.file("infra/constantes.json").json()
+    const codigos = []
+    for (const programa of Object.values(c["integracao-frota.html"].INTEGRACOES))
+      JSON.stringify(programa).replace(/"id":"([^"]+)"/g, (todo, id) => (codigos.push(id), todo))
+    console.log([...new Set(codigos)].sort().join(","))
+  ')
+  obtidos=$(sql "select string_agg(codigo, ',' order by codigo) from programa_atividade")
+  conferir 'os 47 codigos, um a um' "$esperados" "$obtidos"
+fi
 conferir 'trilha do motorista'     23  "$(sql "select count(*) from programa_atividade where codigo like 'm%'")"
 conferir 'trilha do ajudante'      24  "$(sql "select count(*) from programa_atividade where codigo like 'a%'")"
 conferir 'm5c nao existe'           0  "$(sql "select count(*) from programa_atividade where codigo = 'm5c'")"
-faltando=$(sql "select coalesce(string_agg(c, ','), '-') from (
-  select s.p || w.n || l.s as c
-  from (values ('m'),('a')) s(p), generate_series(1,6) w(n), (values ('a'),('b'),('c')) l(s)
-  except select codigo from programa_atividade
-) t")
-conferir 'os unicos codigos ausentes' 'm5c' "$faltando"
 
 echo
 echo "as rotas locais, que decidem se o toggle de viagem longa aparece"

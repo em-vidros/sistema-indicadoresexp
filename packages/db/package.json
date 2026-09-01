@@ -10,13 +10,16 @@
   },
   "scripts": {
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "bun src/migrar.ts"
+    "db:migrate": "bun src/migrar.ts",
+    "seed": "bun semear.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.44.6",
-    "postgres": "^3.4.7"
+    "postgres": "^3.4.7",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@ind/auth": "workspace:*",
     "@ind/core": "workspace:*",
     "bun-types": "^1.4.0",
     "drizzle-kit": "^0.31.5"

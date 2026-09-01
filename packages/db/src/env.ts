@@ -15,10 +15,20 @@ function doArquivoRaiz(chave: string): string | undefined {
   return undefined
 }
 
-function exigir(chave: string): string {
+/**
+ * O leitor de .env do projeto mora aqui porque `db` e a camada mais baixa que a
+ * cerca deixa `auth` e `apps/server` enxergarem. Nao ha um pacote `env`: seriam
+ * tres linhas com cerimonia de publicacao, e o `arquitetura.md` recusa pacote com
+ * um consumidor so.
+ */
+export function exigir(chave: string): string {
   const valor = process.env[chave] ?? doArquivoRaiz(chave)
   if (!valor) throw new Error(`${chave} ausente: defina no ambiente ou no .env da raiz do projeto.`)
   return valor
 }
 
 export const URL_BANCO = exigir('DATABASE_URL')
+
+export function opcional(chave: string, padrao: string): string {
+  return process.env[chave] ?? doArquivoRaiz(chave) ?? padrao
+}
