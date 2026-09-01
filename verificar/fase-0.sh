@@ -8,7 +8,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 
 CONTAINER=${PG_CONTAINER:-indicadores-pg}
-PORTA=${PORTA_SERVIDOR:-3100}
+PORTA=${PORTA_SERVIDOR:-3200}
 falhas=0
 
 sql() { podman exec "$CONTAINER" psql -U indicadores -d indicadores -tAc "$1" 2>&1; }
@@ -63,16 +63,20 @@ conferir 'rotas marcadas como local' 7 "$(sql 'select count(*) from rota where l
 
 echo
 echo "nenhuma senha antiga sobreviveu ao seed"
-# As quatro senhas estao em base64 no HTML servido ao navegador, com um atob() ao
+# As quatro senhas estao em base64 no HTML que o navegador recebia, com um atob() ao
 # lado, entao ja vazaram. O seed cria os usuarios com senha nova, e nenhuma das
 # antigas pode autenticar.
 #
-# Elas sao lidas do proprio HTML em tempo de execucao, e nao escritas aqui: este
-# script fica em `verificar/`, que o Netlify publica junto com o site, e uma copia
-# em texto claro num arquivo publico seria um vazamento a mais, criado por mim.
-codificadas=$(grep -o "senha: _d('[^']*')" formulario-registro.html | sed "s/.*'\(.*\)'.*/\1/")
+# Elas sao lidas do commit de origem, e nao escritas aqui. Dois motivos. Uma copia
+# em texto claro neste arquivo seria um vazamento a mais, criado por mim. E a fase 1
+# tirou o bloco do HTML, mas ele continua no historico do git, entao e de la que a
+# prova tem que ler: enquanto o historico nao for reescrito, e de la que alguem
+# tiraria as senhas para tentar entrar.
+ORIGEM=ca90d06
+codificadas=$(git show "$ORIGEM:formulario-registro.html" \
+  | grep -o "senha: _d('[^']*')" | sed "s/.*'\(.*\)'.*/\1/")
 if [ -z "$codificadas" ]; then
-  printf '  FALHA %s\n' 'nao achei as senhas antigas em formulario-registro.html'
+  printf '  FALHA %s\n' "nao achei as senhas antigas em $ORIGEM:formulario-registro.html"
   falhas=$((falhas + 1))
 fi
 n=0

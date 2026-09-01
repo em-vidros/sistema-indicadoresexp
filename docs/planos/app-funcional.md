@@ -161,31 +161,96 @@ intervalo, senão ela reprova dado correto.
 
 ### fase 1, as telas atrás de um login de verdade
 
-Vite MPA com os 7 HTMLs como entradas. Hono serve o build e a API na mesma origem, o
-que elimina CORS de vez. O overlay de login hardcoded do `formulario-registro.html`
-sai e vira better-auth, com sessão em cookie httpOnly. As 7 páginas passam a exigir
-sessão. Hoje seis delas não pedem nada.
+Feita em 2026-09-01. O que está escrito abaixo é o que aconteceu, não o que eu
+tinha previsto; onde os dois divergiram, o motivo está dito.
 
-As permissões por base e por tipo viram tabela e passam a ser aplicadas no servidor.
-Atenção na migração: o objeto `USUARIOS` da linha 625 é só o valor inicial. O IIFE das
-linhas 643 a 654 sobrescreve `bases` e `tipos` com o que estiver em
-`emvidros_usuarios_config`, gravado por `salvarUsuarios()` na linha 1268. As duas
-fontes precisam ser lidas, senão a permissão que o admin editou some.
+As 7 telas saíram da raiz para `apps/web/src/` e viraram entradas do Vite. O Hono
+serve o build e a API na mesma origem, o que elimina CORS de vez. O overlay de login
+do `formulario-registro.html` virou `entrar.html`, uma oitava tela com o CSS e o
+markup copiados sem tirar nem pôr, e quem decide agora é o better-auth, com sessão em
+cookie httpOnly. As 7 páginas exigem sessão. Antes, seis não pediam nada.
 
-Os PDFs de `docs/` saem do bundle público e passam a ser servidos por rota
-autenticada. Continuam no repositório nesta fase; limpar o histórico do git é assunto
-da fase 4.
+**O build é um no-op, e é de propósito.** Os `<script>` são inline e clássicos, então
+o Vite não tem o que fazer neles: o `dist` sai byte a byte igual à origem, nas oito
+telas. Ele entra nesta fase, e não na fase 2, para separar risco. Introduzir
+empacotador junto com a extração dos módulos daria duas causas possíveis para o mesmo
+sintoma.
 
-O JS de dados não muda aqui. As telas continuam lendo e escrevendo em localStorage. É
-intencional: quero login e servidor provados antes de mexer na persistência.
+**Os caminhos `docs/` não mudaram.** Eu tinha escrito que mudariam. Não precisou: o
+servidor honra o espaço de URL que já existia, e quem passou a exigir sessão foi a
+rota, não o caminho. Isso deixou seis dos sete arquivos intocados, byte a byte.
 
-**Prova.** `verificar/fase-1.sh` compara o HTML renderizado das 7 telas antes e depois
-do build, normalizando duas diferenças esperadas: o bloco de login e os `href` que
-apontam para `docs/`. Esses `href` vêm de `DOCS_ESTATICOS`, `MANUAIS_RAPOSA` e
-`PLANOS` em `documentos-frota.html` e mudam de caminho nesta fase por decisão, não por
-acidente. Qualquer outra diferença reprova. Abrir qualquer URL sem sessão redireciona
-para o login. O usuário `andreina` recebe 403 ao tentar lançar registro de Imperatriz,
-e a recusa vem do servidor.
+**A permissão vem do servidor.** `GET /api/sessao` devolve nome, admin, base fixa,
+bases e tipos, lidos de `usuario_base` e `usuario_tipo`. O objeto `USUARIOS` com as
+quatro senhas em base64 saiu do HTML, e com ele a chave `emvidros_sessao`.
+
+**O `emvidros_usuarios_config` não tem como ser recuperado, e não vale endereço de
+importação.** Ele vive no localStorage do navegador da Lívia, na origem do Netlify. O
+app novo roda em outra origem, e origem diferente não enxerga o localStorage da
+outra. Um endereço de importação nasceria sem quem o chamasse. Se ela tiver editado
+permissão por lá, refaz uma vez na tela de administração, que agora grava no banco.
+
+**A tela de administração de usuários passou a gravar no servidor**, em
+`/api/usuarios`. O markup dela é gerado por `innerHTML`, então trocar a fonte do dado
+não muda um pixel, com uma exceção que declaro porque é mudança de pixel. O campo
+"Senha" passou a nascer vazio e passou de `type="text"` para `type="password"`. O
+motivo dos dois é o mesmo: depois da fase 0 só existe hash, então não há o que
+mostrar, vazio quer dizer "não muda", e um campo em que se digita senha é do tipo
+senha. Hoje ele imprimia `livia@2026` na tela, em texto claro.
+
+**O cadastro aberto do better-auth foi fechado.** `sign-up/email` vinha público junto
+com `sign-in`, e num sistema de quatro usuários que nascem do seed isso é porta
+destrancada. O portão devolve 404 nele.
+
+Os PDFs de `docs/` saíram do site público e passaram a sair por `/docs/*` atrás da
+sessão, só `.pdf` e `.svg`, com contenção de caminho. `docs/planos/` fica de fora por
+duas barreiras independentes. O logo continua público, porque a tela de login o
+mostra antes de existir sessão.
+
+O JS de dados não mudou. As telas continuam lendo e escrevendo em localStorage, de
+propósito: eu queria login e servidor provados antes de mexer na persistência.
+
+**Prova.** `verificar/fase-1.sh`, 35 asserções. Ela se dividiu em duas comparações
+exatas no lugar do diff normalizado que eu tinha planejado, porque o build ser
+byte a byte permitiu isso. A primeira compara as oito telas construídas com os
+arquivos de origem. A segunda compara seis das sete com o commit `ca90d06`. Para o
+`formulario-registro.html`, `verificar/visual-formulario.ts` aplica no arquivo
+original as três mudanças declaradas fora do `<script>` e exige que o resultado
+bata byte a byte; qualquer quarta diferença de CSS ou de markup reprova. Depois
+disso, contra o servidor de pé: as sete telas redirecionam para o login, o que não é
+navegação recebe 401 em vez de um 302 que o `fetch` leria como sucesso, a apólice
+abre com sessão, o plano em markdown não sai, nada escapa da pasta e a base da
+Andreina vem do servidor.
+
+**O que uma revisão independente derrubou.** Ela achou 14 defeitos, e dois eram de
+parar. O `destinoSeguro` do `entrar.html` tinha quatro das cinco checagens do
+servidor, sem a de caractere de controle, e o navegador remove TAB antes de resolver
+a URL, então `/%09/evil.com` virava `//evil.com` e saía do site. Pior, no caminho sem
+sessão o servidor servia a tela e nunca olhava o destino, então quem decidia era a
+checagem fraca. Agora o portão limpa o destino envenenado da query antes de a tela
+carregar, e o cliente tem a sexta linha.
+
+O segundo era meu. Eu acrescentei a guarda que impede tirar a base fixa das bases
+liberadas depois que o teste dela já estava escrito, e deixei a suíte vermelha com
+um teste afirmando o contrário da regra. A revisão apagou a guarda inteira e a suíte
+ficou mais verde do que com ela.
+
+Outras cinco correções vieram dali. O `/api/entrar` passava por fora do limitador do
+better-auth, que mora no roteador dele e não roda em chamada direta ao endpoint;
+agora tem contador por IP, 10 falhas em 5 minutos. Uma exceção dentro do
+`aplicarSessao` virava laço infinito de redirecionamento, com a aba piscando sem
+mensagem, porque o `.catch` estava depois dele na cadeia. A cerca não enxergava
+`import 'x'` sem `from`, o que deixou um pacote importar um app pelo efeito
+colateral. E a prova do visual ignorava tudo que nasce de `innerHTML`, que nesta
+tela são 8 pontos; ela agora compara também as tags de dentro do `<script>`, com as
+interpolações apagadas.
+
+**Uma prova que mudou de fase.** Eu tinha escrito aqui que a `andreina` receberia 403
+ao lançar registro de Imperatriz. Não dá para provar isso na fase 1, porque a fase 1
+não tem rota de escrita: os registros continuam em localStorage. Criar a rota só para
+a prova seria endereço sem quem chame. A asserção foi para a fase 2, junto com a
+escrita de verdade. O que a fase 1 prova no lugar é que a permissão da Andreina sai
+do banco, e não de um objeto no HTML dela.
 
 ### fase 2, o banco vira a fonte de verdade
 
@@ -206,6 +271,14 @@ grava na API e a outra lê o localStorage, e o dashboard aparece zerado.
 
 Os três primeiros são commits independentes, verificados antes do próximo. O quarto é
 o maior e o mais arriscado, e é indivisível.
+
+**Armadilha herdada da fase 1, leia antes de extrair o primeiro módulo.** O portão
+nega por omissão, e a lista de rotas públicas tem quatro entradas nomeadas. Hoje o
+`entrar.html` não tem asset nenhum, porque o script dele é inline. No momento em que
+ele virar módulo, o Vite vai emitir um `/assets/entrar-<hash>.js`, o portão vai pedir
+sessão para esse arquivo, e a tela de login vai carregar sem JavaScript, sem erro
+visível. Não resolva liberando `/assets/*`: os bundles das outras seis telas carregam
+o cadastro embutido. A saída é o asset do login ser nomeado e público, como o logo já é.
 
 O JS extraído mantém as funções globais expostas em `window`, porque os 106
 `onclick=` do markup dependem disso. Não é elegante, e é o preço direto de não tocar
@@ -524,7 +597,7 @@ do passivo da fase 4 na origem, em vez de arrastá-lo até lá.
 | fase | estado | quando | o que falta |
 |---|---|---|---|
 | 0 base | **pronta** | 2026-08-31 | |
-| 1 login | não iniciada | | |
+| 1 login | **pronta** | 2026-09-01 | |
 | 2 banco | não iniciada | | |
 | 3 duplicação | não iniciada | | |
 | 4 publicar | não iniciada | | |

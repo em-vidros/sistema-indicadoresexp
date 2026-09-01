@@ -18,7 +18,7 @@ packages/
   auth/          adaptador de sessão. better-auth sobre o drizzle.
 apps/
   server/        raiz de composição. hono, rotas, injeção. o único que conhece todos.
-  web/           vite multipágina. os 7 html, intactos.
+  web/           vite multipágina. os 7 html intactos, mais o `entrar.html` da fase 1.
 infra/           o container do banco, o extrator de constantes.
 verificar/       as provas de cada fase, mais a cerca de import.
 ```
@@ -99,13 +99,34 @@ camada e compara com uma tabela do que aquela camada pode ver. `dominio/` só po
 importar `zod` e ele mesmo. `portas/` pode ver `dominio/`. `casos/` pode ver os
 dois. `db` e `auth` podem ver `core`, e ninguém pode ver `apps/`.
 
+A fase 1 acrescentou a camada `server`, que é `apps/server/src/**` e pode ver
+`hono`, os três pacotes da casa, `zod` e a biblioteca padrão. Ela é a raiz de
+composição, e por isso é a única que alcança `db` e `auth` ao mesmo tempo. Foi essa
+regra que decidiu onde o hash da senha é calculado: `packages/db` não alcança
+`@ind/auth`, então a senha chega lá pronta, e quem hasheia é o servidor.
+
+A regra de import relativo mudou junto, e vale registrar por que. Ela era "não pode
+começar com `../`", e isso proibia `packages/db/src/consultas/` de alcançar
+`../schema/`, que é o próprio pacote. O efeito foi torcer o código: a primeira
+consulta nasceu em SQL cru pelo motivo errado. Agora a regra resolve o caminho e
+pergunta se ele cai dentro da própria camada. Cerca que muda o formato do código
+dentro da camada não está guardando fronteira nenhuma.
+
 A prova é por falha, não por sucesso. Ponha `import { db } from '@ind/db'` em
 qualquer arquivo de `dominio/`, rode o comando, e ele sai com código 1 nomeando o
 arquivo, a linha e o motivo. Isso entra no `bun run verificar` junto com os tipos
 e os testes.
 
+Duas coisas que uma revisão de 2026-09-01 achou nela, as duas corrigidas. A linha
+apontada vinha uma acima da real, porque o casamento do regex começa no espaço
+antes da palavra-chave e esse espaço costuma ser a quebra de linha anterior. E
+`import 'x'`, sem `from` e sem parêntese, passava direto, o que deixava um pacote
+importar um app pelo efeito colateral. Cerca é o único mecanismo aqui, não há
+`dependency-cruiser` nem plugin de lint atrás dela, então furo nela é furo no
+contrato inteiro.
+
 Sem `dependency-cruiser`, sem plugin de lint, sem `tsconfig` com references. Um
-arquivo de 90 linhas faz o mesmo trabalho.
+arquivo faz o mesmo trabalho.
 
 ## o modelo de domínio
 
