@@ -9,7 +9,8 @@
     "start": "bun src/index.ts"
   },
   "dependencies": {
-    "hono": "^4.13.5"
+    "hono": "^4.13.5",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@ind/auth": "workspace:*",
