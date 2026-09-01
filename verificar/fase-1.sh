@@ -26,20 +26,16 @@ conferir() {
   fi
 }
 
-echo "o build nao toca em nenhum byte das telas"
-bun run build >/dev/null 2>&1 || { echo '  FALHA build do vite'; exit 1; }
-for tela in "${TELAS[@]}" entrar; do
-  conferir "$tela" 'igual' \
-    "$(cmp -s "apps/web/src/$tela.html" "apps/web/dist/$tela.html" && echo igual || echo DIFERENTE)"
-done
-
-echo
-echo "as telas que a fase 1 nao edita continuam iguais a $ORIGEM"
-for tela in "${TELAS[@]}"; do
-  [ "$tela" = formulario-registro ] && continue
-  conferir "$tela" 'igual' \
-    "$(git show "$ORIGEM:$tela.html" | diff -q - "apps/web/src/$tela.html" >/dev/null && echo igual || echo DIFERENTE)"
-done
+echo "o visual das telas nao mudou, e o build tambem nao mexe nele"
+# Ate a fase 1 isto era `cmp` byte a byte aqui mesmo. A fase 2 tirou o script das
+# telas para modulos, e comparacao de texto deixou de dizer alguma coisa: quem sabe
+# o que mudou de proposito, e o que isso permite, e `visual-telas.ts`.
+if bun verificar/visual-telas.ts >/tmp/visual-fase1.txt 2>&1; then
+  conferir "as 6 telas e o build" 'igual' 'igual'
+else
+  conferir "as 6 telas e o build" 'igual' 'DIFERENTE'
+  sed 's/^/    /' /tmp/visual-fase1.txt
+fi
 
 echo
 echo "as sete telas exigem sessao, e antes seis nao pediam nada"
@@ -96,9 +92,6 @@ conferir 'a base da andreina vem do servidor' 'Raposa' \
        | sed 's/.*"baseFixa":"\([^"]*\)".*/\1/'; rm -f "$c2")"
 rm -f "$cookie"
 
-echo
-echo "o formulario mudou so onde a fase 1 declara ter mexido"
-conferir 'css e markup fora do <script>' 'igual' "$(bun verificar/visual-formulario.ts)"
 
 echo
 if [ "$falhas" -eq 0 ]; then
