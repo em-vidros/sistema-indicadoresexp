@@ -521,9 +521,9 @@ do passivo da fase 4 na origem, em vez de arrastá-lo até lá.
 
 ## registro de execução
 
-| fase | estado | quando | commits |
+| fase | estado | quando | o que falta |
 |---|---|---|---|
-| 0 base | não iniciada | | |
+| 0 base | em andamento | 2026-08-31 | seed, `packages/auth`, `apps/server` mínimo |
 | 1 login | não iniciada | | |
 | 2 banco | não iniciada | | |
 | 3 duplicação | não iniciada | | |
@@ -532,3 +532,38 @@ do passivo da fase 4 na origem, em vez de arrastá-lo até lá.
 
 Atualize esta tabela ao fim de cada fase. Plano que diverge da realidade engana a
 próxima sessão.
+
+### o que a fase 0 já tem
+
+Bun 1.4.0. Postgres 17.11 rootless na 5433, por `infra/banco.sh`. O monorepo com
+`packages/core`, `packages/db` e a cerca de import. 32 tabelas aplicadas, com as
+oito colunas geradas saindo do `drizzle-kit` sem SQL escrito à mão. 117 testes
+passando, tipos limpos, cerca verde.
+
+O domínio tem as regras que hoje vivem espalhadas nos HTMLs, cada uma como função
+pura: `avaliarKpi`, `classificarPontualidade`, `statusVencimento`,
+`statusPreventiva`, `podeRegistrar` e os sete derivados. As portas são três, e
+ainda não têm consumidor, porque `casos/` só entra na fase 1.
+
+### o que a fase 0 ainda não tem
+
+O seed, o `packages/auth` e um `apps/server` mínimo que exponha o login. Sem os
+três, `verificar/fase-0.sh` não roda: ele confere nove contagens no banco e testa
+o login, inclusive recusando as quatro senhas que vazaram no HTML.
+
+### duas coisas que a fase 0 aprendeu e que valem para o resto
+
+**O banco é o árbitro do número, não a documentação.** `Math.round(x * 100) / 100`,
+que é o que o front faz hoje, discorda do `ROUND(numeric, 2)` do Postgres em
+`3 × 2,675`, onde um dá 8,02 e o outro 8,03. A causa é que o erro já está no
+produto em float, antes de qualquer arredondamento, então nenhum truque de string
+resolve. `derivados.ts` passou a fazer aritmética decimal em inteiro, e o teste
+`derivados-vs-postgres.test.ts` compara 4.560 pares contra o banco de verdade,
+numa consulta por operação.
+
+**Número ausente ganha de número inventado.** `atraso_min` fica nulo quando a data
+prevista é nula, em vez de cair na data de saída. A tela de hoje tem um campo de
+data só, e supor que a viagem chega no dia previsto erra por 24 horas justamente
+na viagem noturna, que é o padrão desta frota. A fase 2 vai mandar a data prevista
+igual à de chegada, reproduzindo a suposição de forma explícita, e a saída é
+acrescentar um campo de data ao lado de "Hora Prevista" quando o visual abrir.

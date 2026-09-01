@@ -54,17 +54,19 @@ export const documento = pgTable(
   (t) => [
     // Chave redundante para a FK composta de documento_veiculo prender o tipo 'manual'.
     unique('documento_id_tipo_uk').on(t.id, t.tipo),
+    // O CHECK diz de quem o campo pode ser, nao que ele tem que estar preenchido.
+    // `grep -c tacografo_venc documentos-frota.html` devolve 0: os 7 tacografos que o
+    // sistema entrega hoje nao tem data nenhuma, e exigir o vencimento impediria de
+    // semear o parque que existe. Manual e plano_pgq continuam sem poder ter um.
     check(
       'documento_vencimento_ck',
-      sql`CASE WHEN ${t.tipo} IN ('apolice', 'crlv', 'tacografo', 'cnh')
-            THEN ${t.vencimento} IS NOT NULL
-            ELSE ${t.vencimento} IS NULL END`,
+      sql`${t.vencimento} IS NULL OR ${t.tipo} IN ('apolice', 'crlv', 'tacografo', 'cnh')`,
     ),
+    // Mesmo motivo: a tela tem `<option value="">—</option>` na categoria (linha 651) e
+    // renderiza com `||'—'` (linha 468), entao CNH sem numero e sem categoria existe.
     check(
       'documento_cnh_ck',
-      sql`CASE WHEN ${t.tipo} = 'cnh'
-            THEN ${t.cnhNumero} IS NOT NULL AND ${t.cnhCategoria} IS NOT NULL
-            ELSE ${t.cnhNumero} IS NULL AND ${t.cnhCategoria} IS NULL END`,
+      sql`(${t.cnhNumero} IS NULL AND ${t.cnhCategoria} IS NULL) OR ${t.tipo} = 'cnh'`,
     ),
     check(
       'documento_veiculo_ck',
@@ -84,7 +86,24 @@ export const documento = pgTable(
             THEN ${t.baseId} IS NOT NULL
             ELSE ${t.baseId} IS NULL END`,
     ),
-    check('documento_fonte_ck', sql`${t.arquivoId} IS NOT NULL OR ${t.linkExterno} IS NOT NULL`),
+    // `IS NOT NULL` nao era fonte: `link_externo = ''` entrava como documento sem
+    // fonte nenhuma, e `link_externo = 'javascript:alert(document.cookie)'` entrava
+    // inteiro. Quem grava pelo seed ou por importador nao passa pelo zod, e a tela da
+    // fase 2 renderiza esse valor num `<a href>`. O CHECK repete, em regex do
+    // Postgres, o mesmo par que o `link` de `dominio/documento.ts` aceita: URL http
+    // ou https, ou caminho relativo sem espaco e sem esquema, que e o formato dos
+    // literais de origem ('docs/manual-atego.pdf', 'docs/pgq-manutencao-2026.pdf').
+    // As classes sao POSIX, e nao \s: o drizzle-kit passa o SQL por JSON ao gerar
+    // a migracao e come a barra invertida, entao \S chegava ao banco como a letra S.
+    // O COALESCE nao e enfeite: `NULL ~ regex` e NULL, e `FALSE OR NULL OR NULL` da
+    // NULL, que o CHECK aceita. Sem ele, o documento sem arquivo e sem link, que este
+    // mesmo CHECK existe para barrar, voltava a passar.
+    check(
+      'documento_fonte_ck',
+      sql`${t.arquivoId} IS NOT NULL
+          OR COALESCE(${t.linkExterno}, '') ~ '^https?://[^[:space:]]+$'
+          OR COALESCE(${t.linkExterno}, '') ~ '^[^[:space:]:]+$'`,
+    ),
     check('documento_seguradora_ck', sql`${t.seguradora} IS NULL OR ${t.tipo} = 'apolice'`),
   ],
 )

@@ -1,2 +1,16 @@
 /  /formulario-registro.html  200
+
+# O Netlify publica a raiz do repositorio, entao tudo que nao e tela fica
+# baixavel por quem souber o caminho. Estas regras devolvem 404. O plano e o ADR
+# enumeram falhas de seguranca do sistema atual; o resto e codigo-fonte, script de
+# verificacao e migracao de banco, que nao tem por que estar num site publico.
 /docs/planos/*  /formulario-registro.html  404
+/packages/*     /formulario-registro.html  404
+/apps/*         /formulario-registro.html  404
+/infra/*        /formulario-registro.html  404
+/verificar/*    /formulario-registro.html  404
+/node_modules/* /formulario-registro.html  404
+/package.json   /formulario-registro.html  404
+/bun.lock       /formulario-registro.html  404
+/tsconfig*      /formulario-registro.html  404
+/.env*          /formulario-registro.html  404

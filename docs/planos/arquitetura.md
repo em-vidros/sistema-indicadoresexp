@@ -85,7 +85,7 @@ um domínio com buraco, e não adianta fingir que não.
 Duas coisas fecham. A primeira é que a função pura existe do mesmo jeito em
 `dominio/derivados.ts`, porque o formulário mostra o custo da viagem na tela antes
 de gravar, e isso não pode ir ao servidor a cada tecla. A segunda é
-`packages/db/src/derivados.test.ts`, que grava linhas com valor conhecido, lê a
+`packages/db/test/derivados.test.ts`, que grava linhas com valor conhecido, lê a
 coluna gerada de volta e compara com a função pura. Divergência entre o SQL e o
 TypeScript reprova.
 
@@ -119,10 +119,29 @@ voltou ainda. `Viagem` é união de `em_curso`, que tem previsão e não tem che
 
 **A pontualidade não é escolha do operador.** Hoje é um `<select>` na linha 308 do
 formulário, independente de `hora_prevista` e `hora_chegada`. Nada impede gravar
-"adiantado" com chegada depois do previsto, e o KPI de atraso conta essa linha. Vira
-coluna gerada, com a tolerância vindo da tabela `meta`. O `<select>` continua no
-HTML, porque o visual não muda, e para de ser enviado na fase 2. Sai na fase 5,
-junto com o resto do andaime.
+"adiantado" com chegada depois do previsto, e o KPI de atraso conta essa linha. O
+`<select>` continua no HTML, porque o visual não muda, e para de ser enviado na
+fase 2. Sai na fase 5, junto com o resto do andaime.
+
+A coluna gerada não é `pontualidade`, é `atraso_min`, um inteiro assinado em
+minutos. A classificação em três faixas precisa da tolerância, que vive em
+`parametro`, e coluna gerada do Postgres não consulta outra tabela. Então o banco
+guarda o desvio e a consulta classifica, juntando com o parâmetro.
+
+E `atraso_min` fica **nulo** quando `data_prevista` é nula, em vez de cair na data
+de saída. A tela de hoje tem um campo de data só para a chegada e dois de hora,
+então ninguém informa o dia previsto. Supor que a viagem chega no dia previsto erra
+por 24 horas justamente na viagem noturna, que é o padrão desta frota: uma viagem
+prevista para 06:00 do dia 31 que chega às 02:00 do dia 1, ou seja 1200 minutos
+atrasada, sairia classificada como adiantada em 240. Número ausente ganha de número
+inventado. A fase 2 vai mandar `data_prevista = data_chegada`, reproduzindo a
+suposição de mesmo dia de forma explícita, e a saída é acrescentar um campo de data
+ao lado de "Hora Prevista" quando o visual abrir.
+
+O segundo também ficou proibido nas cinco colunas de hora de viagem e manutenção,
+por CHECK. `HoraHM` do domínio é `HH:MM` e não representa segundo, então uma linha
+com `13:19:30` faria `atraso_min` valer -40 no banco e -41 na função pura. Nenhuma
+tela coleta segundo; proibir grava a paridade em vez de documentá-la.
 
 **O abastecimento perde o campo `viagem_longa`.** Ele é escrito nas linhas 856 e
 877 e nunca é lido de volta por nada. É estado de interface, não de negócio. O modo
@@ -155,7 +174,17 @@ não é nada.
 valor_alerta)`, não expressa o semáforo de três faixas nem o único KPI que usa `≤`
 e não tem faixa crítica, que é o percentual de atraso da linha 431. Vira
 `(chave, direcao, limite_ok, limite_atencao)`, com `limite_atencao` nulo quando só
-há duas faixas.
+há duas faixas. São quatro linhas, uma por KPI.
+
+E o que não é limiar sai de lá. A tolerância da pontualidade e o teto de upload são
+escalares sem direção e sem faixa; enfiá-los em `meta` seria o saco de campos
+opcionais que esta mesma seção condena. Vão para `parametro (chave, valor,
+descricao)`, que existe para isso e para o próximo valor desse feitio.
+
+**`rota` é única por par, não por nome.** `BELÉM` e `SALINÓPOLIS` existem em
+Imperatriz e em Belém ao mesmo tempo, então são 22 rotas para 20 nomes distintos.
+`UNIQUE (nome, base_id)`. Placa continua única global, porque as três listas são
+disjuntas e as 15 são distintas.
 
 ### o que eu não mudei
 
@@ -198,8 +227,12 @@ conta. Semeei 15 minutos, que é o valor que eu escolheria, e ele vive na tabela
 ## o que sai do jeito antigo
 
 `GENERATED ALWAYS` cobre `viagem.km_rodados`, `viagem.custo_viagem`,
-`viagem.pct_custo`, `viagem.pontualidade`, `abastecimento_parada.valor_total`,
+`viagem.pct_custo`, `viagem.atraso_min`, `abastecimento_parada.valor_total`,
 `manutencao.dias_oficina`, `manutencao.status_documental` e `quebra.pct_quebra`.
-São oito, contra os seis do plano anterior. Os dois novos são `pontualidade` e
+São oito, contra os seis do plano anterior. Os dois novos são `atraso_min` e
 `status_documental`, e os dois entraram porque eram estado ilegal, não porque
 faltava um número.
+
+Também vale registrar o que **não** virou coluna gerada. `mediaKmL` existe só como
+função pura, porque ela é um agregado sobre as paradas de um abastecimento e não
+cabe numa expressão de linha.

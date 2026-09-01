@@ -1,0 +1,14 @@
+{
+  "name": "@ind/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./dominio": "./src/dominio/index.ts",
+    "./portas": "./src/portas/index.ts"
+  },
+  "dependencies": {
+    "zod": "^4.1.5"
+  }
+}

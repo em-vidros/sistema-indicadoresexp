@@ -1,0 +1,21 @@
+{
+  "name": "indicadores",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "banco": "./infra/banco.sh",
+    "db:generate": "bun --filter @ind/db db:generate",
+    "db:migrate": "bun --filter @ind/db db:migrate",
+    "db:seed": "bun --filter @ind/db seed",
+    "dev": "bun --filter @ind/server dev",
+    "tipos": "tsc -b",
+    "teste": "bun test",
+    "fronteiras": "bun verificar/fronteiras.ts",
+    "verificar": "bun run fronteiras && bun run tipos && bun run teste"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "@types/bun": "^1.2.20"
+  }
+}
