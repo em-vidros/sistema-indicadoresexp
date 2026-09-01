@@ -9,6 +9,7 @@
     "db:migrate": "bun --filter @ind/db db:migrate",
     "db:seed": "bun --filter @ind/db seed",
     "dev": "bun --filter @ind/server dev",
+    "build": "bun --filter @ind/web build",
     "tipos": "tsc -b",
     "teste": "bun test",
     "fronteiras": "bun verificar/fronteiras.ts",
