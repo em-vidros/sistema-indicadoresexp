@@ -13,3 +13,4 @@ export type Db = ReturnType<typeof criarDb>['db']
 export { schema, URL_BANCO }
 export { exigir, opcional } from './env.ts'
 export * from './schema/index.ts'
+export * from './consultas/sessao.ts'

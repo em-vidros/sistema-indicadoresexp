@@ -101,6 +101,11 @@ const Programa = z.object({
 
 const Usuario = z.object({
   nome: z.string(),
+  // `admin: true` so aparece no objeto da livia; nos outros tres a chave nao existe
+  // no HTML. Quem nao e admin e por ausencia, e nao por um `false` escrito la.
+  admin: z.boolean().optional(),
+  // `base` e a base fixa da tela, e vem explicita em todos: `null` na livia.
+  base: z.string().nullable(),
   bases: z.array(z.string()),
   tipos: z.array(z.enum(['viagem', 'abastecimento', 'manutencao', 'quebra'])),
 })
@@ -551,19 +556,32 @@ export async function semearEm(db: Escritor, deps: DepsSeed, c: Constantes): Pro
   // apaga do JSON, e o seed le uma senha nova por usuario do `.env`. Nenhuma das
   // antigas pode autenticar, e `verificar/fase-0.sh` cobra isso com as quatro.
   const chaves = Object.keys(USUARIOS)
-  const usuarios = chaves.map((chave) => ({
-    id: `usr_${chave}`,
-    name: USUARIOS[chave]!.nome,
-    // Minusculo porque o `sign-in/email` procura por `email.toLowerCase()`.
-    email: `${chave.toLowerCase()}@${DOMINIO_EMAIL}`,
-    emailVerified: true,
-  }))
+  const usuarios = chaves.map((chave) => {
+    const u = USUARIOS[chave]!
+    return {
+      id: `usr_${chave}`,
+      name: u.nome,
+      // Minusculo porque o `sign-in/email` procura por `email.toLowerCase()`.
+      email: `${chave.toLowerCase()}@${DOMINIO_EMAIL}`,
+      emailVerified: true,
+      admin: u.admin === true,
+      baseId: u.base === null ? null : idBase(u.base),
+    }
+  })
   await db
     .insert(user)
     .values(usuarios)
     .onConflictDoUpdate({
       target: user.id,
-      set: { name: sqlExcluded('name'), email: sqlExcluded('email'), updatedAt: agora },
+      // `admin` e `base_id` entram no set junto com o resto: sem eles, um usuario
+      // que ficou com a permissao errada continuaria errado depois do segundo seed.
+      set: {
+        name: sqlExcluded('name'),
+        email: sqlExcluded('email'),
+        admin: sqlExcluded('admin'),
+        baseId: sqlExcluded('base_id'),
+        updatedAt: agora,
+      },
     })
 
   const contas = await Promise.all(

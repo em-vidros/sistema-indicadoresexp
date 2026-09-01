@@ -1,4 +1,15 @@
-import { boolean, pgEnum, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import {
+  boolean,
+  check,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from 'drizzle-orm/pg-core'
 import { base } from './cadastro.ts'
 
 export const tipoRegistro = pgEnum('tipo_registro', [
@@ -8,15 +19,32 @@ export const tipoRegistro = pgEnum('tipo_registro', [
   'quebra',
 ])
 
-export const user = pgTable('user', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  email: text('email').notNull().unique(),
-  emailVerified: boolean('email_verified').notNull().default(false),
-  image: text('image'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-})
+export const user = pgTable(
+  'user',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    email: text('email').notNull().unique(),
+    emailVerified: boolean('email_verified').notNull().default(false),
+    image: text('image'),
+    // Os dois campos que o objeto USUARIOS de formulario-registro.html ja tinha e
+    // que a tela le: `admin` destrava o seletor de base e mostra o menu de
+    // administracao; `base_id` e a base que ja vem selecionada e travada.
+    admin: boolean('admin').notNull().default(false),
+    baseId: uuid('base_id').references(() => base.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // `aplicarSessao` ou trava numa base fixa ou abre o seletor de admin, e nao
+    // existe terceiro caminho. O CHECK torna irrepresentavel o estado que a tela
+    // nao sabe desenhar: admin sem base, nao-admin com base, nada entre os dois.
+    check(
+      'user_admin_sem_base_ck',
+      sql`(${t.admin} AND ${t.baseId} IS NULL) OR (NOT ${t.admin} AND ${t.baseId} IS NOT NULL)`,
+    ),
+  ],
+)
 
 export const session = pgTable('session', {
   id: text('id').primaryKey(),
