@@ -523,7 +523,7 @@ do passivo da fase 4 na origem, em vez de arrastá-lo até lá.
 
 | fase | estado | quando | o que falta |
 |---|---|---|---|
-| 0 base | em andamento | 2026-08-31 | seed, `packages/auth`, `apps/server` mínimo |
+| 0 base | **pronta** | 2026-08-31 | |
 | 1 login | não iniciada | | |
 | 2 banco | não iniciada | | |
 | 3 duplicação | não iniciada | | |
@@ -537,7 +537,7 @@ próxima sessão.
 
 Bun 1.4.0. Postgres 17.11 rootless na 5433, por `infra/banco.sh`. O monorepo com
 `packages/core`, `packages/db` e a cerca de import. 32 tabelas aplicadas, com as
-oito colunas geradas saindo do `drizzle-kit` sem SQL escrito à mão. 117 testes
+oito colunas geradas saindo do `drizzle-kit` sem SQL escrito à mão. 142 testes
 passando, tipos limpos, cerca verde.
 
 O domínio tem as regras que hoje vivem espalhadas nos HTMLs, cada uma como função
@@ -545,11 +545,23 @@ pura: `avaliarKpi`, `classificarPontualidade`, `statusVencimento`,
 `statusPreventiva`, `podeRegistrar` e os sete derivados. As portas são três, e
 ainda não têm consumidor, porque `casos/` só entra na fase 1.
 
-### o que a fase 0 ainda não tem
+### a prova da fase 0, e o que ela cobra
 
-O seed, o `packages/auth` e um `apps/server` mínimo que exponha o login. Sem os
-três, `verificar/fase-0.sh` não roda: ele confere nove contagens no banco e testa
-o login, inclusive recusando as quatro senhas que vazaram no HTML.
+`bash verificar/fase-0.sh` com o servidor de pé e o seed rodado. São 20 asserções e
+todas passam. As nove contagens do cadastro, os 47 códigos de atividade comparados
+um a um contra o extrator, as 7 rotas locais, as quatro senhas vazadas recusadas com
+401, e o login novo devolvendo 200 com cookie.
+
+A comparação dos códigos é um a um de propósito. Eu tinha escrito uma grade de `a` a
+`c` e a série real não é regular: a semana 1 vai até `f`, as semanas 2 a 4 vão até
+`d`, e a semana 5 do motorista para em `b`. Contar 47 não prova que são os 47 certos.
+
+O seed é idempotente, com transação e id determinístico por UUIDv5 sobre a chave
+natural. `colaborador` não tem nenhuma restrição de unicidade, então com id
+aleatório a segunda execução duplicaria as 31 linhas.
+
+O servidor mínimo roda na 3200, e não na 3100, que está ocupada pelo container do
+agente-projetista.
 
 ### duas coisas que a fase 0 aprendeu e que valem para o resto
 
@@ -558,7 +570,7 @@ que é o que o front faz hoje, discorda do `ROUND(numeric, 2)` do Postgres em
 `3 × 2,675`, onde um dá 8,02 e o outro 8,03. A causa é que o erro já está no
 produto em float, antes de qualquer arredondamento, então nenhum truque de string
 resolve. `derivados.ts` passou a fazer aritmética decimal em inteiro, e o teste
-`derivados-vs-postgres.test.ts` compara 4.560 pares contra o banco de verdade,
+`derivados-vs-postgres.test.ts` compara 5.060 pares contra o banco de verdade,
 numa consulta por operação.
 
 **Número ausente ganha de número inventado.** `atraso_min` fica nulo quando a data
