@@ -122,17 +122,7 @@ textarea{resize:vertical;min-height:70px;}
 .seção-titulo{font-size:.88rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
 .hoje-chip{display:inline-block;background:var(--accent-soft);color:var(--accent);font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:8px;}
 
-/* LOGIN */
-.login-overlay{position:fixed;inset:0;background:var(--bg-side);display:flex;align-items:center;justify-content:center;z-index:9999;}
-.login-box{background:#fff;border-radius:16px;padding:36px 40px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
-.login-logo{background:var(--bg-side);border-radius:10px;padding:12px 20px;margin-bottom:8px;text-align:center;}
-.login-sub{font-size:.82rem;color:var(--txt-dim);margin-bottom:28px;}
-.login-box label{font-size:.75rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px;}
-.login-box input{width:100%;background:var(--bg-app);border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;font-size:.95rem;color:var(--txt-main);font-family:inherit;margin-bottom:16px;}
-.login-box input:focus{outline:none;border-color:var(--accent);background:#fff;}
-.btn-login{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;}
-.btn-login:hover{background:#1d4ed8;}
-.login-erro{background:var(--red-soft);color:#991b1b;border-radius:8px;padding:10px 14px;font-size:.84rem;margin-top:12px;display:none;}
+/* USUÁRIO NA SIDEBAR */
 .user-chip{display:flex;align-items:center;gap:8px;padding:10px 20px;border-top:1px solid rgba(255,255,255,.08);margin-top:auto;}
 .user-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:#fff;flex-shrink:0;}
 .user-info{flex:1;min-width:0;}
@@ -170,26 +160,6 @@ textarea{resize:vertical;min-height:70px;}
 </style>
 </head>
 <body>
-
-<!-- LOGIN OVERLAY -->
-<div class="login-overlay" id="loginOverlay">
-  <div class="login-box">
-    <div class="login-logo"><img src="docs/logo-emvidros.svg" alt="EM Vidros" style="height:64px;width:auto;display:block;margin:0 auto;"></div>
-    <div class="login-sub">Registro Diário · Logística</div>
-    <div>
-      <label>Usuário</label>
-      <input type="text" id="loginUsuario" placeholder="Seu usuário" autocomplete="username" onkeydown="if(event.key==='Enter')fazerLogin()">
-      <label>Senha</label>
-      <input type="password" id="loginSenha" placeholder="Sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()">
-      <div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px;font-size:.85rem;color:var(--dim);">
-        <input type="checkbox" id="lembrarMe" style="width:16px;height:16px;cursor:pointer;" checked>
-        <label for="lembrarMe" style="cursor:pointer;margin:0;">Lembrar de mim</label>
-      </div>
-      <button class="btn-login" onclick="fazerLogin()">Entrar</button>
-      <div class="login-erro" id="loginErro">Usuário ou senha incorretos.</div>
-    </div>
-  </div>
-</div>
 
 <!-- SIDEBAR -->
 <nav class="sidebar">
@@ -256,7 +226,7 @@ textarea{resize:vertical;min-height:70px;}
           <div style="font-size:.88rem;color:var(--txt-dim);">Selecione uma base acima para começar o registro</div>
         </div>
 
-        <div id="formArea">
+        <div id="formArea" style="display:none;">
         <!-- TIPO -->
         <div class="seção-titulo">Tipo de Registro <span class="required">*</span></div>
         <div class="tipo-grid">
@@ -618,78 +588,35 @@ const N8N_URL = 'https://170.247.31.241:9002';
 const N8N_WEBHOOK = N8N_URL + '/webhook/registro-indicadores';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUXXAoZeuvTYm3s9Buj3ocnPH9vNitZ30XBcM696qp0r0wkiUE-Ubsr7uPde0X0l_spA/exec';
 const STORAGE_KEY = 'emvidros_indicadores';
-const SESSION_KEY = 'emvidros_sessao';
 
-// Usuários do sistema — altere senhas aqui se necessário
-const _d = s => atob(s);
-let USUARIOS = {
-  'livia':       { senha: _d('bGl2aWFAMjAyNg=='),      base: null,          nome: 'Livia (Admin)', admin: true,
-                   bases: ['Raposa','Imperatriz','Belém'], tipos: ['viagem','abastecimento','manutencao','quebra'] },
-  'andreina':    { senha: _d('cmFwb3NhQDIwMjY='),     base: 'Raposa',      nome: 'Andreina',
-                   bases: ['Raposa'], tipos: ['viagem','abastecimento','manutencao','quebra'] },
-  'lucascunha':  { senha: _d('aW1wQDIwMjY='),        base: 'Imperatriz',  nome: 'Lucas Cunha',
-                   bases: ['Imperatriz'], tipos: ['viagem','abastecimento','manutencao','quebra'] },
-  'belem':       { senha: _d('YmVsZW1AMjAyNg=='),      base: 'Belém',       nome: 'Victor',
-                   bases: ['Belém'], tipos: ['viagem','abastecimento','manutencao','quebra'] },
-};
 
 // ===================== ESTADO =====================
 let tipoAtual = 'viagem';
 let baseAtual = 'Raposa';
 let tipoManutencaoAtual = 'preventiva';
-let sessaoAtual = null; // { usuario, nome, base }
+let sessaoAtual = null; // o que /api/sessao devolve: usuario, nome, admin, baseFixa, bases, tipos
 
-// ===================== CARREGAR CUSTOMIZAÇÕES DE USUÁRIOS =====================
-(function carregarCustomUsuarios() {
-  try {
-    const custom = JSON.parse(localStorage.getItem('emvidros_usuarios_config'));
-    if (custom) {
-      Object.entries(custom).forEach(([login, dados]) => {
-        if (USUARIOS[login]) Object.assign(USUARIOS[login], dados);
-      });
-    }
-  } catch {}
-})();
-
-// ===================== LOGIN =====================
-function fazerLogin() {
-  const usuario = document.getElementById('loginUsuario').value.trim().toLowerCase();
-  const senha   = document.getElementById('loginSenha').value;
-  const u = USUARIOS[usuario];
-  if (!u || u.senha !== senha) {
-    const erroEl = document.getElementById('loginErro');
-    erroEl.style.display = 'block';
-    setTimeout(() => erroEl.style.display='none', 3000);
-    return;
-  }
-  const sessao = { usuario, nome: u.nome, base: u.base, admin: u.admin || false };
-  const lembrar = document.getElementById('lembrarMe')?.checked !== false;
-  if (lembrar) {
-    try { localStorage.setItem(SESSION_KEY, JSON.stringify(sessao)); } catch(e) {}
-  }
-  aplicarSessao(sessao);
-}
-
+// ===================== SESSÃO =====================
 function fazerLogout() {
   if (!confirm('Sair do sistema?')) return;
-  localStorage.removeItem(SESSION_KEY);
-  location.reload();
+  // O cookie e httpOnly: quem apaga e o servidor. O `finally` existe porque a tela
+  // tem que sair mesmo se a chamada falhar, senao o usuario fica preso no lugar.
+  fetch('/api/sair', { method: 'POST' }).finally(() => { location.href = '/entrar.html'; });
 }
 
 function aplicarSessao(sessao) {
   sessaoAtual = sessao;
-  // Ocultar overlay de login
-  document.getElementById('loginOverlay').style.display = 'none';
   // Atualizar chip de usuário na sidebar
   document.getElementById('userAvatar').textContent = sessao.nome.charAt(0).toUpperCase();
   document.getElementById('userNome').textContent = sessao.nome;
-  document.getElementById('userBaseLabel').textContent = sessao.base;
+  document.getElementById('userBaseLabel').textContent = sessao.baseFixa;
   // Definir e travar base
-  baseAtual = sessao.base || 'Raposa';
+  baseAtual = sessao.baseFixa;
   const isAdmin = !!sessao.admin;
-  const u = USUARIOS[sessao.usuario] || {};
-  const basesPermitidas = u.bases || ['Raposa','Imperatriz','Belém'];
-  const tiposPermitidos = u.tipos || ['viagem','abastecimento','manutencao','quebra'];
+  // Sem `||` de reserva: lista vazia aqui e permissao de verdade, e um padrao
+  // generoso transformaria erro de consulta em acesso a base que nao e sua.
+  const basesPermitidas = sessao.bases;
+  const tiposPermitidos = sessao.tipos;
   const selector = document.getElementById('baseSelector');
   selector.classList.remove('base-locked');
   // Mostrar/ocultar botões de base conforme permissão
@@ -704,9 +631,10 @@ function aplicarSessao(sessao) {
   });
   if (!isAdmin) {
     selector.classList.add('base-locked');
-    document.getElementById('btnRaposa').classList.toggle('ativo', sessao.base==='Raposa');
-    document.getElementById('btnImperatriz').classList.toggle('ativo', sessao.base==='Imperatriz');
-    document.getElementById('btnBelem').classList.toggle('ativo', sessao.base==='Belém');
+    document.getElementById('formArea').style.display = 'block';
+    document.getElementById('btnRaposa').classList.toggle('ativo', sessao.baseFixa==='Raposa');
+    document.getElementById('btnImperatriz').classList.toggle('ativo', sessao.baseFixa==='Imperatriz');
+    document.getElementById('btnBelem').classList.toggle('ativo', sessao.baseFixa==='Belém');
   } else {
     // Admin: nenhuma base pré-selecionada — usuário escolhe antes de preencher
     document.getElementById('labelBase').innerHTML = 'Base <span style="font-size:.68rem;color:var(--accent);font-weight:600;">● Admin</span>';
@@ -731,22 +659,18 @@ function aplicarSessao(sessao) {
 
 // ===================== INIT =====================
 document.addEventListener('DOMContentLoaded', () => {
-  // Verificar sessão salva
-  try {
-    const s = JSON.parse(localStorage.getItem(SESSION_KEY));
-    if (s && USUARIOS[s.usuario]) {
-      s.admin = USUARIOS[s.usuario].admin || false;
-      s.base  = USUARIOS[s.usuario].base;
-      s.nome  = USUARIOS[s.usuario].nome;
-      aplicarSessao(s);
-      return;
-    }
-  } catch {}
-  // Sem sessão — focar no campo usuário
-  setTimeout(() => {
-    const el = document.getElementById('loginUsuario');
-    if (el) el.focus();
-  }, 100);
+  // Quem nao tem cookie valido nao recebe este HTML: o servidor manda para o login
+  // antes. O 401 aqui e a sessao que expirou entre a pagina carregar e esta chamada.
+  fetch('/api/sessao')
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    // O tratamento de erro e o segundo argumento do `then`, e nao um `.catch`
+    // encadeado, porque encadeado ele pegaria tambem o que `aplicarSessao` lancar.
+    // Ai a tela iria para o login, o portao veria sessao valida e a devolveria, e o
+    // laco correria sem mensagem nenhuma.
+    .then(aplicarSessao, () => {
+      location.href = '/entrar.html?destino=' + encodeURIComponent(location.pathname + location.search);
+    })
+    .catch(erro => { console.error('falhou ao montar a tela', erro); });
 });
 
 function setDataHoje() {
@@ -1087,7 +1011,7 @@ const ROTAS_LOCAIS = ['IMPERATRIZ', 'SÃO LUÍS', 'LOJA GUAJAJARAS', 'LOJA ANGEL
 // ===================== AUTOCOMPLETE =====================
 function popularAutocompletistas() {
   const dados = carregarDados();
-  const base = sessaoAtual ? sessaoAtual.base : baseAtual;
+  const base = sessaoAtual ? sessaoAtual.baseFixa : baseAtual;
   const isAdmin = sessaoAtual && sessaoAtual.admin;
   const motoresPre  = isAdmin ? [...MOTORISTAS_RAPOSA,...MOTORISTAS_IMPERATRIZ,...MOTORISTAS_BELEM]
                               : base==='Raposa' ? MOTORISTAS_RAPOSA : base==='Imperatriz' ? MOTORISTAS_IMPERATRIZ : MOTORISTAS_BELEM;
@@ -1180,8 +1104,28 @@ function limparHoje() {
 }
 
 // ===================== GERENCIAR USUÁRIOS (admin) =====================
-function abrirGerenciarUsuarios() {
+// A lista chega do servidor e fica aqui entre abrir o modal e salvar. Guardar so
+// os quatro logins, e nao o objeto inteiro, deixaria `salvarUsuarios` sem saber
+// quem e admin e reenviaria permissao de quem nao tem permissao editavel.
+let usuariosAdmin = [];
+
+// O nome vem do banco e qualquer admin o grava por `PUT /api/usuarios`. Sem passar
+// por aqui ele sai como HTML no modal de quem abrir depois.
+function esc(texto) {
+  const mapa = { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' };
+  return String(texto).replace(/[&<>"']/g, c => mapa[c]);
+}
+
+async function abrirGerenciarUsuarios() {
   const body = document.getElementById('modalUsuariosBody');
+  try {
+    const r = await fetch('/api/usuarios');
+    if (!r.ok) throw new Error(r.status);
+    usuariosAdmin = await r.json();
+  } catch {
+    alert('Não consegui carregar os usuários. Tente de novo.');
+    return;
+  }
   const baseLabel = { Raposa:'📍 Raposa', Imperatriz:'📍 Imperatriz', 'Belém':'📍 Belém', null:'🔑 Admin' };
   const todasBases = ['Raposa','Imperatriz','Belém'];
   const todosTipos = [
@@ -1190,10 +1134,11 @@ function abrirGerenciarUsuarios() {
     { id:'manutencao',    ico:'🔧', label:'Manut.' },
     { id:'quebra',        ico:'📦', label:'Quebra' },
   ];
-  body.innerHTML = Object.entries(USUARIOS).map(([login, u]) => {
+  body.innerHTML = usuariosAdmin.map(u => {
+    const login = esc(u.usuario);
     const isAdmin = !!u.admin;
-    const basesUser  = u.bases  || todasBases;
-    const tiposUser  = u.tipos  || todosTipos.map(t=>t.id);
+    const basesUser  = u.bases;
+    const tiposUser  = u.tipos;
     const basesHtml = todasBases.map(b => `
       <label style="display:flex;align-items:center;gap:5px;font-size:.8rem;font-weight:500;text-transform:none;color:var(--txt-main);cursor:pointer;">
         <input type="checkbox" id="edit_base_${login}_${b.replace(/[^a-z]/gi,'')}"
@@ -1211,20 +1156,20 @@ function abrirGerenciarUsuarios() {
     return `
     <div class="user-card">
       <div class="user-card-header">
-        <div class="user-badge">${u.nome.charAt(0).toUpperCase()}</div>
+        <div class="user-badge">${esc(u.nome.charAt(0).toUpperCase())}</div>
         <div class="info">
           <div class="user-login">${login}</div>
-          <div class="user-base-tag">${baseLabel[u.base] || '🔑 Admin'}</div>
+          <div class="user-base-tag">${baseLabel[u.baseFixa] || '🔑 Admin'}</div>
         </div>
       </div>
       <div class="user-fields">
         <div>
           <label>Nome exibido</label>
-          <input type="text" id="edit_nome_${login}" value="${u.nome}">
+          <input type="text" id="edit_nome_${login}" value="${esc(u.nome)}">
         </div>
         <div>
           <label>Senha</label>
-          <input type="text" id="edit_senha_${login}" value="${u.senha}" placeholder="Nova senha">
+          <input type="password" id="edit_senha_${login}" value="" placeholder="Nova senha">
         </div>
       </div>
       ${isAdmin ? '' : `
@@ -1247,30 +1192,44 @@ function fecharModal() {
   document.getElementById('modalUsuarios').classList.remove('aberto');
 }
 
-function salvarUsuarios() {
+async function salvarUsuarios() {
   const todasBases = ['Raposa','Imperatriz','Belém'];
   const todosTipos = ['viagem','abastecimento','manutencao','quebra'];
-  const custom = {};
-  Object.keys(USUARIOS).forEach(login => {
+  const mudancas = usuariosAdmin.map(u => {
+    const login = u.usuario;
     const novoNome  = document.getElementById('edit_nome_' + login)?.value.trim();
     const novaSenha = document.getElementById('edit_senha_' + login)?.value;
-    if (novoNome)  USUARIOS[login].nome  = novoNome;
-    if (novaSenha) USUARIOS[login].senha = novaSenha;
-    if (!USUARIOS[login].admin) {
-      USUARIOS[login].bases = todasBases.filter(b =>
+    const m = { usuario: login, nome: novoNome || u.nome };
+    // Vazio quer dizer "nao muda". Depois da fase 0 so existe hash no banco, entao
+    // o campo nunca vem preenchido e mandar vazio apagaria a senha de todo mundo.
+    if (novaSenha) m.senha = novaSenha;
+    if (!u.admin) {
+      m.bases = todasBases.filter(b =>
         document.getElementById('edit_base_' + login + '_' + b.replace(/[^a-z]/gi,''))?.checked);
-      USUARIOS[login].tipos = todosTipos.filter(t =>
+      m.tipos = todosTipos.filter(t =>
         document.getElementById('edit_tipo_' + login + '_' + t)?.checked);
     }
-    custom[login] = { nome: USUARIOS[login].nome, senha: USUARIOS[login].senha,
-                      bases: USUARIOS[login].bases, tipos: USUARIOS[login].tipos };
+    return m;
   });
-  try { localStorage.setItem('emvidros_usuarios_config', JSON.stringify(custom)); } catch {}
+  try {
+    const r = await fetch('/api/usuarios', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(mudancas),
+    });
+    if (!r.ok) throw new Error(r.status);
+  } catch {
+    alert('Não consegui salvar. Nada foi alterado.');
+    return;
+  }
   fecharModal();
   // Atualizar nome do usuário atual no chip se foi editado
   if (sessaoAtual) {
-    sessaoAtual.nome = USUARIOS[sessaoAtual.usuario]?.nome || sessaoAtual.nome;
-    document.getElementById('userNome').textContent = sessaoAtual.nome;
+    const meu = mudancas.find(m => m.usuario === sessaoAtual.usuario);
+    if (meu) {
+      sessaoAtual.nome = meu.nome;
+      document.getElementById('userNome').textContent = meu.nome;
+    }
   }
   alert('✅ Usuários atualizados com sucesso!');
 }
