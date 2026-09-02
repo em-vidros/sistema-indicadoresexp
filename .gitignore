@@ -14,3 +14,6 @@ tsconfig.tsbuildinfo
 .env.local
 .env*.local
 .neon
+
+# Local agent skills and configs
+.agents/
