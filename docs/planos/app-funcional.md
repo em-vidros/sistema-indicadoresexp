@@ -92,6 +92,10 @@ O front continua sendo os mesmos 7 HTMLs, servidos pelo Vite em modo multipágin
 cada `.html` como ponto de entrada. Tailwind e Motion entram no projeto para tela
 nova, não para reescrever tela existente.
 
+> **Revisto em 2026-09-02.** O Henrique decidiu portar para React mesmo assim, e a fase
+> 6 diz como isso acontece sem mudar um pixel. Os três fatos acima continuam verdadeiros
+> e continuam sendo o custo; o que mudou foi quem paga.
+
 Nota para quem executar: o Bun 1.4 tem servidor com import de HTML e bundling
 embutido, que faria o mesmo trabalho sem Vite. Segui com Vite porque foi o pedido, e
 porque o ecossistema de plugin é maior. A troca é reversível e custa umas 30 linhas.
@@ -417,6 +421,166 @@ elas ficam, e isso é escolha, não esquecimento.
 Saem também o `GUIA-CONFIGURACAO.html` e os dois workflows JSON, que documentam uma
 configuração de n8n e Google Sheets que o app novo torna desnecessária.
 
+**Atualização de 2026-09-02.** A fase 6 tira os globais de `window` por outro caminho, o
+porte para React, sem abrir o visual. O guia continua condenado e continua de pé até o
+Henrique decidir; os workflows já saíram na fase 4.
+
+### fase 6, o frontend vira React, e o visual não muda
+
+Decidido pelo Henrique em 2026-09-02, sabendo que a seção "a restrição que manda no
+desenho" descartava React de propósito. A restrição da Lívia continua valendo por
+inteiro. O que muda é quem gera o markup: os oito `.html` de tela saem de
+`apps/web/src`, cada tela vira um componente React 19, e a toolchain passa a ser o
+Vite+ da VoidZero (CLI `vp`, pacote `vite-plus`), com o Bun continuando como runtime e
+gerenciador de pacotes. O desenho saiu de um painel de três candidatos mais um juiz em
+2026-09-02, e o que segue é a síntese.
+
+**O que não muda, e por quê.** A navegação entre telas continua sendo recarga completa,
+`window.location='dashboard-semanal.html'`, exatamente como hoje. Não entra roteador.
+Isso é a decisão que sustenta o resto: duas telas nunca compartilham documento, então os
+sete blocos `:root` que a fase 3 constatou serem diferentes nunca colidem, e o CSS vai
+verbatim, sem prefixo, sem `@scope`, sem CSS Modules. As URLs continuam `/<tela>.html`,
+porque bookmark, `destino=` em voo e as três provas de fase dependem delas. Os cinco
+`*-api.ts` e seus testes ficam como estão. `portao.ts` e `paginas.ts` não ganham rota
+nova nem fallback.
+
+**A casca.** `apps/web/src/index.html` com uma dúzia de linhas e um `<div id="app">`.
+Um plugin do Vite copia `dist/index.html` para `dist/<tela>.html`, uma cópia por nome em
+`ROTAS`, e lança se o destino já existir, para a cópia nunca apagar uma tela que ainda
+não foi portada. Do ponto de vista do Hono, `dist/` tem os mesmos nomes de arquivo de
+hoje. `main.tsx` lê `location.pathname` uma vez, resolve o nome e monta o componente. A
+casca tem uma regra de CSS própria, `#app{display:contents}`, porque `body{display:flex}`
+das telas conta com `.sidebar` e `.main` como filhos diretos e o container do React
+entraria no meio. É a única mudança de estrutura, e ela está declarada na prova.
+
+**`ROTAS` é a barra de progresso.** `apps/web/src/telas/rotas.ts` tem o array das telas
+já portadas e o complemento. O plugin copia a casca só para quem está dentro, o
+`main.tsx` só resolve quem está dentro, a prova nova só cobra quem está dentro, e
+`visual-telas.ts` e `handlers.ts` cobram exatamente quem está fora. Um commit de tela é
+uma linha nesse array mais dois arquivos apagados. Nenhum dos cinco consumidores pede
+edição por commit.
+
+**Uma tela.** `telas/<tela>.tsx` mais `telas/<tela>.css`. O CSS é o recorte literal do
+`<style>` de hoje, feito por script, e entra no componente como `<style>{css}</style>`
+via `import css from './x.css?raw'`. O `?raw` entrega a string exata do arquivo; importar
+como folha passaria pelo minificador e juntaria os oito `:root` num arquivo só. O estado
+de módulo de hoje vira `useState`; as quatro variáveis de modal viram uma união
+discriminada; `docsCfg`, que guarda placa e `'moto_'+nome` no mesmo objeto, vira dois
+mapas. Formulários ficam não controlados, `defaultValue` e leitura por `ref` no salvar,
+porque é o que a tela faz hoje. Regra de fidelidade estrutural: o que hoje alterna
+`display:none` ou classe sem sair do DOM (`.modal-overlay`, `.login-erro`) continua
+sempre montado e alterna por `className`; o que hoje nasce de `innerHTML` inteiro vira
+`.map()` ou condicional. Sem essa regra o snapshot do estado inicial reprova. Zero
+função em `window`, e a prova cobra isso por grep.
+
+**O login migra também, e é a única tela com casca própria.** `entrar.html` vira uma
+casca igual à outra apontando para `entrar.tsx`, com asset de nome fixo,
+`assets/entrar.js`, e o React num chunk também nomeado, `assets/vendor-react.js`. Os dois
+entram em `PUBLICOS` por nome, como o logo. `verificar/publicos.ts` cobra as duas
+direções: tudo que `dist/entrar.html` carrega está em `PUBLICOS`, senão o login abre sem
+JavaScript e sem erro; e nenhum arquivo público contém canário de cadastro (placa, nome
+de motorista, rota de API), senão o porte abriu o que o portão fechava. Um sentido só
+deixa passar exatamente o erro que o outro pega.
+
+**Chart.js** sai do CDN e vira `chart.js@4.4.0`, a mesma versão da tag, por `import()`
+dinâmico dentro do efeito do dashboard, com `destroy()` na limpeza. Some o global
+`window.Chart` sem tipo e some a dependência de um CDN externo atrás de um portão que não
+admite mais nada.
+
+**Tipos.** Os componentes entram no `tsconfig.json` da raiz com `jsx: react-jsx` e o
+`strict` que já está lá. Os `js/<tela>.ts` de hoje nunca passaram pelo `tsc -b`; os
+`*-api.ts` passam a ser checados pela primeira vez e ganham tipo de retorno.
+
+**A prova, que substitui `visual-telas.ts` e `handlers.ts`.** As duas comparam texto de
+origem, e JSX não é HTML. A nova compara o que o navegador monta. Roda em Chromium de
+verdade, por Playwright, nos dois lados, porque uma sonda de 2026-09-02 mostrou que o
+happy-dom não compila `onclick="..."` em função e a captura das telas velhas depende
+disso. `page.route` serve os arquivos de `dist/` e responde `/api/*` com fixtures
+gravadas uma vez, então a prova não precisa de Hono nem de banco;
+`page.clock.setFixedTime` congela o relógio, porque as telas escrevem "vence em 42 dias"
+no DOM. Por tela e por estado (`inicial`, `lista-renderizada`, `modal-veiculo-aberto`),
+cada estado alcançado por interação real, nunca chamando função interna.
+
+Quatro comparações por tela. O DOM normalizado de cada estado contra
+`verificar/baseline/<tela>/<estado>.html`; o normalizador apaga só o que não desenha
+(atributo `on*=`, ordem de atributo, corrida de espaço, `style` reserializado), e cada
+regra dele é uma afirmação contestável. O `telas/<tela>.css` byte a byte contra o
+`<style>` de origem. A união dos handlers que os passos declaram cobrir contra a lista
+extraída do markup velho, para handler que ninguém clica reprovar a prova e não a tela.
+E a configuração passada ao `Chart` contra o JSON congelado, porque pixel de canvas não
+está no DOM. O screenshot de cada estado fica salvo na baseline para inspeção; diff de
+pixel com limiar entra só se o DOM não bastar.
+
+A baseline congela uma vez, antes de existir React, a partir do build de hoje, e entra
+no git. Depois disso a prova não precisa do código velho, o que é o que permite apagar
+`<tela>.html` e `js/<tela>.ts` no commit da própria tela. `bun verificar/paridade.ts
+--mutar` planta duas mutações numa cópia temporária do fonte, um `gap:5px` virando
+`gap:50px` num template e um `onClick` removido, e exige vermelho de cada uma; sem isso a
+prova é uma afirmação sobre si mesma. Os bugs de hoje entram na baseline como estão. Há
+pelo menos um em `documentos-frota`: o `querySelectorAll('.form-group input')` que
+adiciona a classe `inp` roda na carga do módulo com o modal vazio e não faz nada. O React
+tem que reproduzir isso; corrigir é decisão separada, com a Lívia.
+
+**Vite+, adoção parcial.** Uma sonda de 2026-09-02 mostrou que `vite-plus@0.3.0` embute
+Vite 8 sobre Rolldown, que `@vitejs/plugin-react@6` exige `vite@^8` explícito no
+workspace (sem isso o build quebra com `ERR_PACKAGE_PATH_NOT_EXPORTED ./internal`), que
+`vp test` é Vitest e não entende `bun:test`, e que `vp check` reformataria 27 arquivos
+existentes. Então entram `vp dev` e `vp build`; `bun test` continua sendo o runner, e
+`vp check` fica de fora até haver decisão de formatar a árvore, porque um script que
+nasce vermelho ensina todo mundo a ignorá-lo. Tudo pelo pacote local, nada de
+instalador global. Uma segunda sonda mostrou que o Playwright 1.62 roda sob Bun 1.4 com
+`page.route`, `page.clock` e screenshot, e que o ciclo por tela leva menos de um segundo.
+
+Um tropeço do commit 0 que vale registrar porque pode voltar. Por uns minutos em
+2026-09-02, `rolldown@1.2.7` (que o Vite 8 puxa) estava no npm sem o binário
+`@rolldown/binding-darwin-arm64`, e o build morria antes de ler o config. O binário
+apareceu em seguida e o build passou sem override. Se acontecer de novo numa versão
+nova, `"overrides": { "rolldown": "<última com binário>" }` na raiz resolve, dentro da
+faixa `~1.2.x` que o Vite declara.
+
+**A sequência.** Dez commits, cada um fechado por prova antes do próximo.
+
+0. Vite+ entra e nada mais muda. `vite@^8`, `vite-plus` e `@vitejs/plugin-react`; o
+   `vite.config.ts` troca o `defineConfig` e mantém a descoberta de `*.html`. React,
+   Chart.js e Playwright entram no commit em que passam a ser usados. Prova: `bun run
+   verificar` inteiro verde com o `dist` de hoje, e este plano com a fase escrita.
+1. A baseline congela. `playwright` entra; o harness em `verificar/paridade/`, os
+   roteiros e as fixtures das sete telas, os arquivos de `verificar/baseline/`. Zero React
+   de tela. Prova: capturar duas vezes dá os mesmos bytes, e as duas mutações plantadas
+   no legado reprovam.
+2. `entrar`, a menor, e a que exercita o recorte público. Nasce `verificar/publicos.ts`.
+3. `documentos-frota`. 4. `integracao-frota`. 5. `dashboard-semanal`, onde entra o
+   Chart.js. 6. `ata-reuniao`. 7. `manutencao-frota`. 8. `formulario-registro`, onde o
+   nome do asset muda nas provas das fases 2 e 4.
+9. Limpeza. Somem `visual-telas.ts`, `handlers.ts` e a captura do legado; o `include`
+   do tsconfig fecha em `apps/web/src/**`; a tabela no fim deste arquivo fecha a fase.
+
+As fixtures e o servidor de desenvolvimento usam a branch `porte-react` da Neon, criada
+em 2026-09-02 a partir de `production`, com a string em `.env.porte.local`, fora do git.
+O `.env` desta máquina aponta para a produção e nenhum passo desta fase toca nele.
+
+**Mecânico, delegado a modelo mais barato.** Recorte do `<style>` por script, HTML e
+template para JSX (`class`, `for`, `style` de string para objeto sempre com valor em
+string, `onclick="f('a')"` para `onClick={() => f('a')}`, `.map().join('')` para
+`.map()` com `key`), os roteiros das telas 3 a 8 depois que o da 2 existe como modelo,
+os globs dos `fase-*.sh`. **Julgamento, na sessão principal.** O modelo de estado de
+cada tela, as regras do normalizador, a lista de estados, a tabela de handlers cobertos,
+o recorte de asset público, e decidir se uma diferença apontada é regressão ou mudança
+declarada.
+
+**Riscos que fico devendo provar.** O `display:contents` no `#app` é a única coisa entre
+o layout de hoje e um layout quebrado, e o screenshot salvo na baseline é o que permite
+olhar. Há uma janela branca antes da primeira pintura que hoje não existe, porque o CSS
+passa a chegar pelo JavaScript; se incomodar a Lívia, a correção é uma regra de fundo na
+casca, por rota. Playwright sob Bun é fato a confirmar no commit 1; se falhar, a prova
+roda com `node`. E o `GUIA-CONFIGURACAO.html` fica fora até decisão.
+
+**Prova.** `verificar/fase-6.sh`: nenhum `.html` de tela em `apps/web/src` além das
+duas cascas e do guia; `bun verificar/paridade.ts` verde e `--mutar` vermelho nas duas
+mutações; `verificar/publicos.ts` verde nos dois sentidos; zero `window.` de escrita em
+`apps/web/src/telas/`; e as provas das fases 1, 2 e 4 continuam passando contra o
+servidor.
+
 ## o schema
 
 Vale mais detalhar isto do que qualquer outra parte, porque é o que trava se estiver
@@ -655,7 +819,8 @@ do passivo da fase 4 na origem, em vez de arrastá-lo até lá.
 | 2 banco | **pronta** | 2026-09-01 | |
 | 3 duplicação | não iniciada | | |
 | 4 publicar | **pronta** | 2026-09-02 | |
-| 5 andaime | não iniciada | | |
+| 5 andaime | não iniciada | | os globais saem pela fase 6; sobra o guia |
+| 6 react | em andamento | 2026-09-02 | commits 0 a 9, um por tela |
 
 Atualize esta tabela ao fim de cada fase. Plano que diverge da realidade engana a
 próxima sessão.
