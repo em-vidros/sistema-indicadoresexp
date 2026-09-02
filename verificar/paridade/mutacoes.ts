@@ -26,11 +26,19 @@ export type Mutacao = {
 export const MUTACOES: readonly Mutacao[] = [
   {
     tela: 'entrar',
-    arquivo: 'apps/web/src/entrar.html',
+    arquivo: 'apps/web/src/telas/entrar.css',
     de: '.login-box{background:#fff;border-radius:16px;padding:36px 40px;',
     para: '.login-box{background:#fff;border-radius:4px;padding:36px 40px;',
     motivo:
       'o canto da caixa de login deixa de ser redondo e nada no DOM muda; so o `estilo.css` da baseline pega, e sem esta linha essa comparacao nunca ficou vermelha',
+  },
+  {
+    tela: 'entrar',
+    arquivo: 'apps/web/src/telas/entrar.tsx',
+    de: 'autoComplete="current-password"\n            onKeyDown={aoTeclar}',
+    para: 'autoComplete="current-password"',
+    motivo:
+      'o Enter no campo de senha para de enviar o formulario; e a familia de defeito que o porte cria, porque o handler deixa de morar num atributo do markup e passa a ser uma prop que da para esquecer sem quebrar nada',
   },
   {
     tela: 'documentos-frota',

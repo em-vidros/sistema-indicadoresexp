@@ -557,6 +557,14 @@ faixa `~1.2.x` que o Vite declara.
    de tela. Prova: capturar duas vezes dá os mesmos bytes, e a mutação plantada em cada
    tela reprova. Fechado com 81 passos congelados e sete mutações pegas.
 2. `entrar`, a menor, e a que exercita o recorte público. Nasce `verificar/publicos.ts`.
+   Fechado. Três coisas que ele decidiu e valem para as outras seis. Campo que a tela
+   velha lê com `getElementById(...).value` vira `ref`, e não estado controlado: o React
+   escreve o atributo `value` num input controlado e a baseline congelou sem ele. O
+   inventário de `handlers.txt` passa a ser lido da baseline e nunca reextraído, porque
+   o React não deixa atributo `on*` e a lista viraria vazia, deixando a prova verde
+   justamente onde ela precisa morder. E cada tela portada sai da lista de
+   `visual-telas.ts` no seu próprio commit, porque aquela prova compara arquivo com
+   arquivo e a casca React não se parece com o que o build entrega.
 3. `documentos-frota`. 4. `integracao-frota`. 5. `dashboard-semanal`, onde entra o
    Chart.js. 6. `ata-reuniao`. 7. `manutencao-frota`. 8. `formulario-registro`, onde o
    nome do asset muda nas provas das fases 2 e 4.

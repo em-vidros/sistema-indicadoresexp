@@ -77,6 +77,13 @@ async function handlersDaTela(tela: Tela, dist: string, fonteJs: string): Promis
  * A uniao dos `cobre` tem que ser exatamente o conjunto do handlers.txt. Sobra quer
  * dizer que a tela faz algo que nenhum passo olha, e falta quer dizer que o roteiro
  * fala de um handler que nao existe mais. Os dois reprovam a prova, nao a tela.
+ *
+ * O `handlers` que entra aqui e o da baseline, congelado antes do porte, e nunca o
+ * extraido agora. A extracao le atributo `on*=` do markup, e o React nao deixa nenhum:
+ * na primeira tela portada a lista viraria vazia, o cruzamento passaria a comparar
+ * nada com nada, e a prova ficaria verde justamente onde ela precisa morder. Congelada,
+ * ela e o contrato: estes comportamentos existiam, e algum passo tem que exercitar
+ * cada um deles depois do porte tambem.
  */
 function furosDaProva(roteiro: Roteiro, handlers: readonly string[]): string[] {
   const cobertos = new Set(roteiro.passos.flatMap((p) => [...p.cobre]))
@@ -99,7 +106,6 @@ async function rodarTela(
   navegador: Browser,
   roteiro: Roteiro,
   dist: string,
-  fonteJs: string,
   comImagem: boolean,
 ): Promise<Artefatos> {
   const palco = await montarPalco(navegador, roteiro, dist)
@@ -168,7 +174,6 @@ async function rodarTela(
     await palco.fechar()
   }
 
-  texto.set('handlers.txt', (await handlersDaTela(roteiro.tela, dist, fonteJs)).map((n) => `${n}\n`).join(''))
   return { texto, imagens }
 }
 
@@ -203,6 +208,9 @@ async function divergencias(tela: Tela, artefatos: Artefatos): Promise<string[]>
   }
   for (const nome of (await readdir(pasta)).sort()) {
     if (nome.endsWith('.jpg')) continue
+    // O inventario de handlers nao e produzido a cada execucao, e sim congelado uma
+    // vez; quem o cobra e `furosDaProva`.
+    if (nome === 'handlers.txt') continue
     if (artefatos.texto.has(nome)) continue
     achados.push(`  ${nome}: existe na baseline e o roteiro nao produz mais`)
   }
@@ -236,9 +244,10 @@ async function conferirTelas(navegador: Browser, filtro: string | null): Promise
       continue
     }
 
-    const artefatos = await rodarTela(navegador, roteiro, DIST, FONTE_JS, false)
+    const artefatos = await rodarTela(navegador, roteiro, DIST, false)
 
-    const furos = furosDaProva(roteiro, (artefatos.texto.get('handlers.txt') ?? '').trim().split('\n').filter(Boolean))
+    const inventario = await Bun.file(`${BASELINE}/${tela}/handlers.txt`).text()
+    const furos = furosDaProva(roteiro, inventario.trim().split('\n').filter(Boolean))
     if (furos.length > 0) {
       falhas++
       console.log(`${tela}: a prova nao fecha com o handlers.txt`)
@@ -277,8 +286,8 @@ async function capturarTelas(
       continue
     }
 
-    const primeira = await rodarTela(navegador, roteiro, DIST, FONTE_JS, true)
-    const segunda = await rodarTela(navegador, roteiro, DIST, FONTE_JS, false)
+    const primeira = await rodarTela(navegador, roteiro, DIST, true)
+    const segunda = await rodarTela(navegador, roteiro, DIST, false)
 
     const instaveis: string[] = []
     for (const [nome, valor] of [...primeira.texto].sort()) {
@@ -293,8 +302,18 @@ async function capturarTelas(
       continue
     }
 
+    // O inventario de handlers e escrito uma vez e sobrevive a toda recaptura. Ele sai
+    // do markup velho, e depois do porte a extracao devolveria vazio: regravar apagaria
+    // em silencio a lista de comportamentos que o porte tem que manter. Para trocar um
+    // nome nele, edite o arquivo.
+    const congelado = Bun.file(`${pasta}/handlers.txt`)
+    const inventario = (await congelado.exists())
+      ? await congelado.text()
+      : (await handlersDaTela(tela, DIST, FONTE_JS)).map((n) => `${n}\n`).join('')
+
     await rm(pasta, { recursive: true, force: true })
     await mkdir(pasta, { recursive: true })
+    await Bun.write(`${pasta}/handlers.txt`, inventario)
     for (const [nome, valor] of primeira.texto) await Bun.write(`${pasta}/${nome}`, valor)
     for (const [nome, valor] of primeira.imagens) await Bun.write(`${FOTOS}/${tela}/${nome}`, valor)
     console.log(`${tela}: baseline gravada, ${roteiro.passos.length} passos, as duas passadas bateram`)
@@ -362,7 +381,7 @@ async function provarMutacoes(navegador: Browser, filtro: string | null): Promis
     }
     rodadas++
     const copia = await prepararCopia(indice, mutacao)
-    const artefatos = await rodarTela(navegador, roteiro, `${copia}/dist`, `${copia}/src/js`, false)
+    const artefatos = await rodarTela(navegador, roteiro, `${copia}/dist`, false)
     const achados = await divergencias(mutacao.tela, artefatos)
     if (achados.length === 0) {
       falhas++

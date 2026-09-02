@@ -9,11 +9,15 @@
     "preview": "vp preview"
   },
   "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^6.1.1",
     "vite": "^8",
     "vite-plus": "^0.3.0"
   },
   "dependencies": {
-    "chart.js": "4.4.0"
+    "chart.js": "4.4.0",
+    "react": "^19",
+    "react-dom": "^19"
   }
 }

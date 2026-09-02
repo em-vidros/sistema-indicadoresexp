@@ -301,9 +301,15 @@ for (const tela of TELAS) {
   console.error(mesmoConjunto ? '  as mesmas tags, em outra ordem' : primeiraDiferenca(a, b))
 }
 
-// As duas telas sem modulo entram aqui: `GUIA-CONFIGURACAO` porque nada nela mudou,
-// `entrar` porque ela nasceu na fase 1 e nao tem origem em `ca90d06` para comparar.
-for (const nome of [...TELAS.map((t) => t.nome), 'GUIA-CONFIGURACAO', 'entrar']) {
+// `GUIA-CONFIGURACAO` entra aqui sem modulo porque nada nela mudou.
+//
+// `entrar` saiu desta lista no commit em que virou React. Esta prova compara texto de
+// arquivo com texto de arquivo, e a casca de uma tela React nao se parece com o que o
+// build entrega: o CSS vira `<link>` e o script sobe para o `<head>`. Quem cobra
+// `entrar` agora e `verificar/paridade.ts`, que compara o que o navegador montou, e
+// cobra mais: DOM, CSS, efeito de cada clique e os cinco estados. A cada tela portada
+// some uma linha daqui, e no fim o arquivo inteiro.
+for (const nome of [...TELAS.map((t) => t.nome), 'GUIA-CONFIGURACAO']) {
   if (await buildFiel(nome)) continue
   falhas++
   console.log(`${nome}: o build alterou a tela alem da tag de script`)
