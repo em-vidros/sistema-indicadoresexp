@@ -26,14 +26,16 @@ conferir() {
 }
 
 # `git grep` em vez de `grep -r`: ele varre o que esta versionado, o que ja exclui
-# node_modules, `dist/` e o `.env` sem precisar listar excecao. `docs/planos` fica de
-# fora porque o plano cita as cinco strings de proposito, e incluir o documento faria
-# a prova nunca passar.
+# node_modules, `dist/` e o `.env` sem precisar listar excecao. Ficam de fora
+# `docs/planos`, porque o plano cita as cinco strings de proposito, e este script, que
+# tambem as escreve nas linhas de `conferir` logo abaixo. Sem as duas excecoes a prova
+# acusa a si mesma e nunca passa.
 achou() {
   local padrao=$1
   shift
   local onde=("${@:-.}")
-  git grep -lI -e "$padrao" -- "${onde[@]}" ':(exclude)docs/planos' 2>/dev/null | wc -l | tr -d ' '
+  git grep -lI -e "$padrao" -- "${onde[@]}" \
+    ':(exclude)docs/planos' ':(exclude)verificar/fase-4.sh' 2>/dev/null | wc -l | tr -d ' '
 }
 
 echo "os cinco segredos sairam do codigo"
@@ -78,8 +80,12 @@ echo
 echo "as telas vieram junto no bundle da funcao"
 for origem in apps/web/src/*.html; do
   tela=$(basename "$origem" .html)
+  # `entrar.html` e a unica pedida sem cookie: o portao devolve 302 para quem ja tem
+  # sessao, entao com o cookie da livia o 200 nunca viria.
+  cookie=(-b "$livia")
+  [ "$tela" = entrar ] && cookie=()
   conferir "$tela" '200' \
-    "$(curl -s -o /dev/null -w '%{http_code}' -b "$livia" --max-time 20 "$BASE/$tela.html" 2>/dev/null)"
+    "$(curl -s -o /dev/null -w '%{http_code}' "${cookie[@]}" --max-time 20 "$BASE/$tela.html" 2>/dev/null)"
 done
 asset=$(ls apps/web/dist/assets/ 2>/dev/null | grep '^formulario-registro-.*\.js$' | head -1)
 conferir 'o JS com hash do formulario' '200' \

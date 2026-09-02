@@ -391,7 +391,7 @@ do plano Scale, e rede privada por AWS PrivateLink, que é de conta Organization
 seja, o banco fica exposto à internet com autenticação, e não atrás de uma rede fechada.
 Para o tamanho deste sistema isso é defensável, mas é escolha, não é o mesmo que privado.
 
-**O que sai do `.env` e vira segredo da Vercel:** `DATABASE_URL`, `DATABASE_URL_DIRETA`,
+**O que sai do `.env` e vira segredo da Vercel:** `DATABASE_URL`, `DATABASE_URL_UNPOOLED`,
 `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` e as quatro senhas do seed.
 `BLOB_READ_WRITE_TOKEN` a Vercel injeta sozinha quando o Blob está ligado no projeto.
 
@@ -586,8 +586,8 @@ Ficou uma decisão nova no lugar delas: a tolerância da pontualidade, semeada e
 minutos e guardada na tabela `meta`, então muda sem publicar versão.
 
 Onde o app publica deixou de estar em aberto em 2026-09-01: Vercel com runtime Bun, e
-o banco na Neon. A seção da fase 4 tem o desenho, e a do fim do documento tem o que já
-está de pé.
+o banco na Neon. Publicado em 2026-09-02. A seção da fase 4 tem o desenho, e a do fim
+do documento tem o que o deploy mudou em relação a ele.
 
 ## por onde começar
 
@@ -654,7 +654,7 @@ do passivo da fase 4 na origem, em vez de arrastá-lo até lá.
 | 1 login | **pronta** | 2026-09-01 | |
 | 2 banco | **pronta** | 2026-09-01 | |
 | 3 duplicação | não iniciada | | |
-| 4 publicar | **em curso** | | falta o primeiro deploy e a metade online da prova |
+| 4 publicar | **pronta** | 2026-09-02 | |
 | 5 andaime | não iniciada | | |
 
 Atualize esta tabela ao fim de cada fase. Plano que diverge da realidade engana a
@@ -821,9 +821,10 @@ a linha antiga com `apagado_em` e deixa o blob no armazenamento. As duas escolha
 certas uma a uma, e a soma é armazenamento que só cresce. Com 15 veículos e 4 usuários
 isso leva anos para importar, mas o coletor não existe e ninguém vai lembrar depois.
 
-### o que a fase 4 já tem, e o que falta
+### o que a fase 4 fez, e o que ficou de fora
 
-Escrito em 2026-09-02. O código está publicável, e nada foi publicado ainda.
+Escrito em 2026-09-02. Está no ar em `https://sistema-indicadoresexp.vercel.app`, e as
+18 asserções de `verificar/fase-4.sh` passam contra essa URL.
 
 **O entrypoint mudou de lugar, e isso não é detalhe.** O preset Bun da Vercel descobre
 o servidor pela chamada de `Bun.serve()` durante a carga do módulo, e só procura por
@@ -838,13 +839,16 @@ permissão só, para que ele não vire um segundo lugar onde se monta rota.
 **As duas leituras de disco passaram a resolver por `process.cwd()` na Vercel.**
 `paginas.ts` e `documentos.ts` montavam o caminho a partir de `import.meta.url`, que
 dentro da função aponta para o bundle e não para a árvore do repositório.
-`pastaDeConteudo` em `arquivos.ts` decide pelos dois casos. Isso resolve o caminho e
-não resolve o conteúdo: os arquivos só chegam na função porque o `includeFiles` do
-`vercel.json` os lista, e é essa aposta que o primeiro deploy tem que confirmar.
+`pastaDeConteudo` em `arquivos.ts` decide pelos dois casos.
 
-**O `includeFiles` cobre `apps/web/dist/**` e os PDFs e SVGs de `docs/`, não `docs/`
-inteiro.** A rota só serve `.pdf` e `.svg`, e `docs/planos/` é documento interno. Não
-há motivo para mandá-lo para a nuvem, mesmo que a lista de extensões o barre na saída.
+**O `includeFiles` que o plano previa não existe, e não podia existir.** O campo
+`functions` do `vercel.json` só casa padrão dentro de `api/`, e o preset Bun põe o
+entrypoint na raiz. O deploy recusou com `The pattern "server.ts" defined in
+'functions' doesn't match any Serverless Functions inside the 'api' directory`. Tirei a
+chave inteira, e o preset subiu o projeto todo. As telas, o asset com hash e o PDF de
+1,6 MB de `docs/` chegam na função com o mesmo sha256 do disco, o que a prova mede. O
+custo é que `docs/planos/` também sobe. É documento interno num bundle privado, e a
+rota só serve `.pdf` e `.svg`, então ninguém o alcança de fora.
 
 **A função vai para `gru1`.** O banco está em `sa-east-1`, e uma função em `iad1`
 pagaria a travessia do Atlântico Sul em cada consulta, várias por request. Se a conta
@@ -852,8 +856,8 @@ não permitir escolher região, o deploy recusa o `vercel.json` e o campo sai.
 
 **A Neon está de pé, com o schema e o seed aplicados.** 32 tabelas, as 8 colunas
 geradas e as nove contagens do cadastro iguais às do Postgres local. O banco lá é o
-18.6, e o local é o 17.11. `derivados-vs-postgres.test.ts` ainda não rodou contra o
-18, o que é a única checagem de paridade que falta.
+18.6, e o local é o 17.11; os 21 testes de `derivados-vs-postgres.test.ts` rodaram
+contra o 18 e passaram, então as colunas geradas e os derivados batem nas duas versões.
 
 **São duas strings de conexão, e o código sabe disso sozinho.** `criarDb` liga
 `prepare: false` e baixa `max` para 3 quando o host tem `-pooler`, em vez de esperar
@@ -876,11 +880,21 @@ qualquer forma. O que continua de pé é o histórico do git, que guarda as cinc
 e os 11 MB de PDF mesmo depois de apagados da árvore. Reescrever histórico é
 irreversível e passa pelo Henrique.
 
-**O que falta, e cada item precisa de uma credencial que o Claude não tem.** Criar o
-projeto na Vercel e ligar o Blob; pôr `DATABASE_URL`, `DATABASE_URL_DIRETA`,
-`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` e as quatro senhas do seed como segredo do
-projeto; publicar; e rodar `bash verificar/fase-4.sh <URL>`, que é onde as três
-perguntas sem resposta local são respondidas. A metade offline da prova já passa.
+**O `ArquivosVercel` nunca tinha rodado até agora.** Ele existe desde a fase 2, e os
+testes usam um adaptador em memória enquanto o local usa disco. A prova sobe um PDF
+pelo `/api/atas/:id/pdf` e compara o sha256 do que volta, que é o único exercício real
+desse código.
+
+**O que ficou de fora é o domínio.** O app responde em
+`sistema-indicadoresexp.vercel.app`, e não em `sistema-indicadoresexp.emvidros.com.br`.
+Apontar o DNS obriga a trocar `BETTER_AUTH_URL` e publicar de novo, porque o cookie de
+sessão é assinado com o host. É decisão da Livia com o Henrique, não minha.
+
+**O deploy não sai do git.** `vercel link` recusou o repositório com `The repository
+"sistema-indicadoresexp" is private and owned by an organization, which is not
+supported on the Hobby plan`. O projeto foi criado do mesmo jeito, mas cada publicação
+é um `vercel deploy --prod` na mão. Quem publicar precisa lembrar de rodar
+`bash verificar/fase-4.sh <URL>` depois, porque não há CI nesse caminho.
 
 Sobre o `neon.ts` e o `neon deploy`: eles descrevem o estado do projeto Neon e o
 reconciliam, `neon deploy` sendo alias de `neon config apply`. Não publicam o app, e

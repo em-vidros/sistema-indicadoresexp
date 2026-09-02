@@ -10,3 +10,7 @@ tsconfig.tsbuildinfo
 
 # A pasta que o CLI da Vercel cria com o id do projeto.
 .vercel
+# O que o CLI da Vercel escreve aqui. `.env.example` continua versionado.
+.env.local
+.env*.local
+.neon

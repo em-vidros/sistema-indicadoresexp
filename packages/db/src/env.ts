@@ -39,14 +39,19 @@ export function opcional(chave: string, padrao: string): string {
  * sustenta o DDL em transacao que o migrador emite. Fora da Neon existe uma so, e
  * `DATABASE_URL` responde pelas duas.
  *
+ * O nome e `DATABASE_URL_UNPOOLED` porque e o que `neon link` escreve no `.env` e o
+ * que a integracao da Neon com a Vercel injeta no projeto. Inventar um nome nosso
+ * significaria uma variavel escrita por ferramenta e outra lida por codigo, as duas
+ * com o mesmo conteudo ate o dia em que uma mudar sozinha.
+ *
  * E funcao, e nao `const`, porque isto lanca: uma constante de modulo derrubaria o
  * servidor no import, e quem tem que falhar aqui e o comando de migracao.
  */
 export function urlMigracao(): string {
-  const url = opcional('DATABASE_URL_DIRETA', '').trim() || URL_BANCO
+  const url = opcional('DATABASE_URL_UNPOOLED', '').trim() || URL_BANCO
   if (/-pooler\./.test(url)) {
     throw new Error(
-      'migracao apontada para a conexao pooled: defina DATABASE_URL_DIRETA com a string direta da Neon.',
+      'migracao apontada para a conexao pooled: defina DATABASE_URL_UNPOOLED com a string direta da Neon.',
     )
   }
   return url
