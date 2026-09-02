@@ -19,7 +19,6 @@
 const TELAS = [
   'ata-reuniao',
   'dashboard-semanal',
-  'documentos-frota',
   'formulario-registro',
   'integracao-frota',
   'manutencao-frota',
