@@ -82,11 +82,22 @@ export const dashboardSemanal: Roteiro = {
       },
     },
     {
+      // Mil milissegundos ficam abaixo dos 3 s do `setTimeout` que devolve o botao ao
+      // rotulo original, entao este passo pega o botao ainda destacado. O efeito traz
+      // a mensagem inteira, que e o que `copiarWhatsApp` produz de verdade.
       nome: 'whatsapp-copiado',
       cobre: ['copiarWhatsApp'],
+      esperaMs: 1000,
       agir: async (p) => {
         await p.click('#btnWpp')
       },
+    },
+    {
+      // Ninguem age. O relogio passa dos 3 s e o botao se desfaz sozinho, e sem um
+      // passo depois do prazo esse retorno nao seria comparado com nada.
+      nome: 'whatsapp-revertido',
+      cobre: ['copiarWhatsApp'],
+      agir: async () => {},
     },
   ],
 }
