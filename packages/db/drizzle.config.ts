@@ -1,11 +1,11 @@
 import { defineConfig } from 'drizzle-kit'
-import { URL_BANCO } from './src/env.ts'
+import { urlMigracao } from './src/env.ts'
 
 export default defineConfig({
   dialect: 'postgresql',
   schema: './src/schema/index.ts',
   out: './src/migrations',
-  dbCredentials: { url: URL_BANCO },
+  dbCredentials: { url: urlMigracao() },
   strict: true,
   verbose: true,
 })

@@ -7,3 +7,6 @@ var/
 .DS_Store
 infra/constantes.json
 tsconfig.tsbuildinfo
+
+# A pasta que o CLI da Vercel cria com o id do projeto.
+.vercel

@@ -72,6 +72,16 @@ const CAMADAS: Camada[] = [
     // implementa vive em `core/portas`, que continua sem saber que ele existe.
     motivo: 'raiz de composicao. web, pacotes da casa, stdlib e adaptador de saida.',
   },
+  {
+    nome: 'entrypoint',
+    arquivos: 'server.ts',
+    permite: [/^\.\/apps\/server\/src\/index\.ts$/],
+    // A lista e curta de proposito. Este arquivo existe porque a Vercel procura o
+    // `Bun.serve()` na raiz, e a tentacao e ele virar um segundo lugar onde se monta
+    // rota e se cria dependencia. Dois lugares de composicao divergem, e o que roda
+    // em producao seria o outro.
+    motivo: 'so abre a porta. quem compoe o app e apps/server/src/index.ts.',
+  },
 ]
 
 const PROIBIDO_GLOBAL = [

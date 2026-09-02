@@ -32,3 +32,22 @@ export const URL_BANCO = exigir('DATABASE_URL')
 export function opcional(chave: string, padrao: string): string {
   return process.env[chave] ?? doArquivoRaiz(chave) ?? padrao
 }
+
+/**
+ * A conexao que as migracoes usam. Na Neon sao duas strings: a pooled passa por
+ * PgBouncer em modo transacao, que troca de conexao a cada statement e por isso nao
+ * sustenta o DDL em transacao que o migrador emite. Fora da Neon existe uma so, e
+ * `DATABASE_URL` responde pelas duas.
+ *
+ * E funcao, e nao `const`, porque isto lanca: uma constante de modulo derrubaria o
+ * servidor no import, e quem tem que falhar aqui e o comando de migracao.
+ */
+export function urlMigracao(): string {
+  const url = opcional('DATABASE_URL_DIRETA', '').trim() || URL_BANCO
+  if (/-pooler\./.test(url)) {
+    throw new Error(
+      'migracao apontada para a conexao pooled: defina DATABASE_URL_DIRETA com a string direta da Neon.',
+    )
+  }
+  return url
+}

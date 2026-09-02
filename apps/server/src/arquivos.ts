@@ -65,3 +65,23 @@ export function extensaoDe(caminho: string): string {
   if (ponto <= barra + 1) return ''
   return caminho.slice(ponto).toLowerCase()
 }
+
+/**
+ * Onde uma pasta de conteudo mora, aqui e na funcao da Vercel.
+ *
+ * Local, o caminho sai de `import.meta.url`, que aponta para o arquivo fonte dentro
+ * do repositorio. Na funcao esse caminho nao existe: o bundler reescreve a arvore e
+ * `import.meta.url` passa a apontar para dentro do bundle, entao `../../web/dist`
+ * resolve para uma pasta que nao esta la. O que existe na funcao e o `process.cwd()`,
+ * que e a raiz do projeto empacotado, e e a partir dele que a Vercel documenta a
+ * leitura de arquivo em runtime.
+ *
+ * Isso resolve o caminho. Nao resolve o conteudo: o arquivo so chega na funcao se o
+ * `includeFiles` do `vercel.json` o listar, porque analise estatica nao enxerga
+ * caminho montado em string. Quem prova as duas coisas e `verificar/fase-4.sh`,
+ * contra o deploy.
+ */
+export function pastaDeConteudo(relativoAoProjeto: string, padraoLocal: URL): string {
+  if (process.env['VERCEL']) return resolve(process.cwd(), relativoAoProjeto)
+  return resolve(padraoLocal.pathname)
+}

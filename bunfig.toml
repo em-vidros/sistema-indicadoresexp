@@ -1,0 +1,4 @@
+[test]
+# A trava contra rodar a suite no banco de producao. Ela existe porque os testes
+# truncam tabelas e o `.env` da maquina aponta para a Neon desde a fase 4.
+preload = ["./verificar/banco-de-teste.ts"]

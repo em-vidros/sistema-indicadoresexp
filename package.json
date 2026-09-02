@@ -11,13 +11,14 @@
     "db:generate": "bun --filter @ind/db db:generate",
     "db:migrate": "bun --filter @ind/db db:migrate",
     "db:seed": "bun --filter @ind/db seed",
-    "dev": "bun --filter @ind/server dev",
+    "dev": "bun --watch server.ts",
     "build": "bun --filter @ind/web build",
     "tipos": "tsc -b",
     "teste": "bun test",
     "fronteiras": "bun verificar/fronteiras.ts",
     "telas": "bun verificar/handlers.ts && bun run build && bun verificar/visual-telas.ts",
-    "verificar": "bun run fronteiras && bun run telas && bun run tipos && bun run teste"
+    "verificar": "bun run fronteiras && bun run telas && bun run tipos && bun run teste",
+    "start": "bun server.ts"
   },
   "devDependencies": {
     "typescript": "^5.9.2",

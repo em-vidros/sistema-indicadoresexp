@@ -6,12 +6,11 @@
  * nome. O resto e 404, que e resposta legitima: inventar fallback para index
  * transformaria erro de link em pagina errada servida com 200.
  */
-import { resolve } from 'node:path'
 import type { Handler } from 'hono'
-import { caminhoPedido, dentroDe, extensaoDe, tipoDe } from './arquivos.ts'
+import { caminhoPedido, dentroDe, extensaoDe, pastaDeConteudo, tipoDe } from './arquivos.ts'
 import type { Ambiente } from './portao.ts'
 
-const RAIZ = resolve(new URL('../../web/dist/', import.meta.url).pathname)
+const RAIZ = pastaDeConteudo('apps/web/dist', new URL('../../web/dist/', import.meta.url))
 
 export const paginas: Handler<Ambiente> = async (c) => {
   const pedido = caminhoPedido(c.req.url)

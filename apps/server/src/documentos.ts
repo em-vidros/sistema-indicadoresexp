@@ -10,10 +10,10 @@
 import { basename, resolve } from 'node:path'
 import { opcional } from '@ind/db'
 import type { Handler } from 'hono'
-import { caminhoPedido, dentroDe, extensaoDe, tipoDe } from './arquivos.ts'
+import { caminhoPedido, dentroDe, extensaoDe, pastaDeConteudo, tipoDe } from './arquivos.ts'
 import type { Ambiente } from './portao.ts'
 
-const PADRAO = new URL('../../../docs/', import.meta.url).pathname
+const PADRAO = pastaDeConteudo('docs', new URL('../../../docs/', import.meta.url))
 
 // `opcional` so cai no padrao quando a chave nao existe. Um `DOCS_DIR=` vazio no
 // .env passaria por ele e resolveria para o cwd, servindo o repositorio inteiro.

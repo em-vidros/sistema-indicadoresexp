@@ -585,7 +585,9 @@ concorrentes. O teto de upload ficou em 6 MB. O raciocínio de cada um está no
 Ficou uma decisão nova no lugar delas: a tolerância da pontualidade, semeada em 15
 minutos e guardada na tabela `meta`, então muda sem publicar versão.
 
-Onde o app publica continua em aberto. Não bloqueia nada até a fase 4.
+Onde o app publica deixou de estar em aberto em 2026-09-01: Vercel com runtime Bun, e
+o banco na Neon. A seção da fase 4 tem o desenho, e a do fim do documento tem o que já
+está de pé.
 
 ## por onde começar
 
@@ -650,9 +652,9 @@ do passivo da fase 4 na origem, em vez de arrastá-lo até lá.
 |---|---|---|---|
 | 0 base | **pronta** | 2026-08-31 | |
 | 1 login | **pronta** | 2026-09-01 | |
-| 2 banco | não iniciada | | |
+| 2 banco | **pronta** | 2026-09-01 | |
 | 3 duplicação | não iniciada | | |
-| 4 publicar | não iniciada | | |
+| 4 publicar | **em curso** | | falta o primeiro deploy e a metade online da prova |
 | 5 andaime | não iniciada | | |
 
 Atualize esta tabela ao fim de cada fase. Plano que diverge da realidade engana a
@@ -818,3 +820,68 @@ documento assinado seria pior que guardar o arquivo. Trocar o PDF de um document
 a linha antiga com `apagado_em` e deixa o blob no armazenamento. As duas escolhas estão
 certas uma a uma, e a soma é armazenamento que só cresce. Com 15 veículos e 4 usuários
 isso leva anos para importar, mas o coletor não existe e ninguém vai lembrar depois.
+
+### o que a fase 4 já tem, e o que falta
+
+Escrito em 2026-09-02. O código está publicável, e nada foi publicado ainda.
+
+**O entrypoint mudou de lugar, e isso não é detalhe.** O preset Bun da Vercel descobre
+o servidor pela chamada de `Bun.serve()` durante a carga do módulo, e só procura por
+ela em `server.ts` ou `src/server.ts` na raiz do projeto. Num monorepo isso obriga o
+arquivo a morar longe do servidor. Então `apps/server/src/index.ts` parou de abrir
+porta e passou a exportar `criarApp()`, e quem chama `Bun.serve` é o `server.ts` da
+raiz. O `bun run dev` aponta para esse mesmo arquivo de propósito: dois entrypoints,
+um para produção e outro para desenvolvimento, divergem, e a divergência só aparece
+depois de publicar. A cerca de import ganhou uma camada `entrypoint` com uma
+permissão só, para que ele não vire um segundo lugar onde se monta rota.
+
+**As duas leituras de disco passaram a resolver por `process.cwd()` na Vercel.**
+`paginas.ts` e `documentos.ts` montavam o caminho a partir de `import.meta.url`, que
+dentro da função aponta para o bundle e não para a árvore do repositório.
+`pastaDeConteudo` em `arquivos.ts` decide pelos dois casos. Isso resolve o caminho e
+não resolve o conteúdo: os arquivos só chegam na função porque o `includeFiles` do
+`vercel.json` os lista, e é essa aposta que o primeiro deploy tem que confirmar.
+
+**O `includeFiles` cobre `apps/web/dist/**` e os PDFs e SVGs de `docs/`, não `docs/`
+inteiro.** A rota só serve `.pdf` e `.svg`, e `docs/planos/` é documento interno. Não
+há motivo para mandá-lo para a nuvem, mesmo que a lista de extensões o barre na saída.
+
+**A função vai para `gru1`.** O banco está em `sa-east-1`, e uma função em `iad1`
+pagaria a travessia do Atlântico Sul em cada consulta, várias por request. Se a conta
+não permitir escolher região, o deploy recusa o `vercel.json` e o campo sai.
+
+**A Neon está de pé, com o schema e o seed aplicados.** 32 tabelas, as 8 colunas
+geradas e as nove contagens do cadastro iguais às do Postgres local. O banco lá é o
+18.6, e o local é o 17.11. `derivados-vs-postgres.test.ts` ainda não rodou contra o
+18, o que é a única checagem de paridade que falta.
+
+**São duas strings de conexão, e o código sabe disso sozinho.** `criarDb` liga
+`prepare: false` e baixa `max` para 3 quando o host tem `-pooler`, em vez de esperar
+que alguém passe a opção certa. `urlMigracao()` faz o inverso e recusa a pooled, com
+mensagem dizendo o que definir. As duas estão no `.env` com `sslmode=verify-full` mais
+`channel_binding=require`, que a Neon aceita.
+
+**Uma armadilha que quase custou o banco.** `seed.test.ts` e `sessao.test.ts` fazem
+`truncate ... restart identity cascade`, e o `.env` desta máquina passou a apontar para
+a Neon no meio desta fase. A suíte rodou uma vez contra ela. Não havia dado, mas o
+mecanismo é esse: o teste passa verde e leva o banco junto. `verificar/banco-de-teste.ts`
+entrou como `preload` de `bun test` pelo `bunfig.toml` e recusa host que não seja local,
+a menos que `PERMITIR_TESTE_REMOTO=1` esteja na linha de comando.
+
+**Os cinco segredos saíram.** Três já tinham saído na extração dos módulos. O IP do
+servidor antigo saiu do `GUIA-CONFIGURACAO.html`, e os dois workflows do n8n foram
+apagados, com o e-mail e o id de planilha junto. Eles documentavam a integração com
+Apps Script e Google Sheets que a fase 2 tornou desnecessária, e sairiam na fase 5 de
+qualquer forma. O que continua de pé é o histórico do git, que guarda as cinco strings
+e os 11 MB de PDF mesmo depois de apagados da árvore. Reescrever histórico é
+irreversível e passa pelo Henrique.
+
+**O que falta, e cada item precisa de uma credencial que o Claude não tem.** Criar o
+projeto na Vercel e ligar o Blob; pôr `DATABASE_URL`, `DATABASE_URL_DIRETA`,
+`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` e as quatro senhas do seed como segredo do
+projeto; publicar; e rodar `bash verificar/fase-4.sh <URL>`, que é onde as três
+perguntas sem resposta local são respondidas. A metade offline da prova já passa.
+
+Sobre o `neon.ts` e o `neon deploy`: eles descrevem o estado do projeto Neon e o
+reconciliam, `neon deploy` sendo alias de `neon config apply`. Não publicam o app, e
+por isso não competem com a Vercel. Entram depois do `neon login`, que é interativo.
