@@ -38,7 +38,11 @@ export const FORA_DA_PROVA: readonly Recorte[] = [
       'do Chart.js nao e a mesma curva que o `monotone` do Recharts e os dois calculam ' +
       'tick, legenda e raio de donut por algoritmos diferentes. A decisao de aceitar o ' +
       'grafico desenhando diferente e de quem pediu a troca, e vale so para o desenho: o ' +
-      'cartao, o titulo, a grade e o tamanho de 180 px do `.chart-wrap` continuam cobrados.',
+      'cartao, o titulo, a grade e o tamanho de 180 px do `.chart-wrap` continuam cobrados. ' +
+      'O balao de valor entra nesse recorte tambem. Ele existia por padrao no Chart.js, ' +
+      'saiu no porte e voltou como `<Tooltip>` em 2026-09-02, com dois numeros que o ' +
+      'Chart.js nao daria: o percentual com duas casas, igual ao dos cartoes de cima, e o ' +
+      '`—` na semana sem carga, onde o Chart.js nao mostrava balao nenhum.',
   },
 ]
 

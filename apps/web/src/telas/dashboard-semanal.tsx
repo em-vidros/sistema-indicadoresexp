@@ -38,6 +38,7 @@ import {
   PieChart,
   ReferenceLine,
   ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
@@ -629,7 +630,17 @@ function DashboardSemanal(): JSX.Element {
                       <XAxis dataKey="label" />
                       <YAxis tickFormatter={(valor: number) => `${valor}%`} />
                       <ReferenceLine y={7} stroke="#dc2626" strokeDasharray="5 5" strokeWidth={1.5} />
-                      <Area type="monotone" dataKey="pct" stroke="#2563eb" strokeWidth={2} fill="rgba(37,99,235,.08)" dot={{ r: 4, fill: '#2563eb' }} isAnimationActive={false} />
+                      {/*
+                        O numero do balao passa pelo mesmo `fmtPct` dos cartoes acima, e nao
+                        pelo padrao do Recharts, que imprimiria `6.785714285714286`.
+
+                        `filterNull={false}` porque a semana sem carga tem `pct` nulo, e o
+                        padrao do Recharts tira a linha e deixa a caixa so com a data, em
+                        branco por baixo. Com a linha, o `fmtPct` escreve o mesmo `—` que a
+                        tabela usa para "nao houve".
+                      */}
+                      <Tooltip filterNull={false} formatter={(valor) => fmtPct(typeof valor === 'number' ? valor : null)} />
+                      <Area name="% Custo/Carga" type="monotone" dataKey="pct" stroke="#2563eb" strokeWidth={2} fill="rgba(37,99,235,.08)" dot={{ r: 4, fill: '#2563eb' }} isAnimationActive={false} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -645,6 +656,7 @@ function DashboardSemanal(): JSX.Element {
                         por valor, e a ordem daqui e a do adiantado ao atrasado, que e a
                         que se le. O Chart.js nao reordenava.
                       */}
+                      <Tooltip />
                       <Legend position="bottom" itemSorter={null} wrapperStyle={{ fontSize: 11 }} />
                     </PieChart>
                   </ResponsiveContainer>
