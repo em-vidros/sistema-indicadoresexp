@@ -271,6 +271,32 @@ export async function montarPalco(
     efeitos.push(texto)
   }
 
+  // O texto que a tela copia vira efeito, pelo mesmo motivo do download que sai de
+  // `Blob`: o que identifica a saida e o conteudo, e nao a chamada.
+  //
+  // Sem isto o passo `whatsapp-copiado` do dashboard nao comparava nada. `paridade.local`
+  // nao e contexto seguro e `navigator.clipboard` nem existe, entao a tela estourava um
+  // TypeError sincrono que o `.catch()` dela nao pega, o botao nunca trocava de rotulo,
+  // e o passo terminava com o DOM identico ao do passo anterior e o efeito vazio. As
+  // sessenta linhas que montam a mensagem podiam sumir inteiras sem uma linha vermelha.
+  //
+  // Dar a propria implementacao tambem faz rodar o caminho de sucesso, que e o que a
+  // pessoa na frente da tela ve: o rotulo vira "Copiado!" e volta sozinho depois.
+  await contexto.exposeFunction('__registrarCopia', (texto: string): void => {
+    registrar(`copiado com:\n${texto.replace(/\n$/, '').replace(/^/gm, '  ')}`)
+  })
+  await contexto.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (texto: string): Promise<void> => {
+          await (window as unknown as { __registrarCopia: (t: string) => Promise<void> })
+            .__registrarCopia(texto)
+        },
+      },
+    })
+  })
+
   const ehQuadroPrincipal = (pedido: PedidoHttp): boolean => {
     // `route.frame()` nao existe; quem sabe o quadro e o pedido.
     try {
