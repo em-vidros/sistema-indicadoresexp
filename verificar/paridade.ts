@@ -227,6 +227,15 @@ async function conferirTelas(navegador: Browser, filtro: string | null): Promise
       console.log(`${tela}: sem roteiro ainda`)
       continue
     }
+    // Roteiro sem baseline nao e "ainda nao chegou", e prova pela metade: alguem
+    // escreveu os passos e nao congelou a tela. Reprova dizendo o comando que falta.
+    if (!(await Bun.file(`${BASELINE}/${tela}/handlers.txt`).exists())) {
+      falhas++
+      console.log(`${tela}: tem roteiro e nao tem baseline`)
+      console.error(`  rode: bun verificar/paridade.ts --capturar --tela ${tela}`)
+      continue
+    }
+
     const artefatos = await rodarTela(navegador, roteiro, DIST, FONTE_JS, false)
 
     const furos = furosDaProva(roteiro, (artefatos.texto.get('handlers.txt') ?? '').trim().split('\n').filter(Boolean))

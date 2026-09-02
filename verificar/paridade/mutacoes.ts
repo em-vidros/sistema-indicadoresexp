@@ -39,4 +39,44 @@ export const MUTACOES: readonly Mutacao[] = [
     motivo:
       'o handler sumiu de `window` e o botao de editar virou clique que nao faz nada; a tela abre, pinta certo, e so o console reclama',
   },
+  {
+    tela: 'integracao-frota',
+    arquivo: 'apps/web/src/js/integracao-frota.ts',
+    de: 'font-size:9pt;margin-bottom:16pt;line-height:1.5;',
+    para: 'font-size:90pt;margin-bottom:16pt;line-height:1.5;',
+    motivo:
+      'o paragrafo do termo de ciente no PDF de impressao cresce dez vezes e ninguem declarou; nasce dentro do modulo, em `gerarPDF`, e nenhuma comparacao de arquivo enxerga',
+  },
+  {
+    tela: 'dashboard-semanal',
+    arquivo: 'apps/web/src/js/dashboard-semanal.ts',
+    de: '  mostrarTela,\n',
+    para: '',
+    motivo:
+      'o handler sumiu de `window` e a navegacao entre KPIs, Viagens e Frota vira clique que nao faz nada; a tela abre, pinta certo, e so o console reclama',
+  },
+  {
+    tela: 'ata-reuniao',
+    arquivo: 'apps/web/src/js/ata-reuniao.ts',
+    de: '  switchTab,\n',
+    para: '',
+    motivo:
+      'o handler sumiu de `window` e a aba Historico vira clique que nao faz nada; a tela abre, pinta certo, e so o console reclama',
+  },
+  {
+    tela: 'manutencao-frota',
+    arquivo: 'apps/web/src/js/manutencao-frota.ts',
+    de: 'margin-left:8px',
+    para: 'margin-left:80px',
+    motivo:
+      'o espaco entre a placa e o modelo do veiculo cresce dez vezes e ninguem declarou; nasce dentro do modulo, em `renderCardVeiculo`, e nenhuma comparacao de arquivo enxerga',
+  },
+  {
+    tela: 'formulario-registro',
+    arquivo: 'apps/web/src/js/formulario-registro.ts',
+    de: '(comb + diar).toFixed(2)',
+    para: '(comb - diar).toFixed(2)',
+    motivo:
+      'o custo total da viagem passa a subtrair as diarias em vez de somar; o campo continua com numero dentro, so o numero esta errado, e nenhuma comparacao de arquivo enxerga uma conta',
+  },
 ]

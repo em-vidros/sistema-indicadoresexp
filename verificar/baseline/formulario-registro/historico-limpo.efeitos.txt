@@ -1,0 +1,2 @@
+confirm Apagar registros de hoje de Raposa?
+DELETE /api/registros <sem corpo>

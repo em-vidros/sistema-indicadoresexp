@@ -1,0 +1,1 @@
+PUT /api/preventiva/3c640294-047f-5605-ba09-683d95c51a4a {"itens":[{"tipo":"string","intervalo_km":"number","alerta_km":"number","ultimo_km":"number","obs":"string"},{"tipo":"string","intervalo_km":"number","alerta_km":"number","ultimo_km":"number","obs":"null"},{"tipo":"string","intervalo_km":"number","alerta_km":"number","ultimo_km":"null","obs":"null"}]}

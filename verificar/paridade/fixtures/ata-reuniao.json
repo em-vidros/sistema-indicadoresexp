@@ -1,0 +1,247 @@
+{
+  "GET /api/atas/catalogo": {
+    "corpo": [
+      {
+        "id": "7b5158f1-076d-51a5-b8df-f8315b06b76e",
+        "nome": "Adinaldo de Souza de Jesus",
+        "cargo": "Motorista Carreteiro",
+        "funcao": "motorista"
+      },
+      {
+        "id": "e0c1f6fb-87b7-5c23-8e92-4f00b01508c6",
+        "nome": "Adriel da Silva Santos",
+        "cargo": null,
+        "funcao": "motorista"
+      },
+      {
+        "id": "8965f67c-ce0c-5a51-a7d4-fbf67892c1ff",
+        "nome": "Alejandro Marques Alves",
+        "cargo": "Ajudante de Entrega I",
+        "funcao": "ajudante"
+      },
+      {
+        "id": "f79b7e33-99de-56a9-ae8f-27eabfe7d9d4",
+        "nome": "Anderson Penha Dos Anjos",
+        "cargo": "Motorista I",
+        "funcao": "motorista"
+      },
+      {
+        "id": "c66d61e3-c9a5-5dc7-a451-ed0d85cf7df0",
+        "nome": "Andreina Santos Vilar",
+        "cargo": null,
+        "funcao": "logistica"
+      },
+      {
+        "id": "faa29f70-c6c6-5842-a65a-b9d5e9af7d13",
+        "nome": "Carlos Augusto Ferreira",
+        "cargo": "Ajudante de Entrega I",
+        "funcao": "ajudante"
+      },
+      {
+        "id": "13da5e02-0388-5ab3-9cdc-a7c0c00128f7",
+        "nome": "Edmilson Fonseca Ribeiro",
+        "cargo": "Ajudante de Entrega IV",
+        "funcao": "ajudante"
+      },
+      {
+        "id": "0122a298-5479-53a0-8f17-9236b6f3c884",
+        "nome": "Emerson Hugo Silva Rodrigues",
+        "cargo": "Ajudante de Entrega I",
+        "funcao": "ajudante"
+      },
+      {
+        "id": "bf0ba7dc-9910-5b13-bc52-7c8ae9fceb8e",
+        "nome": "Erika Sousa de Oliveira Reis",
+        "cargo": null,
+        "funcao": "atendimento"
+      },
+      {
+        "id": "d6d83872-8f4f-5777-b890-221bad488c8d",
+        "nome": "Erizelton Abreu Ferreira",
+        "cargo": "Ajudante de Entrega I",
+        "funcao": "ajudante"
+      },
+      {
+        "id": "9dadf0a5-e6ce-5104-9028-97bada86e19e",
+        "nome": "Esteves Gabriel de Sousa de Assis",
+        "cargo": "Ajudante de Entrega I",
+        "funcao": "ajudante"
+      },
+      {
+        "id": "eefe8c95-8919-5a82-aa43-1c81b985398b",
+        "nome": "Evandro de Oliveira Cardim",
+        "cargo": null,
+        "funcao": "motorista"
+      },
+      {
+        "id": "9dd4b2dc-91c1-57f2-9c07-88f492ba9394",
+        "nome": "Francisco Pereira dos Santos",
+        "cargo": null,
+        "funcao": "motorista"
+      },
+      {
+        "id": "776cfbb5-e982-5997-b62d-cc697afd34b0",
+        "nome": "Francisco de Sousa Cabral",
+        "cargo": null,
+        "funcao": "motorista"
+      },
+      {
+        "id": "5c9a55fe-e840-5650-b608-976782512cf4",
+        "nome": "Gabriel Reis Costa",
+        "cargo": "Motorista I",
+        "funcao": "motorista"
+      },
+      {
+        "id": "89f90ecc-c2e7-53e6-8f97-3d9dda9e5c7e",
+        "nome": "Italo Melo Sales",
+        "cargo": null,
+        "funcao": "motorista"
+      },
+      {
+        "id": "d8ed4a37-1790-5671-9f49-2c5b0b5adcf2",
+        "nome": "Josenilson Pereira da Silva",
+        "cargo": "Ajudante de Entrega IV",
+        "funcao": "ajudante"
+      },
+      {
+        "id": "78b35590-e3aa-52b1-8ea3-e386e044265f",
+        "nome": "Kleryson Cleber Pereira Isaias",
+        "cargo": "Ajudante de Entrega I",
+        "funcao": "ajudante"
+      },
+      {
+        "id": "cd0ab21f-6ea0-5664-83f6-3aca9f306fa5",
+        "nome": "Laurenilson Pereira Dias",
+        "cargo": "Ajudante de Entrega II",
+        "funcao": "ajudante"
+      },
+      {
+        "id": "2d511eb6-03b9-5a9c-88e5-e8154a56ba79",
+        "nome": "Leandro do Nascimento Brito",
+        "cargo": "Motorista II",
+        "funcao": "motorista"
+      },
+      {
+        "id": "182ec61a-96c6-560f-b1b6-a88dec38c0fc",
+        "nome": "Luís Henrique Pereira Diniz",
+        "cargo": null,
+        "funcao": "atendimento"
+      },
+      {
+        "id": "b19d92d4-ca0f-5a8b-98d0-57783628d26e",
+        "nome": "Nataniel Pereira Rocha",
+        "cargo": null,
+        "funcao": "motorista"
+      },
+      {
+        "id": "38c7f678-6f70-5fc7-ad58-bc0c0e307349",
+        "nome": "Railton da Silva Batista",
+        "cargo": null,
+        "funcao": "motorista"
+      },
+      {
+        "id": "b684e671-da73-5fef-b02b-7ac40da0c6f5",
+        "nome": "Raimundo Correia Ferreira",
+        "cargo": "Motorista I",
+        "funcao": "motorista"
+      },
+      {
+        "id": "d72e7c1e-f46b-5d85-b7c9-0787ec854e91",
+        "nome": "Raimundo Nonato da Silva Divino",
+        "cargo": "Motorista II",
+        "funcao": "motorista"
+      },
+      {
+        "id": "28b79ea8-432f-59d5-b87d-395d6612f20c",
+        "nome": "Saturnino Assumpção Dias Filho",
+        "cargo": "Motorista I",
+        "funcao": "motorista"
+      },
+      {
+        "id": "9340d99c-8426-5fe7-9145-bda174981fdf",
+        "nome": "Sebastiao de Brito Matos",
+        "cargo": null,
+        "funcao": "motorista"
+      },
+      {
+        "id": "16a78550-866c-59a1-9af9-4bb0ad29d235",
+        "nome": "Severino Manoel Barata do Nascimento",
+        "cargo": null,
+        "funcao": "motorista"
+      },
+      {
+        "id": "58b5000a-d651-58cf-bd86-04bc8556c64c",
+        "nome": "Silio Vinicius Cruz Castro",
+        "cargo": "Motorista I",
+        "funcao": "motorista"
+      },
+      {
+        "id": "47505757-3b48-524b-ad75-d5b737da588c",
+        "nome": "Terles Sousa Dias",
+        "cargo": "Ajudante de Entrega I",
+        "funcao": "ajudante"
+      },
+      {
+        "id": "1d845742-34fc-5584-910d-cec9a3c3d779",
+        "nome": "Victor Gonçalves Vasconcelos",
+        "cargo": "Motorista I",
+        "funcao": "motorista"
+      }
+    ]
+  },
+  "GET /api/atas": {
+    "corpo": [
+      {
+        "id": "a4f91702-dfde-4cec-9195-902d05da4056",
+        "numero": null,
+        "titulo": "Ata da prova da fase 4",
+        "data": "2026-09-02",
+        "horario": null,
+        "local": null,
+        "convocada": null,
+        "facilitadores": null,
+        "participantesGeral": null,
+        "gestor1Nome": null,
+        "gestor1Cargo": null,
+        "gestor2Nome": null,
+        "gestor2Cargo": null,
+        "importada": false,
+        "salvoEm": "2026-09-02T12:33:31.886Z",
+        "temPdf": true,
+        "topicos": [],
+        "participantes": []
+      }
+    ]
+  },
+  "POST /api/atas": {
+    "corpo": {
+      "id": "c3333333-0000-4000-8000-000000000001",
+      "numero": null,
+      "titulo": "Alinhamento Equipe Expedição Setembro",
+      "data": "2026-09-02",
+      "horario": "12:00:00",
+      "local": null,
+      "convocada": "Lívia Lima, Raimundo Pontes",
+      "facilitadores": "Gestores de Expedição – EM Vidros",
+      "participantesGeral": "Equipe Expedição (Motoristas e Assist frota)",
+      "gestor1Nome": "Lívia Maria de Castro Cutrim Lima",
+      "gestor1Cargo": "Gerente de Logística",
+      "gestor2Nome": "Raimundo Pontes Pereira",
+      "gestor2Cargo": "Coordenador de Expedição",
+      "importada": false,
+      "salvoEm": "2026-09-02T12:00:00.000Z",
+      "temPdf": false,
+      "topicos": [],
+      "participantes": []
+    }
+  },
+  "POST /api/atas/c3333333-0000-4000-8000-000000000001/pdf": {
+    "corpo": {}
+  },
+  "GET /api/atas/c3333333-0000-4000-8000-000000000001/pdf": {
+    "corpo": {}
+  },
+  "DELETE /api/atas/a4f91702-dfde-4cec-9195-902d05da4056": {
+    "corpo": {}
+  }
+}

@@ -1,0 +1,2 @@
+confirm Excluir esta ata do histórico?
+DELETE /api/atas/a4f91702-dfde-4cec-9195-902d05da4056 <sem corpo>

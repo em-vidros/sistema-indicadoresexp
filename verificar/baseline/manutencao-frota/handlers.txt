@@ -1,0 +1,13 @@
+abrirConfig
+abrirImport
+adicionarItemConfig
+confirmarImport
+fecharModalConfig
+fecharModalImport
+irParaRegistro
+mudarAba
+processarImport
+removerItem
+renderHistorico
+salvarConfig
+selecionarBase

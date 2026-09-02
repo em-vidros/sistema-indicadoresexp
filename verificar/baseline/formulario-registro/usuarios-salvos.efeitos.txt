@@ -1,0 +1,2 @@
+PUT /api/usuarios [{"usuario":"string","nome":"string","bases":["string"],"tipos":["string","string","string","string"]},{"usuario":"string","nome":"string","bases":["string"],"tipos":["string","string","string","string"]},{"usuario":"string","nome":"string"},{"usuario":"string","nome":"string","bases":["string"],"tipos":["string","string","string","string"]}]
+alert ✅ Usuários atualizados com sucesso!

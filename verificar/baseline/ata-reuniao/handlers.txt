@@ -1,0 +1,17 @@
+abrirModalImportar
+addImportRow
+adicionarParticipanteExtra
+adicionarTopico
+anexarPDF
+anexarParaAta
+atualizarMarcado
+deletarAta
+downloadPDF
+escolherPDFImport
+fecharModalImportar
+gerarPDF
+marcarTodos
+onPDFImportSelecionado
+removerTopico
+salvarImportadas
+switchTab
