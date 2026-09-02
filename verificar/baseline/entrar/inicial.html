@@ -1,0 +1,28 @@
+body
+  div class="login-overlay" id="loginOverlay"
+    div class="login-box"
+      div class="login-logo"
+        img alt="EM Vidros" src="docs/logo-emvidros.svg" style="height: 64px; width: auto; display: block; margin: 0px auto;"
+      div class="login-sub"
+        "Registro Diário · Logística"
+      div
+        label
+          "Usuário"
+        " "
+        input @value="" autocomplete="username" id="loginUsuario" placeholder="Seu usuário" type="text"
+        " "
+        label
+          "Senha"
+        " "
+        input @value="" autocomplete="current-password" id="loginSenha" placeholder="Sua senha" type="password"
+        " "
+        div style="display: flex; align-items: center; gap: 8px; margin: 8px 0px 4px; font-size: 0.85rem; color: var(--dim);"
+          input @checked="true" @value="on" checked="" id="lembrarMe" style="width: 16px; height: 16px; cursor: pointer;" type="checkbox"
+          label for="lembrarMe" style="cursor: pointer; margin: 0px;"
+            "Lembrar de mim"
+        " "
+        button class="btn-login"
+          "Entrar"
+        " "
+        div class="login-erro" id="loginErro"
+          "Usuário ou senha incorretos."

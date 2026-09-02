@@ -1,0 +1,11 @@
+abrirModalMotorista
+abrirModalVeiculo
+baixarDocCard
+escolherArquivoDoc
+fecharModalDoc
+importarDocCard
+onDocCardChange
+onDocFileChange
+renderTudo
+salvarDoc
+verDocCard

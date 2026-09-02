@@ -1,0 +1,831 @@
+{
+  "GET /api/documentos/catalogo": {
+    "corpo": {
+      "bases": [
+        {
+          "id": "f1e5eafc-6388-5c55-90d8-a847fb041a06",
+          "nome": "Belém",
+          "ativo": true
+        },
+        {
+          "id": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f",
+          "nome": "Imperatriz",
+          "ativo": true
+        },
+        {
+          "id": "6dda10e8-31c9-509b-9423-99e522ae7621",
+          "nome": "Raposa",
+          "ativo": true
+        }
+      ],
+      "veiculos": [
+        {
+          "id": "d84e0e82-b094-55ad-bb3e-f6cdf910a208",
+          "placa": "DMG9D41",
+          "modelo": null,
+          "marca": null,
+          "ano": null,
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f",
+          "ativo": true
+        },
+        {
+          "id": "d2eb4cdf-3cca-5b95-8805-880042d3d662",
+          "placa": "NXB2H55",
+          "modelo": null,
+          "marca": null,
+          "ano": null,
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f",
+          "ativo": true
+        },
+        {
+          "id": "ad5be9ac-749f-56c5-a280-c94c2ac3a3c4",
+          "placa": "NXD4H26",
+          "modelo": null,
+          "marca": null,
+          "ano": null,
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f",
+          "ativo": true
+        },
+        {
+          "id": "a6eb4628-4bb8-5c50-a35a-8e3e00477a9d",
+          "placa": "PTT0004",
+          "modelo": "ACCELO 1316",
+          "marca": "Mercedes-Benz",
+          "ano": "2019/2020",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621",
+          "ativo": true
+        },
+        {
+          "id": "3c640294-047f-5605-ba09-683d95c51a4a",
+          "placa": "PTV0006",
+          "modelo": "ATEGO 3030 CE",
+          "marca": "Mercedes-Benz",
+          "ano": "2019/2020",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621",
+          "ativo": true
+        },
+        {
+          "id": "25dec389-80fc-50d7-92db-1c620e0a1e95",
+          "placa": "ROW3A87",
+          "modelo": "26.260 CRM 6x2",
+          "marca": "Volkswagen",
+          "ano": "2023/2024",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621",
+          "ativo": true
+        },
+        {
+          "id": "da67ce90-c14b-5047-aea1-5c02d584ffb3",
+          "placa": "ROW4J37",
+          "modelo": null,
+          "marca": null,
+          "ano": null,
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f",
+          "ativo": true
+        },
+        {
+          "id": "df8b086b-a512-5c99-8780-3dd624113f0a",
+          "placa": "SM02J13",
+          "modelo": "ATEGO 2429",
+          "marca": "Mercedes-Benz",
+          "ano": "2024/2025",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621",
+          "ativo": true
+        },
+        {
+          "id": "3792bf91-d46a-57b1-8bcb-ac6910aa0d9c",
+          "placa": "SMM4A02",
+          "modelo": null,
+          "marca": null,
+          "ano": null,
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f",
+          "ativo": true
+        },
+        {
+          "id": "1a72cd47-c8b1-56d4-aa06-0884317c9093",
+          "placa": "SMP2F01",
+          "modelo": null,
+          "marca": null,
+          "ano": null,
+          "baseId": "f1e5eafc-6388-5c55-90d8-a847fb041a06",
+          "ativo": true
+        },
+        {
+          "id": "b55a3aa5-9bd6-5bcc-9a75-7dfbafb72c40",
+          "placa": "SMP6F86",
+          "modelo": "ATEGO 2429",
+          "marca": "Mercedes-Benz",
+          "ano": "2024/2025",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621",
+          "ativo": true
+        },
+        {
+          "id": "4c779651-0727-5ea9-bd8a-c5b291e1f39f",
+          "placa": "SMQ2I80",
+          "modelo": "ACCELO 1017",
+          "marca": "Mercedes-Benz",
+          "ano": "2024/2024",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621",
+          "ativo": true
+        },
+        {
+          "id": "83ebaccf-bb76-53f0-b758-969774640fe6",
+          "placa": "SMR2H61",
+          "modelo": null,
+          "marca": null,
+          "ano": null,
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f",
+          "ativo": true
+        },
+        {
+          "id": "ceae5b32-789c-5b91-acbf-90643da31f4a",
+          "placa": "SMW0B96",
+          "modelo": "ATEGO 2429",
+          "marca": "Mercedes-Benz",
+          "ano": "2024/2025",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621",
+          "ativo": true
+        },
+        {
+          "id": "0c296dcc-a8f9-5e06-a775-196e2701e8ba",
+          "placa": "SND9C34",
+          "modelo": null,
+          "marca": null,
+          "ano": null,
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f",
+          "ativo": true
+        }
+      ],
+      "colaboradores": [
+        {
+          "id": "7b5158f1-076d-51a5-b8df-f8315b06b76e",
+          "nome": "Adinaldo de Souza de Jesus",
+          "cargo": "Motorista Carreteiro",
+          "funcao": "motorista",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "e0c1f6fb-87b7-5c23-8e92-4f00b01508c6",
+          "nome": "Adriel da Silva Santos",
+          "cargo": null,
+          "funcao": "motorista",
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f"
+        },
+        {
+          "id": "8965f67c-ce0c-5a51-a7d4-fbf67892c1ff",
+          "nome": "Alejandro Marques Alves",
+          "cargo": "Ajudante de Entrega I",
+          "funcao": "ajudante",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "f79b7e33-99de-56a9-ae8f-27eabfe7d9d4",
+          "nome": "Anderson Penha Dos Anjos",
+          "cargo": "Motorista I",
+          "funcao": "motorista",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "c66d61e3-c9a5-5dc7-a451-ed0d85cf7df0",
+          "nome": "Andreina Santos Vilar",
+          "cargo": null,
+          "funcao": "logistica",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "faa29f70-c6c6-5842-a65a-b9d5e9af7d13",
+          "nome": "Carlos Augusto Ferreira",
+          "cargo": "Ajudante de Entrega I",
+          "funcao": "ajudante",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "13da5e02-0388-5ab3-9cdc-a7c0c00128f7",
+          "nome": "Edmilson Fonseca Ribeiro",
+          "cargo": "Ajudante de Entrega IV",
+          "funcao": "ajudante",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "0122a298-5479-53a0-8f17-9236b6f3c884",
+          "nome": "Emerson Hugo Silva Rodrigues",
+          "cargo": "Ajudante de Entrega I",
+          "funcao": "ajudante",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "bf0ba7dc-9910-5b13-bc52-7c8ae9fceb8e",
+          "nome": "Erika Sousa de Oliveira Reis",
+          "cargo": null,
+          "funcao": "atendimento",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "d6d83872-8f4f-5777-b890-221bad488c8d",
+          "nome": "Erizelton Abreu Ferreira",
+          "cargo": "Ajudante de Entrega I",
+          "funcao": "ajudante",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "9dadf0a5-e6ce-5104-9028-97bada86e19e",
+          "nome": "Esteves Gabriel de Sousa de Assis",
+          "cargo": "Ajudante de Entrega I",
+          "funcao": "ajudante",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "eefe8c95-8919-5a82-aa43-1c81b985398b",
+          "nome": "Evandro de Oliveira Cardim",
+          "cargo": null,
+          "funcao": "motorista",
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f"
+        },
+        {
+          "id": "9dd4b2dc-91c1-57f2-9c07-88f492ba9394",
+          "nome": "Francisco Pereira dos Santos",
+          "cargo": null,
+          "funcao": "motorista",
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f"
+        },
+        {
+          "id": "776cfbb5-e982-5997-b62d-cc697afd34b0",
+          "nome": "Francisco de Sousa Cabral",
+          "cargo": null,
+          "funcao": "motorista",
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f"
+        },
+        {
+          "id": "5c9a55fe-e840-5650-b608-976782512cf4",
+          "nome": "Gabriel Reis Costa",
+          "cargo": "Motorista I",
+          "funcao": "motorista",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "89f90ecc-c2e7-53e6-8f97-3d9dda9e5c7e",
+          "nome": "Italo Melo Sales",
+          "cargo": null,
+          "funcao": "motorista",
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f"
+        },
+        {
+          "id": "d8ed4a37-1790-5671-9f49-2c5b0b5adcf2",
+          "nome": "Josenilson Pereira da Silva",
+          "cargo": "Ajudante de Entrega IV",
+          "funcao": "ajudante",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "78b35590-e3aa-52b1-8ea3-e386e044265f",
+          "nome": "Kleryson Cleber Pereira Isaias",
+          "cargo": "Ajudante de Entrega I",
+          "funcao": "ajudante",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "cd0ab21f-6ea0-5664-83f6-3aca9f306fa5",
+          "nome": "Laurenilson Pereira Dias",
+          "cargo": "Ajudante de Entrega II",
+          "funcao": "ajudante",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "2d511eb6-03b9-5a9c-88e5-e8154a56ba79",
+          "nome": "Leandro do Nascimento Brito",
+          "cargo": "Motorista II",
+          "funcao": "motorista",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "182ec61a-96c6-560f-b1b6-a88dec38c0fc",
+          "nome": "Luís Henrique Pereira Diniz",
+          "cargo": null,
+          "funcao": "atendimento",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "b19d92d4-ca0f-5a8b-98d0-57783628d26e",
+          "nome": "Nataniel Pereira Rocha",
+          "cargo": null,
+          "funcao": "motorista",
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f"
+        },
+        {
+          "id": "38c7f678-6f70-5fc7-ad58-bc0c0e307349",
+          "nome": "Railton da Silva Batista",
+          "cargo": null,
+          "funcao": "motorista",
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f"
+        },
+        {
+          "id": "b684e671-da73-5fef-b02b-7ac40da0c6f5",
+          "nome": "Raimundo Correia Ferreira",
+          "cargo": "Motorista I",
+          "funcao": "motorista",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "d72e7c1e-f46b-5d85-b7c9-0787ec854e91",
+          "nome": "Raimundo Nonato da Silva Divino",
+          "cargo": "Motorista II",
+          "funcao": "motorista",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "28b79ea8-432f-59d5-b87d-395d6612f20c",
+          "nome": "Saturnino Assumpção Dias Filho",
+          "cargo": "Motorista I",
+          "funcao": "motorista",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "9340d99c-8426-5fe7-9145-bda174981fdf",
+          "nome": "Sebastiao de Brito Matos",
+          "cargo": null,
+          "funcao": "motorista",
+          "baseId": "e4cbfbc0-8bff-5db8-a7e6-4a129287784f"
+        },
+        {
+          "id": "16a78550-866c-59a1-9af9-4bb0ad29d235",
+          "nome": "Severino Manoel Barata do Nascimento",
+          "cargo": null,
+          "funcao": "motorista",
+          "baseId": "f1e5eafc-6388-5c55-90d8-a847fb041a06"
+        },
+        {
+          "id": "58b5000a-d651-58cf-bd86-04bc8556c64c",
+          "nome": "Silio Vinicius Cruz Castro",
+          "cargo": "Motorista I",
+          "funcao": "motorista",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "47505757-3b48-524b-ad75-d5b737da588c",
+          "nome": "Terles Sousa Dias",
+          "cargo": "Ajudante de Entrega I",
+          "funcao": "ajudante",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        },
+        {
+          "id": "1d845742-34fc-5584-910d-cec9a3c3d779",
+          "nome": "Victor Gonçalves Vasconcelos",
+          "cargo": "Motorista I",
+          "funcao": "motorista",
+          "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621"
+        }
+      ]
+    }
+  },
+  "GET /api/documentos": {
+    "corpo": [
+      {
+        "id": "786ae1f4-10d2-5b9e-8c99-684c9bbfa5a9",
+        "tipo": "apolice",
+        "titulo": "Apólice PTT0004",
+        "descricao": null,
+        "vencimento": "2026-08-31",
+        "linkExterno": "docs/apolice-PTT0004.pdf",
+        "veiculoId": "a6eb4628-4bb8-5c50-a35a-8e3e00477a9d",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": "MAPFRE",
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "72572fb6-bd7f-5d73-bf4c-aa4ae8786b60",
+        "tipo": "apolice",
+        "titulo": "Apólice PTV0006",
+        "descricao": null,
+        "vencimento": "2026-12-26",
+        "linkExterno": "docs/apolice-PTV0006.pdf",
+        "veiculoId": "3c640294-047f-5605-ba09-683d95c51a4a",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": "Bradesco",
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "b8fc09be-c64f-5589-939f-be450b06e3e4",
+        "tipo": "apolice",
+        "titulo": "Apólice ROW3A87",
+        "descricao": null,
+        "vencimento": "2026-09-11",
+        "linkExterno": "docs/apolice-ROW3A87.pdf",
+        "veiculoId": "25dec389-80fc-50d7-92db-1c620e0a1e95",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": "Bradesco",
+        "contatoEmergencia": "0800 726 8000 — 24h",
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "58a6ab61-7e6d-5502-9804-b3cc9fd79958",
+        "tipo": "apolice",
+        "titulo": "Apólice SM02J13",
+        "descricao": null,
+        "vencimento": "2026-06-14",
+        "linkExterno": "docs/apolice-SM02J13.pdf",
+        "veiculoId": "df8b086b-a512-5c99-8780-3dd624113f0a",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": "MAPFRE",
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "5a67b960-567a-5f1b-87c6-477ed2566cc1",
+        "tipo": "apolice",
+        "titulo": "Apólice SMP6F86",
+        "descricao": null,
+        "vencimento": "2026-06-12",
+        "linkExterno": "docs/apolice-SMP6F86.pdf",
+        "veiculoId": "b55a3aa5-9bd6-5bcc-9a75-7dfbafb72c40",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": "MAPFRE",
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "2061dbcc-f9ed-5c52-8ebc-da1ab7424950",
+        "tipo": "apolice",
+        "titulo": "Apólice SMQ2I80",
+        "descricao": null,
+        "vencimento": "2027-07-17",
+        "linkExterno": "docs/apolice-SMQ2I80.pdf",
+        "veiculoId": "4c779651-0727-5ea9-bd8a-c5b291e1f39f",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": "Bradesco",
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "4d5956ac-0166-5b9a-99c4-2d3c1c09b587",
+        "tipo": "apolice",
+        "titulo": "Apólice SMW0B96",
+        "descricao": null,
+        "vencimento": "2026-12-11",
+        "linkExterno": "docs/apolice-SMW0B96.pdf",
+        "veiculoId": "ceae5b32-789c-5b91-acbf-90643da31f4a",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": "Bradesco",
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "e4b57bd6-2a1f-5e82-9890-770a187a4b8d",
+        "tipo": "tacografo",
+        "titulo": "Tacógrafo PTT0004",
+        "descricao": null,
+        "vencimento": null,
+        "linkExterno": "docs/tacografo-PTT0004.pdf",
+        "veiculoId": "a6eb4628-4bb8-5c50-a35a-8e3e00477a9d",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "ce00229b-c670-5b3c-a979-5e4c3b42cf31",
+        "tipo": "tacografo",
+        "titulo": "Tacógrafo PTV0006",
+        "descricao": null,
+        "vencimento": "2026-09-20",
+        "linkExterno": null,
+        "veiculoId": "3c640294-047f-5605-ba09-683d95c51a4a",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": "tacografo-PTV0006.pdf",
+        "arquivoId": "a1b2c3d4-0000-4000-8000-000000000001",
+        "temArquivo": true,
+        "veiculos": []
+      },
+      {
+        "id": "9df62290-6ed2-5b6e-adda-547a76b0f5fb",
+        "tipo": "tacografo",
+        "titulo": "Tacógrafo ROW3A87",
+        "descricao": null,
+        "vencimento": null,
+        "linkExterno": "docs/tacografo-ROW3A87.pdf",
+        "veiculoId": "25dec389-80fc-50d7-92db-1c620e0a1e95",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "9332348b-a8d3-5fbe-80e3-61eb2320f12d",
+        "tipo": "tacografo",
+        "titulo": "Tacógrafo SM02J13",
+        "descricao": null,
+        "vencimento": null,
+        "linkExterno": "docs/tacografo-SM02J13.pdf",
+        "veiculoId": "df8b086b-a512-5c99-8780-3dd624113f0a",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "978af1e6-ca5d-5b6b-9a47-ffab362f2a2e",
+        "tipo": "tacografo",
+        "titulo": "Tacógrafo SMP6F86",
+        "descricao": null,
+        "vencimento": null,
+        "linkExterno": "docs/tacografo-SMP6F86.pdf",
+        "veiculoId": "b55a3aa5-9bd6-5bcc-9a75-7dfbafb72c40",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "5181a8d3-7c1c-55d7-be7f-999958de25c4",
+        "tipo": "tacografo",
+        "titulo": "Tacógrafo SMQ2I80",
+        "descricao": null,
+        "vencimento": null,
+        "linkExterno": "docs/tacografo-SMQ2I80.pdf",
+        "veiculoId": "4c779651-0727-5ea9-bd8a-c5b291e1f39f",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "67933a87-07a3-57c2-a7bf-6b0bae89ec25",
+        "tipo": "tacografo",
+        "titulo": "Tacógrafo SMW0B96",
+        "descricao": null,
+        "vencimento": null,
+        "linkExterno": "docs/tacografo-SMW0B96.pdf",
+        "veiculoId": "ceae5b32-789c-5b91-acbf-90643da31f4a",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "a7f2d807-f123-5b52-9213-c95195470e20",
+        "tipo": "manual",
+        "titulo": "Manual 26.260 CRM 6x2",
+        "descricao": "Volkswagen · 26.260 CRM 6x2",
+        "vencimento": null,
+        "linkExterno": "docs/manual-volks.pdf",
+        "veiculoId": null,
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": [
+          "25dec389-80fc-50d7-92db-1c620e0a1e95"
+        ]
+      },
+      {
+        "id": "2a0d14c9-ccfc-59ff-a91e-e38623a3865d",
+        "tipo": "manual",
+        "titulo": "Manual ACCELO 1017 (Euro VI)",
+        "descricao": "Mercedes-Benz · ACCELO 1017 (Euro VI)",
+        "vencimento": null,
+        "linkExterno": "docs/manual-accelo-euro-vi.pdf",
+        "veiculoId": null,
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": [
+          "4c779651-0727-5ea9-bd8a-c5b291e1f39f"
+        ]
+      },
+      {
+        "id": "ac7b6645-27f8-5076-bcb0-32b4d7651094",
+        "tipo": "manual",
+        "titulo": "Manual ACCELO 1316 (Euro V)",
+        "descricao": "Mercedes-Benz · ACCELO 1316 (Euro V)",
+        "vencimento": null,
+        "linkExterno": "docs/manual-accelo-euro-v.pdf",
+        "veiculoId": null,
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": [
+          "a6eb4628-4bb8-5c50-a35a-8e3e00477a9d"
+        ]
+      },
+      {
+        "id": "589f0d88-4072-5331-91d9-dbebc153d827",
+        "tipo": "manual",
+        "titulo": "Manual ATEGO 2429 / 3030 CE",
+        "descricao": "Mercedes-Benz · ATEGO 2429 · ATEGO 3030 CE",
+        "vencimento": null,
+        "linkExterno": "docs/manual-atego.pdf",
+        "veiculoId": null,
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": [
+          "3c640294-047f-5605-ba09-683d95c51a4a",
+          "ceae5b32-789c-5b91-acbf-90643da31f4a",
+          "df8b086b-a512-5c99-8780-3dd624113f0a",
+          "b55a3aa5-9bd6-5bcc-9a75-7dfbafb72c40"
+        ]
+      },
+      {
+        "id": "7aa04430-3d34-50ca-af4b-414b1da7dac7",
+        "tipo": "plano_pgq",
+        "titulo": "PGQ MAN — Programa de Manutenção Preventiva 2026",
+        "descricao": "Cronograma anual assinado — todos os veículos Raposa",
+        "vencimento": null,
+        "linkExterno": "docs/pgq-manutencao-2026.pdf",
+        "veiculoId": null,
+        "colaboradorId": null,
+        "baseId": "6dda10e8-31c9-509b-9423-99e522ae7621",
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "c0000000-0000-4000-8000-000000000002",
+        "tipo": "crlv",
+        "titulo": "CRLV PTT0004",
+        "descricao": null,
+        "vencimento": "2026-10-20",
+        "linkExterno": null,
+        "veiculoId": "a6eb4628-4bb8-5c50-a35a-8e3e00477a9d",
+        "colaboradorId": null,
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": null,
+        "cnhCategoria": null,
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "c0000000-0000-4000-8000-000000000003",
+        "tipo": "cnh",
+        "titulo": "CNH Anderson Penha Dos Anjos",
+        "descricao": null,
+        "vencimento": "2027-03-10",
+        "linkExterno": "https://drive.google.com/file/d/1FicticioCnhAnderson/view",
+        "veiculoId": null,
+        "colaboradorId": "f79b7e33-99de-56a9-ae8f-27eabfe7d9d4",
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": "04512378900",
+        "cnhCategoria": "E",
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      },
+      {
+        "id": "c0000000-0000-4000-8000-000000000004",
+        "tipo": "cnh",
+        "titulo": "CNH Gabriel Reis Costa",
+        "descricao": null,
+        "vencimento": "2026-09-25",
+        "linkExterno": null,
+        "veiculoId": null,
+        "colaboradorId": "5c9a55fe-e840-5650-b608-976782512cf4",
+        "baseId": null,
+        "seguradora": null,
+        "contatoEmergencia": null,
+        "cnhNumero": "07733120455",
+        "cnhCategoria": "D",
+        "nomeArquivo": null,
+        "arquivoId": null,
+        "temArquivo": false,
+        "veiculos": []
+      }
+    ]
+  },
+  "POST /api/documentos": {
+    "corpo": {
+      "id": "d0000000-0000-4000-8000-000000000010",
+      "arquivoId": "d0000000-0000-4000-8000-000000000011"
+    }
+  },
+  "PUT /api/documentos/*": {
+    "corpo": {}
+  },
+  "POST /api/documentos/dados": {
+    "corpo": {
+      "id": "d0000000-0000-4000-8000-000000000012"
+    }
+  },
+  "GET /api/documentos/*/arquivo": {
+    "corpo": {
+      "arquivo": "pdf de teste"
+    }
+  }
+}

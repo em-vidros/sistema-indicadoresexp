@@ -1,0 +1,8 @@
+{
+  "POST /api/entrar": {
+    "status": 401,
+    "corpo": {
+      "erro": "usuario ou senha invalidos"
+    }
+  }
+}

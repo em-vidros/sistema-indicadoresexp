@@ -16,13 +16,15 @@
     "tipos": "tsc -b",
     "teste": "bun test",
     "fronteiras": "bun verificar/fronteiras.ts",
-    "telas": "bun verificar/handlers.ts && bun run build && bun verificar/visual-telas.ts",
+    "paridade": "bun verificar/paridade.ts",
+    "telas": "bun verificar/handlers.ts && bun run build && bun verificar/visual-telas.ts && bun verificar/paridade.ts",
     "verificar": "bun run fronteiras && bun run telas && bun run tipos && bun run teste",
     "start": "bun server.ts"
   },
   "devDependencies": {
     "@neon/config": "^1.2.0",
     "@types/bun": "^1.2.20",
+    "playwright": "^1.62.1",
     "typescript": "^5.9.2"
   }
 }

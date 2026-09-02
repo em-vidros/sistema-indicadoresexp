@@ -1,0 +1,2 @@
+POST /api/documentos <corpo nao-JSON>
+PUT /api/documentos/ce00229b-c670-5b3c-a979-5e4c3b42cf31 {"tipo":"string","titulo":"string","vencimento":"string","linkExterno":"null","veiculoId":"string","seguradora":"null","contatoEmergencia":"null"}
