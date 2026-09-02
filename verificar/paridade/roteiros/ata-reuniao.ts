@@ -18,17 +18,21 @@
  * tinha uma ata de verdade la ("Ata da prova da fase 4", com PDF), que vira o alvo do
  * passo `ata-excluida`. O resto — `POST /api/atas`, `POST` e `GET` de
  * `/api/atas/<id>/pdf` — nao existe na base real porque nenhuma ata foi gerada por
- * este roteiro antes dele rodar; sao as respostas que o servidor daria se desse, com um
- * id inventado (`c3333333-...`) que o roteiro usa depois para mirar os botoes certos.
+ * este roteiro antes dele rodar; sao as respostas que o servidor daria se desse.
+ *
+ * Nenhum seletor daqui olha para `onclick`, pelo mesmo motivo do `documentos-frota.ts`:
+ * o porte apaga o atributo e um seletor preso a ele passaria a nao achar nada, entao o
+ * passo reprovaria por causa da prova e nao da tela. Os dois cartoes do historico ficam
+ * separados pelo titulo que a pessoa le, e nao pelo id da ata, que nem chega ao DOM.
  */
 import { lerFixtures, type Roteiro } from '../palco.ts'
 
 const PDF = Buffer.from('%PDF-1.4\n%%EOF\n')
 
-/** Bate com o `id` gravado na fixture `POST /api/atas`. */
-const NOVA_ID = 'c3333333-0000-4000-8000-000000000001'
+/** A ata que o passo `pdf-gerado` grava, achada pelo titulo que ele mesmo digitou. */
+const TITULO_NOVA = 'Alinhamento Equipe Expedição Setembro'
 /** A ata de verdade que ja estava na base antes deste roteiro rodar. */
-const ATA_ORIGINAL_ID = 'a4f91702-dfde-4cec-9195-902d05da4056'
+const TITULO_ORIGINAL = 'Ata da prova da fase 4'
 
 export const ataReuniao: Roteiro = {
   tela: 'ata-reuniao',
@@ -45,14 +49,15 @@ export const ataReuniao: Roteiro = {
       nome: 'topico-adicionado',
       cobre: ['adicionarTopico'],
       agir: async (p) => {
-        await p.click('[onclick="adicionarTopico()"]')
+        await p.click('.btn-add-topico')
       },
     },
     {
       nome: 'topico-removido',
       cobre: ['removerTopico'],
       agir: async (p) => {
-        await p.click('[onclick="removerTopico(2)"]')
+        // Escopo no `#topico_2` porque `.btn-remover` tambem e o ✕ do participante extra.
+        await p.click('#topico_2 .btn-remover')
       },
     },
     {
@@ -66,22 +71,23 @@ export const ataReuniao: Roteiro = {
       nome: 'todos-marcados',
       cobre: ['marcarTodos'],
       agir: async (p) => {
-        await p.click('[onclick="marcarTodos(true)"]')
+        // Com o ✔, senao "✕ Desmarcar todos" tambem casa: `hasText` e substring.
+        await p.locator('.btn-add', { hasText: '✔ Marcar todos' }).click()
       },
     },
     {
       nome: 'participante-extra',
       cobre: ['adicionarParticipanteExtra'],
       agir: async (p) => {
-        await p.click('[onclick="adicionarParticipanteExtra()"]')
+        await p.locator('.btn-add', { hasText: '+ Adicionar externo' }).click()
       },
     },
     {
       nome: 'pdf-gerado',
       cobre: ['gerarPDF'],
       agir: async (p) => {
-        await p.fill('#f_titulo', 'Alinhamento Equipe Expedição Setembro')
-        await p.click('[onclick="gerarPDF()"]')
+        await p.fill('#f_titulo', TITULO_NOVA)
+        await p.locator('.btn-gerar', { hasText: 'Gerar PDF para Assinatura' }).click()
       },
     },
     {
@@ -107,7 +113,7 @@ export const ataReuniao: Roteiro = {
       agir: async (p) => {
         const escolha = p.waitForEvent('filechooser')
         escolha.catch(() => {})
-        await p.click(`[onclick="anexarParaAta('${NOVA_ID}')"]`)
+        await p.locator('.hist-card', { hasText: TITULO_NOVA }).getByText('Substituir PDF').click()
         await (await escolha).setFiles({ name: 'ata-substituida.pdf', mimeType: 'application/pdf', buffer: PDF })
       },
     },
@@ -115,28 +121,28 @@ export const ataReuniao: Roteiro = {
       nome: 'ata-baixada',
       cobre: ['downloadPDF'],
       agir: async (p) => {
-        await p.click(`[onclick="downloadPDF('${NOVA_ID}')"]`)
+        await p.locator('.hist-card', { hasText: TITULO_NOVA }).locator('.btn-hist.primary').click()
       },
     },
     {
       nome: 'ata-excluida',
       cobre: ['deletarAta'],
       agir: async (p) => {
-        await p.click(`[onclick="deletarAta('${ATA_ORIGINAL_ID}')"]`)
+        await p.locator('.hist-card', { hasText: TITULO_ORIGINAL }).locator('.btn-hist.danger').click()
       },
     },
     {
       nome: 'import-modal-aberto',
       cobre: ['abrirModalImportar'],
       agir: async (p) => {
-        await p.click('[onclick="abrirModalImportar()"]')
+        await p.locator('.btn-gerar', { hasText: 'Importar Atas Passadas' }).click()
       },
     },
     {
       nome: 'import-linha-adicionada',
       cobre: ['addImportRow'],
       agir: async (p) => {
-        await p.click('[onclick="addImportRow()"]')
+        await p.locator('.btn-add', { hasText: '+ Adicionar linha' }).click()
       },
     },
     {
@@ -163,7 +169,7 @@ export const ataReuniao: Roteiro = {
         // Reabre do zero (`abrirModalImportar` limpa as linhas e recria as oito do
         // ano), e so entao esvazia data e titulo de sete delas: `salvarImportadas`
         // pula linha sem os dois campos, entao so Janeiro chega a salvar.
-        await p.click('[onclick="abrirModalImportar()"]')
+        await p.locator('.btn-gerar', { hasText: 'Importar Atas Passadas' }).click()
         const linhas = p.locator('#importRows .import-row')
         const total = await linhas.count()
         for (let i = 1; i < total; i++) {
