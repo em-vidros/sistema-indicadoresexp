@@ -482,10 +482,25 @@ JavaScript e sem erro; e nenhum arquivo público contém canário de cadastro (p
 de motorista, rota de API), senão o porte abriu o que o portão fechava. Um sentido só
 deixa passar exatamente o erro que o outro pega.
 
-**Chart.js** sai do CDN e vira `chart.js@4.4.0`, a mesma versão da tag, por `import()`
-dinâmico dentro do efeito do dashboard, com `destroy()` na limpeza. Some o global
-`window.Chart` sem tipo e some a dependência de um CDN externo atrás de um portão que não
-admite mais nada.
+**Chart.js sai e entra Recharts**, decisão de 2026-09-02, revendo o que este plano dizia
+antes. A ideia original era manter o Chart.js e só trocar o CDN por `import()` dinâmico
+dentro de um efeito, com `destroy()` na limpeza. O pedido foi outro: gráfico declarativo
+em React, sem cola imperativa em volta de um `<canvas>`.
+
+O preço é conhecido e foi aceito antes de uma linha ser escrita. Recharts desenha SVG, e
+não bitmap, então o desenho dos dois gráficos não tem como ser comparado com a tela velha:
+o DOM deixa de ter `<canvas>` e passa a ter uma árvore de SVG, e o pixel não bate porque
+`tension: .3` do Chart.js não é a mesma curva que o `monotone` do Recharts e as duas
+bibliotecas calculam tick, legenda e raio de donut por algoritmos diferentes. Parecido dá,
+idêntico não dá.
+
+Então a prova para de cobrir o desenho e passa a dizer isso em voz alta, em
+`verificar/paridade/fora-da-prova.ts`: a região, o seletor e o motivo. O recorte é do
+conteúdo, não do elemento. `.chart-wrap` continua comparado com classe, caixa e os 180 px
+de altura, e o cartão, o título e a grade em volta continuam cobrados byte a byte; só o
+que desenha dentro dele vira uma linha `<fora da prova>`. Um `gap` errado no pai ainda
+reprova. Some junto a dependência de um CDN externo atrás de um portão que não admite mais
+nada.
 
 **Tipos.** Os componentes entram no `tsconfig.json` da raiz com `jsx: react-jsx` e o
 `strict` que já está lá. Os `js/<tela>.ts` de hoje nunca passaram pelo `tsc -b`; os
@@ -507,9 +522,12 @@ Quatro comparações por tela. O DOM normalizado de cada estado contra
 regra dele é uma afirmação contestável. O `telas/<tela>.css` byte a byte contra o
 `<style>` de origem. A união dos handlers que os passos declaram cobrir contra a lista
 extraída do markup velho, para handler que ninguém clica reprovar a prova e não a tela.
-E a configuração passada ao `Chart` contra o JSON congelado, porque pixel de canvas não
-está no DOM. O screenshot de cada estado fica salvo na baseline para inspeção; diff de
-pixel com limiar entra só se o DOM não bastar.
+Havia uma quarta, o `toDataURL()` de cada `<canvas>` num `.canvas.json`, e ela saiu em
+2026-09-02 junto com o Chart.js. Ela existia só por causa dos dois gráficos do dashboard:
+nas outras seis telas todo arquivo era `{}`, nenhuma mutação jamais foi pega por ela, e
+sem canvas no app sobrariam 82 arquivos de ruído e uma função que só podia devolver `{}`.
+O screenshot de cada estado fica salvo fora do git para inspeção; diff de pixel com limiar
+entra só se o DOM não bastar.
 
 Cada passo também congela os efeitos que o clique disparou, e um deles precisou de
 decisão. Download que sai de `URL.createObjectURL(new Blob(...))` traz uma URL com UUID
@@ -576,9 +594,11 @@ faixa `~1.2.x` que o Vite declara.
    já entra como `@selected` e é quem desenha, então guardar o atributo era cobrar a
    forma de escrever o markup. Nó de texto em branco **não** é regra geral: dentro de um
    flex container o navegador blocifica os filhos, `inline-flex` vira `flex` e
-   `inline-block` vira `block`, e o `" "` some. `documentos-frota` tem zero na baseline,
-   `entrar` tem 18 e `dashboard-semanal` tem 48. A regra para as próximas é grepar `" "`
-   na baseline antes de escrever, não presumir. E texto interpolado é um nó só:
+   `inline-block` vira `block`, e o `" "` some. `documentos-frota` tem zero na baseline e
+   `entrar` tem 18. A regra para as próximas é grepar `" "` na baseline antes de escrever,
+   não presumir, e ela já se pagou: este plano dizia que `dashboard-semanal` teria 48, e a
+   contagem na baseline deu 8, todos nos dois `.filtro-group`, em volta de um `<select>`
+   que é `inline-block` dentro de um pai que não é flex. E texto interpolado é um nó só:
    `${a} · ${b}` num template vira uma linha, enquanto `{a} · {b}` em JSX vira três, o
    que obriga a template literal dentro da chave.
 4. `integracao-frota`, a primeira com estado que sobrevive entre passos. Fechado, 7
@@ -595,9 +615,42 @@ faixa `~1.2.x` que o Vite declara.
    `carregarRegistro` repopulava o `<select>` e só então fazia `select.value = id`, e sem
    o `flushSync` o valor cai no `<select>` do programa anterior, onde aquele id não
    existe, e o navegador o descarta calado.
-5. `dashboard-semanal`, onde entra o Chart.js. 6. `ata-reuniao`.
-   7. `manutencao-frota`. 8. `formulario-registro`, onde o nome do asset muda nas provas
-   das fases 2 e 4.
+5. `dashboard-semanal`, onde o Chart.js sai e entra o Recharts. Fechado, 7 passos, em três
+   commits, sendo os dois primeiros de prova. Cinco coisas que ele decidiu.
+
+   O passo `whatsapp-copiado` não provava nada, e isso foi achado lendo a baseline, não por
+   vermelho. `relatorio-gerado.html` e `whatsapp-copiado.html` eram byte a byte idênticos e
+   o arquivo de efeitos tinha zero byte, então as sessenta linhas de `copiarWhatsApp`
+   podiam sumir inteiras sem uma linha vermelha. A causa é que `paridade.local` não é
+   contexto seguro e `navigator.clipboard` nem existe ali: a tela estourava um TypeError
+   síncrono, que o `.catch()` dela não pega por ser síncrono. O palco passa a dar a própria
+   implementação de `writeText`, registrando o texto como efeito, e o passo virou dois,
+   porque o destaque do botão dura 3 s e some sozinho.
+
+   O que sai de uma prova ganha outra coisa no lugar. O desenho dos gráficos saiu e ganhou
+   `verificar/olhar-graficos.ts`, que fotografa os dois cartões. Sem isso a região vira
+   ponto cego, e a paridade fica verde com o gráfico certo, com o errado e sem gráfico
+   nenhum. A ferramenta já se pagou: a legenda do donut saía em ordem de valor, porque o
+   `itemSorter` do Recharts ordena por padrão e o Chart.js não ordenava.
+
+   Nem toda saída da biblioteca cabe dentro do recorte. O Recharts mede texto com um
+   `<span id="recharts_measurement_span">` que ele pendura no `document.body`, fora do
+   `.chart-wrap` e portanto fora do recorte, e ele apareceu nos sete passos. O
+   `getStringSize` procura esse id antes de criar, então a tela o renderiza dentro do
+   primeiro `.chart-wrap` e ele é adotado em vez de duplicado.
+
+   Trocar dependência mexe no portão. O Recharts traz CJS, o rolldown precisou emitir os
+   ajudantes de interop, e eles viraram um pedaço compartilhado que `entrar.js` também
+   carrega. `verificar/publicos.ts` ficou vermelho, que é exatamente o defeito que ele
+   existe para pegar: em produção seria 302 devolvendo HTML onde o navegador espera
+   JavaScript, e só para quem ainda não entrou.
+
+   E `style=""` nasce de remover a prop, não de escrevê-la. Os `pont-pill` saíam com
+   atributo vazio porque a ternária troca um `<span>` por uma Fragment sem `key`, o React
+   casa o primeiro filho com o `<span>` antigo pelo índice, e ao remover `style` ele zera
+   as propriedades em vez de tirar o atributo. As duas pontas ganharam `key`.
+6. `ata-reuniao`. 7. `manutencao-frota`. 8. `formulario-registro`, onde o nome do asset
+   muda nas provas das fases 2 e 4.
 9. Limpeza. Somem `visual-telas.ts`, `handlers.ts` e a captura do legado; o `include`
    do tsconfig fecha em `apps/web/src/**`; a tabela no fim deste arquivo fecha a fase.
 
