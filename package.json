@@ -17,7 +17,7 @@
     "teste": "bun test",
     "fronteiras": "bun verificar/fronteiras.ts",
     "paridade": "bun verificar/paridade.ts",
-    "telas": "bun verificar/handlers.ts && bun run build && bun verificar/visual-telas.ts && bun verificar/paridade.ts",
+    "telas": "bun verificar/handlers.ts && bun run build && bun verificar/visual-telas.ts && bun verificar/publicos.ts && bun verificar/paridade.ts",
     "verificar": "bun run fronteiras && bun run telas && bun run tipos && bun run teste",
     "start": "bun server.ts"
   },

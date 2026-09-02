@@ -4,122 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Registro Diário — EM Vidros</title>
-<style>
-:root{
-  --bg-app:#f5f7fa;
-  --bg-side:#1a1d2e;
-  --bg-side-hover:#2a2f47;
-  --bg-side-active:#2563eb;
-  --txt-side:#c8ccd6;
-  --txt-side-dim:#7a8194;
-  --txt-side-bright:#fff;
-  --bg-card:#fff;
-  --txt-main:#1a1d2e;
-  --txt-dim:#6b7280;
-  --txt-muted:#9ca3af;
-  --border:#e5e7eb;
-  --accent:#2563eb;
-  --accent-soft:#dbeafe;
-  --green:#16a34a;
-  --green-soft:#dcfce7;
-  --orange:#ea580c;
-  --orange-soft:#ffedd5;
-  --red:#dc2626;
-  --red-soft:#fee2e2;
-  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(--txt-main);font-size:13px;display:flex;min-height:100vh;}
-
-/* LOGIN */
-.login-overlay{position:fixed;inset:0;background:var(--bg-side);display:flex;align-items:center;justify-content:center;z-index:9999;}
-.login-box{background:#fff;border-radius:16px;padding:36px 40px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
-.login-logo{background:var(--bg-side);border-radius:10px;padding:12px 20px;margin-bottom:8px;text-align:center;}
-.login-sub{font-size:.82rem;color:var(--txt-dim);margin-bottom:28px;}
-.login-box label{font-size:.75rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px;}
-.login-box input{width:100%;background:var(--bg-app);border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;font-size:.95rem;color:var(--txt-main);font-family:inherit;transition:.12s;margin-bottom:16px;}
-.login-box input:focus{outline:none;border-color:var(--accent);background:#fff;}
-.btn-login{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;}
-.btn-login:hover{background:#1d4ed8;}
-.login-erro{background:var(--red-soft);color:#991b1b;border-radius:8px;padding:10px 14px;font-size:.84rem;margin-top:12px;display:none;}
-</style>
 </head>
 <body>
-
-<!-- LOGIN OVERLAY -->
-<div class="login-overlay" id="loginOverlay">
-  <div class="login-box">
-    <div class="login-logo"><img src="docs/logo-emvidros.svg" alt="EM Vidros" style="height:64px;width:auto;display:block;margin:0 auto;"></div>
-    <div class="login-sub">Registro Diário · Logística</div>
-    <div>
-      <label>Usuário</label>
-      <input type="text" id="loginUsuario" placeholder="Seu usuário" autocomplete="username" onkeydown="if(event.key==='Enter')fazerLogin()">
-      <label>Senha</label>
-      <input type="password" id="loginSenha" placeholder="Sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')fazerLogin()">
-      <div style="display:flex;align-items:center;gap:8px;margin:8px 0 4px;font-size:.85rem;color:var(--dim);">
-        <input type="checkbox" id="lembrarMe" style="width:16px;height:16px;cursor:pointer;" checked>
-        <label for="lembrarMe" style="cursor:pointer;margin:0;">Lembrar de mim</label>
-      </div>
-      <button class="btn-login" onclick="fazerLogin()">Entrar</button>
-      <div class="login-erro" id="loginErro">Usuário ou senha incorretos.</div>
-    </div>
-  </div>
-</div>
-
-<script>
-// O visual desta tela e o overlay de login que vivia dentro de
-// `formulario-registro.html`, copiado sem tirar nem por. O que mudou e so quem
-// decide: era um objeto de senhas em base64 no proprio HTML, agora e o servidor.
-
-// O servidor valida `destino` do mesmo jeito, e essa e a checagem que vale. Esta
-// aqui existe para o navegador nao chegar a sair do site antes de ouvir o nao.
-// As cinco linhas sao as mesmas do `destinoSeguro` do servidor, na mesma ordem.
-function destinoSeguro(bruto) {
-  if (!bruto) return null;
-  if (bruto.charAt(0) !== '/') return null;
-  if (bruto.slice(0, 2) === '//') return null;
-  if (bruto.indexOf('://') !== -1) return null;
-  if (bruto.indexOf('\\') !== -1) return null;
-  // O parser de URL do navegador descarta TAB, LF e CR antes de resolver, entao
-  // '/\u0009/evil.com' viraria '//evil.com' depois desta funcao e sairia do site.
-  if (/[\u0000-\u0020\u007f]/.test(bruto)) return null;
-  return bruto;
-}
-
-// O overlay antigo focava o campo de usuario 100ms depois de carregar. Aqui a
-// pagina e so isso, entao o foco pode ser imediato.
-document.addEventListener('DOMContentLoaded', function () {
-  document.getElementById('loginUsuario').focus();
-});
-
-function mostrarErro() {
-  var erroEl = document.getElementById('loginErro');
-  erroEl.style.display = 'block';
-  setTimeout(function () { erroEl.style.display = 'none'; }, 3000);
-}
-
-async function fazerLogin() {
-  var usuario = document.getElementById('loginUsuario').value.trim().toLowerCase();
-  var senha   = document.getElementById('loginSenha').value;
-  // Marcado, o cookie sobrevive ao fechar o navegador; desmarcado, morre com ele.
-  var lembrar = document.getElementById('lembrarMe').checked;
-
-  var ok = false;
-  try {
-    var r = await fetch('/api/entrar', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ usuario: usuario, senha: senha, lembrar: lembrar })
-    });
-    ok = r.ok;
-  } catch (e) {}
-
-  if (!ok) { mostrarErro(); return; }
-
-  var destino = new URLSearchParams(location.search).get('destino');
-  // `replace` e nao `assign`: o botao voltar nao deve trazer o login de volta.
-  location.replace(destinoSeguro(destino) || '/formulario-registro.html');
-}
-</script>
+<!--
+  `display:contents` porque o `body` desta e das outras telas e um flex container: um
+  wrapper com caixa propria empurraria o layout de todas elas. O React monta aqui e a
+  arvore que sobra e a mesma de antes do porte.
+-->
+<div id="app" style="display:contents"></div>
+<script type="module" src="./telas/entrar.tsx"></script>
 </body>
 </html>

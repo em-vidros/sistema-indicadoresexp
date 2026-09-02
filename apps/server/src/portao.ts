@@ -16,8 +16,29 @@ export const PAGINA_PADRAO = '/formulario-registro.html'
 /**
  * O logo esta aqui porque a tela de login o mostra antes de existir sessao. E o
  * unico arquivo de `docs/` publico, e por isso ele e nomeado, nao um padrao.
+ *
+ * Os quatro de `/assets/` sao o que a tela de login carrega para existir: o proprio
+ * modulo, o CSS dela, o React e o shim de modulepreload. Eles saem do build sem hash
+ * de proposito, para caberem numa lista de nomes; liberar `/assets/` inteiro seria o
+ * padrao que este portao nao usa, e entregaria de graca o codigo das seis telas de
+ * dentro. `verificar/publicos.ts` cobra os dois sentidos, entao arquivo que a login
+ * passe a pedir e nome que sobre aqui reprovam a build.
  */
-const PUBLICOS = new Set([ROTA_LOGIN, '/api/entrar', '/saude', '/docs/logo-emvidros.svg'])
+const PUBLICOS = new Set([
+  ROTA_LOGIN,
+  '/api/entrar',
+  '/saude',
+  '/docs/logo-emvidros.svg',
+  '/assets/entrar.js',
+  '/assets/entrar.css',
+  '/assets/vendor-react.js',
+  '/assets/modulepreload-polyfill.js',
+])
+
+/** O que `verificar/publicos.ts` confere contra o `dist/`. */
+export const PUBLICOS_DE_ASSET: readonly string[] = [...PUBLICOS].filter((r) =>
+  r.startsWith('/assets/'),
+)
 
 /**
  * O better-auth publica `sign-up/email` junto com `sign-in`, e ele nao serve a este

@@ -1,0 +1,37 @@
+:root{
+  --bg-app:#f5f7fa;
+  --bg-side:#1a1d2e;
+  --bg-side-hover:#2a2f47;
+  --bg-side-active:#2563eb;
+  --txt-side:#c8ccd6;
+  --txt-side-dim:#7a8194;
+  --txt-side-bright:#fff;
+  --bg-card:#fff;
+  --txt-main:#1a1d2e;
+  --txt-dim:#6b7280;
+  --txt-muted:#9ca3af;
+  --border:#e5e7eb;
+  --accent:#2563eb;
+  --accent-soft:#dbeafe;
+  --green:#16a34a;
+  --green-soft:#dcfce7;
+  --orange:#ea580c;
+  --orange-soft:#ffedd5;
+  --red:#dc2626;
+  --red-soft:#fee2e2;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(--txt-main);font-size:13px;display:flex;min-height:100vh;}
+
+/* LOGIN */
+.login-overlay{position:fixed;inset:0;background:var(--bg-side);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.login-box{background:#fff;border-radius:16px;padding:36px 40px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.login-logo{background:var(--bg-side);border-radius:10px;padding:12px 20px;margin-bottom:8px;text-align:center;}
+.login-sub{font-size:.82rem;color:var(--txt-dim);margin-bottom:28px;}
+.login-box label{font-size:.75rem;font-weight:700;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px;}
+.login-box input{width:100%;background:var(--bg-app);border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;font-size:.95rem;color:var(--txt-main);font-family:inherit;transition:.12s;margin-bottom:16px;}
+.login-box input:focus{outline:none;border-color:var(--accent);background:#fff;}
+.btn-login{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;}
+.btn-login:hover{background:#1d4ed8;}
+.login-erro{background:var(--red-soft);color:#991b1b;border-radius:8px;padding:10px 14px;font-size:.84rem;margin-top:12px;display:none;}
