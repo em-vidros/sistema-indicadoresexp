@@ -140,12 +140,29 @@ export async function serializarDom(page: Page): Promise<string> {
 }
 
 /**
- * O CSS das tags `<style>`, que saem do percurso do DOM mas desenham a tela inteira.
+ * O CSS que a tela aplica, que sai do percurso do DOM e desenha tudo.
+ *
+ * Sai do CSSOM, e nao do texto das tags `<style>`, por dois motivos. Hoje o CSS mora
+ * numa `<style>` dentro do HTML; depois do porte ele e importado pelo componente e o
+ * build entrega uma `<link>`, e ler so `<style>` daria vazio sem ninguem reprovar. E o
+ * build reformata o texto no caminho, entao byte a byte reprovaria por espaco em branco.
+ * O navegador reserializa os dois lados na mesma forma, e o que sobra e a regra.
+ *
+ * `cssRules` de folha de outra origem lanca; aqui tudo vem do mesmo palco, e uma folha
+ * que passe a vir de fora tem que aparecer em vez de sumir calada.
  */
 export async function estilo(page: Page): Promise<string> {
   return await page.evaluate(() =>
-    Array.from(document.querySelectorAll('style'))
-      .map((s) => s.textContent ?? '')
+    Array.from(document.styleSheets)
+      .map((folha) => {
+        try {
+          return Array.from(folha.cssRules)
+            .map((regra) => regra.cssText)
+            .join('\n')
+        } catch {
+          return `/* folha ilegivel: ${folha.href ?? '<sem href>'} */`
+        }
+      })
       .join('\n/* --- */\n'),
   )
 }
