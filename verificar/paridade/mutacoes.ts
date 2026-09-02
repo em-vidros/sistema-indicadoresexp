@@ -62,11 +62,19 @@ export const MUTACOES: readonly Mutacao[] = [
   },
   {
     tela: 'integracao-frota',
-    arquivo: 'apps/web/src/js/integracao-frota.ts',
+    arquivo: 'apps/web/src/telas/integracao-frota.tsx',
     de: 'font-size:9pt;margin-bottom:16pt;line-height:1.5;',
     para: 'font-size:90pt;margin-bottom:16pt;line-height:1.5;',
     motivo:
       'o paragrafo do termo de ciente no PDF de impressao cresce dez vezes e ninguem declarou; nasce dentro do modulo, em `gerarPDF`, e nenhuma comparacao de arquivo enxerga',
+  },
+  {
+    tela: 'integracao-frota',
+    arquivo: 'apps/web/src/telas/integracao-frota.tsx',
+    de: 'id="btnMotorista" onClick={() => selecionarFuncao(\'motorista\')}',
+    para: 'id="btnMotorista"',
+    motivo:
+      'a aba Motorista para de trocar de programa; o clique nao muda a funcao, a subarvore das semanas nao remonta, e a ficha do ajudante que estava aberta continua na tela como se nada tivesse sido pedido',
   },
   {
     tela: 'dashboard-semanal',
