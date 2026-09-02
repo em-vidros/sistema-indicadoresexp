@@ -8,6 +8,11 @@
  * atributo `onclick`/`onchange`, entao cada passo clica ou seleciona de verdade em
  * vez de chamar a funcao do modulo, pelo mesmo motivo do `documentos-frota.ts`.
  *
+ * Nenhum seletor daqui olha para `onclick`. Os itens da lateral sao achados pelo texto
+ * que a pessoa le, e nao pelo atributo, porque o porte apaga o atributo: um seletor que
+ * dependesse dele passaria a nao achar nada e o passo reprovaria por causa da prova, e
+ * nao da tela.
+ *
  * O relogio congela em quarta-feira 2026-09-02, e a semana corrente (filtro padrao
  * "Esta Semana") comeca na segunda 2026-08-31 sem teto superior: qualquer data a
  * partir dali entra. Os dez registros da fixture ficam todos entre 31/08 e 02/09,
@@ -52,7 +57,7 @@ export const dashboardSemanal: Roteiro = {
       nome: 'atualizado-manual',
       cobre: ['atualizarDados'],
       agir: async (p) => {
-        await p.click(`.nav-item[onclick="atualizarDados()"]`)
+        await p.locator('.nav-item', { hasText: 'Atualizar' }).click()
       },
     },
     {
@@ -68,7 +73,7 @@ export const dashboardSemanal: Roteiro = {
       nome: 'tela-viagens',
       cobre: ['mostrarTela'],
       agir: async (p) => {
-        await p.click(`.nav-item[onclick="mostrarTela('viagens')"]`)
+        await p.locator('.nav-item', { hasText: 'Viagens' }).click()
       },
     },
     {
