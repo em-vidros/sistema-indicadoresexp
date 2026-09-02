@@ -18,7 +18,6 @@
  */
 const TELAS = [
   'ata-reuniao',
-  'dashboard-semanal',
   'formulario-registro',
   'manutencao-frota',
 ] as const

@@ -16,8 +16,8 @@
     "vite-plus": "^0.3.0"
   },
   "dependencies": {
-    "chart.js": "4.4.0",
     "react": "^19",
-    "react-dom": "^19"
+    "react-dom": "^19",
+    "recharts": "^3.10.1"
   }
 }

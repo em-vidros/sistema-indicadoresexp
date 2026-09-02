@@ -78,17 +78,17 @@ export const MUTACOES: readonly Mutacao[] = [
   },
   {
     tela: 'dashboard-semanal',
-    arquivo: 'apps/web/src/js/dashboard-semanal.ts',
-    de: '  mostrarTela,\n',
-    para: '',
+    arquivo: 'apps/web/src/telas/dashboard-semanal.tsx',
+    de: "'nav-item ativo' : 'nav-item'} onClick={() => setAtiva('viagens')}",
+    para: "'nav-item ativo' : 'nav-item'}",
     motivo:
-      'o handler sumiu de `window` e a navegacao entre KPIs, Viagens e Frota vira clique que nao faz nada; a tela abre, pinta certo, e so o console reclama',
+      'o item Viagens da lateral para de trocar de tela e a navegacao entre KPIs, Viagens e Frota vira clique que nao faz nada; depois do porte o handler nao some mais de `window`, some de uma prop, e some do mesmo jeito calado',
   },
   {
     tela: 'dashboard-semanal',
-    arquivo: 'apps/web/src/js/dashboard-semanal.ts',
-    de: '.filter(r => r.pct >= 7)',
-    para: '.filter(r => r.pct >= 70)',
+    arquivo: 'apps/web/src/telas/dashboard-semanal.tsx',
+    de: 'rotas.filter((r) => r.pct >= 7)',
+    para: 'rotas.filter((r) => r.pct >= 70)',
     motivo:
       'a mensagem do WhatsApp passa a jurar que toda rota esta dentro da meta enquanto a tabela da mesma tela mostra rota critica; o texto so existe na area de transferencia, entao nenhuma comparacao de DOM enxerga a contradicao',
   },

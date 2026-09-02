@@ -11,6 +11,11 @@
  * a caixa, a classe, o tamanho, o lugar na arvore. O que sai e so o conteudo, trocado
  * por uma linha `<fora da prova>`. Uma regiao daqui nao esconde um `gap` errado no pai
  * nem um cartao que mudou de lugar.
+ *
+ * O que sai de uma prova ganha outra coisa no lugar, senao vira ponto cego: a paridade
+ * fica verde com o grafico certo, com o errado e sem grafico nenhum. Aqui o que ficou no
+ * lugar foi `verificar/olhar-graficos.ts`, que fotografa os dois cartoes para alguem
+ * olhar. Rode depois de mexer no desenho.
  */
 import type { Tela } from './palco.ts'
 

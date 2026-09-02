@@ -94,13 +94,6 @@ const TELAS: Tela[] = [
     ],
   },
   {
-    nome: 'dashboard-semanal',
-    origem: 'dashboard-semanal.html',
-    modulo: 'apps/web/src/js/dashboard-semanal.ts',
-    estaticas: [],
-    noScript: [],
-  },
-  {
     nome: 'manutencao-frota',
     origem: 'manutencao-frota.html',
     modulo: 'apps/web/src/js/manutencao-frota.ts',
