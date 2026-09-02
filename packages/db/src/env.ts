@@ -1,10 +1,9 @@
 import { readFileSync } from 'node:fs'
 
-// O `bun --filter` roda com cwd no pacote, e o .env do projeto fica na raiz.
-function doArquivoRaiz(chave: string): string | undefined {
+function lerChave(arquivo: URL, chave: string): string | undefined {
   let texto: string
   try {
-    texto = readFileSync(new URL('../../../.env', import.meta.url), 'utf8')
+    texto = readFileSync(arquivo, 'utf8')
   } catch {
     return undefined
   }
@@ -13,6 +12,21 @@ function doArquivoRaiz(chave: string): string | undefined {
     if (casa?.[1] === chave) return casa[2]?.replace(/^["']|["']$/g, '')
   }
   return undefined
+}
+
+/**
+ * O `bun --filter` roda com cwd no pacote, e o Bun so carrega `.env*` do cwd. Este
+ * fallback le os arquivos da raiz, na mesma ordem que o Bun usaria se estivesse la:
+ * `.env.local` ganha do `.env`.
+ *
+ * A ordem importa. Em 2026-09-02 o `.env` desta maquina apontava para a Neon de
+ * producao e o `.env.local` para um Postgres local; o fallback lia so o `.env`, e um
+ * `bun run db:migrate` rodou contra a producao achando que rodava no local. Foi no-op
+ * por sorte, porque a producao ja estava migrada.
+ */
+function doArquivoRaiz(chave: string): string | undefined {
+  const raiz = new URL('../../../', import.meta.url)
+  return lerChave(new URL('.env.local', raiz), chave) ?? lerChave(new URL('.env', raiz), chave)
 }
 
 /**

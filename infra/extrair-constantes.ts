@@ -162,8 +162,21 @@ const faltantes: string[] = [];
 const linhas: string[] = [];
 let total = 0;
 
+// Os HTMLs de origem sairam da raiz na fase 1 e saem do repositorio na fase 6. O commit
+// em que a Livia os entregou nao muda, entao ele e a fonte, e `constantes.json` continua
+// regeneravel a partir do que ja esta versionado. E o mesmo ref que `visual-telas.ts` usa.
+const ORIGEM = "ca90d06";
+
+function daOrigem(arquivo: string): string {
+  const proc = Bun.spawnSync(["git", "show", `${ORIGEM}:${arquivo}`], { cwd: RAIZ });
+  if (proc.exitCode !== 0) {
+    throw new Error(`git show ${ORIGEM}:${arquivo} falhou: ${proc.stderr.toString().trim()}`);
+  }
+  return proc.stdout.toString();
+}
+
 for (const arquivo of Object.keys(MAPA).sort()) {
-  const fonte = await Bun.file(RAIZ + arquivo).text();
+  const fonte = daOrigem(arquivo);
   const doArquivo: Record<string, unknown> = {};
 
   for (const nome of [...MAPA[arquivo]!].sort()) {
