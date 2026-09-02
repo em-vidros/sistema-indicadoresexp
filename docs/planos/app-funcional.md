@@ -581,7 +581,21 @@ faixa `~1.2.x` que o Vite declara.
    na baseline antes de escrever, não presumir. E texto interpolado é um nó só:
    `${a} · ${b}` num template vira uma linha, enquanto `{a} · {b}` em JSX vira três, o
    que obriga a template literal dentro da chave.
-4. `integracao-frota`. 5. `dashboard-semanal`, onde entra o Chart.js. 6. `ata-reuniao`.
+4. `integracao-frota`, a primeira com estado que sobrevive entre passos. Fechado, 7
+   passos, verde na primeira rodada e sem commit de prova antes, porque o roteiro dela já
+   localizava tudo por id, classe e texto. Duas coisas que ele decidiu. O atributo
+   `checked` do `<input type=checkbox>` distingue clique de reconstrução, e a baseline
+   cobra os dois: um clique mexe só na propriedade, enquanto o `carregarRegistro`, que
+   antes reescrevia a subárvore com `innerHTML`, deixa `checked=""` no markup. Reproduzir
+   isso pede checkbox não controlado com `defaultChecked` lido de uma **cópia** congelada
+   na montagem, dentro de uma subárvore que remonta por `key` nos mesmos pontos em que o
+   módulo velho chamava `renderFuncao`. Guardar a referência do progresso em vez da cópia
+   faz o `defaultChecked` acompanhar o clique, e o React escreve o atributo que a baseline
+   não tem. E escrita imperativa depois de uma remontagem precisa de `flushSync`: o
+   `carregarRegistro` repopulava o `<select>` e só então fazia `select.value = id`, e sem
+   o `flushSync` o valor cai no `<select>` do programa anterior, onde aquele id não
+   existe, e o navegador o descarta calado.
+5. `dashboard-semanal`, onde entra o Chart.js. 6. `ata-reuniao`.
    7. `manutencao-frota`. 8. `formulario-registro`, onde o nome do asset muda nas provas
    das fases 2 e 4.
 9. Limpeza. Somem `visual-telas.ts`, `handlers.ts` e a captura do legado; o `include`

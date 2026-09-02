@@ -101,13 +101,6 @@ const TELAS: Tela[] = [
     noScript: [],
   },
   {
-    nome: 'integracao-frota',
-    origem: 'integracao-frota.html',
-    modulo: 'apps/web/src/js/integracao-frota.ts',
-    estaticas: [],
-    noScript: [],
-  },
-  {
     nome: 'manutencao-frota',
     origem: 'manutencao-frota.html',
     modulo: 'apps/web/src/js/manutencao-frota.ts',
