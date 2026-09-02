@@ -4,9 +4,13 @@
  *
  * A revisao da fase 2 achou exatamente este buraco trocando `gap:5px` por `gap:50px`
  * num template do modal: a prova de entao passou verde. Sao tres familias. O pixel que
- * nasce dentro do modulo e nenhuma comparacao de arquivo enxerga. O handler que some do
- * escopo global e transforma o botao em enfeite. E a regra de folha de estilo, que nao
- * aparece no DOM e so o `estilo.css` da baseline cobra.
+ * nasce dentro do modulo e nenhuma comparacao de arquivo enxerga. O handler que some e
+ * transforma o botao em enfeite. E a regra de folha de estilo, que nao aparece no DOM e
+ * so o `estilo.css` da baseline cobra.
+ *
+ * A segunda familia troca de forma no porte, e continua a mesma familia: antes o handler
+ * caia fora do `Object.assign(window, ...)`, agora e uma prop `onClick` que da para
+ * esquecer. Nos dois casos a tela abre, pinta certo, e o clique nao faz nada.
  *
  * A cada tela portada, a linha dela passa a apontar para o `.tsx` ou para o `.css`.
  */
@@ -42,19 +46,19 @@ export const MUTACOES: readonly Mutacao[] = [
   },
   {
     tela: 'documentos-frota',
-    arquivo: 'apps/web/src/js/documentos-frota.ts',
-    de: '<div style="display:flex;gap:6px;">',
-    para: '<div style="display:flex;gap:60px;">',
+    arquivo: 'apps/web/src/telas/documentos-frota.tsx',
+    de: "style={{ display: 'flex', gap: '6px' }}>",
+    para: "style={{ display: 'flex', gap: '60px' }}>",
     motivo:
-      'o espacamento dos botoes do manual mudou dez vezes de tamanho e ninguem declarou; e o markup que nasce dentro do modulo, que nenhuma comparacao de arquivo enxerga',
+      'o espacamento dos botoes do manual mudou dez vezes de tamanho e ninguem declarou; e o pixel que nasce dentro do componente, que nenhuma comparacao de arquivo enxerga',
   },
   {
     tela: 'documentos-frota',
-    arquivo: 'apps/web/src/js/documentos-frota.ts',
-    de: '  abrirModalVeiculo,\n',
-    para: '',
+    arquivo: 'apps/web/src/telas/documentos-frota.tsx',
+    de: 'btn-sm btn-edit" onClick={() => abrirModalVeiculo(pl)}',
+    para: 'btn-sm btn-edit"',
     motivo:
-      'o handler sumiu de `window` e o botao de editar virou clique que nao faz nada; a tela abre, pinta certo, e so o console reclama',
+      'o botao de vencimentos do card do veiculo para de abrir o modal; depois do porte o handler nao some mais de `window`, some de uma prop, e some do mesmo jeito calado',
   },
   {
     tela: 'integracao-frota',

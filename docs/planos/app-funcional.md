@@ -527,7 +527,9 @@ fase 2 deixou passar: um pixel dentro de template, um `gap` ou uma `margin` cres
 vezes, e um handler que sai do `Object.assign(window, ...)` e vira enfeite. Os bugs de hoje entram na baseline como estão. Há
 pelo menos um em `documentos-frota`: o `querySelectorAll('.form-group input')` que
 adiciona a classe `inp` roda na carga do módulo com o modal vazio e não faz nada. O React
-tem que reproduzir isso; corrigir é decisão separada, com a Lívia.
+tem que reproduzir isso; corrigir é decisão separada, com a Lívia. O commit 3 confirmou o
+diagnóstico e reproduziu por omissão: os inputs do modal de motorista não têm `inp` na
+baseline, os do modal de veículo têm porque o template escreve a classe na mão.
 
 **Vite+, adoção parcial.** Uma sonda de 2026-09-02 mostrou que `vite-plus@0.3.0` embute
 Vite 8 sobre Rolldown, que `@vitejs/plugin-react@6` exige `vite@^8` explícito no
@@ -565,9 +567,23 @@ faixa `~1.2.x` que o Vite declara.
    justamente onde ela precisa morder. E cada tela portada sai da lista de
    `visual-telas.ts` no seu próprio commit, porque aquela prova compara arquivo com
    arquivo e a casca React não se parece com o que o build entrega.
-3. `documentos-frota`. 4. `integracao-frota`. 5. `dashboard-semanal`, onde entra o
-   Chart.js. 6. `ata-reuniao`. 7. `manutencao-frota`. 8. `formulario-registro`, onde o
-   nome do asset muda nas provas das fases 2 e 4.
+3. `documentos-frota`, a maior árvore e o primeiro modal. Fechado, 10 passos, uma rodada
+   de paridade. Quatro coisas que ele decidiu. O roteiro não pode localizar elemento por
+   `onclick`, porque o porte apaga o atributo e o seletor passa a achar zero elementos,
+   reprovando a tela por causa da prova; os passos agora vão por card, rótulo da linha e
+   `title`, e a troca foi provada neutra contra a tela velha antes do porte. O atributo
+   `selected` do `<option>` saiu do serializador: o React só escreve a propriedade, que
+   já entra como `@selected` e é quem desenha, então guardar o atributo era cobrar a
+   forma de escrever o markup. Nó de texto em branco **não** é regra geral: dentro de um
+   flex container o navegador blocifica os filhos, `inline-flex` vira `flex` e
+   `inline-block` vira `block`, e o `" "` some. `documentos-frota` tem zero na baseline,
+   `entrar` tem 18 e `dashboard-semanal` tem 48. A regra para as próximas é grepar `" "`
+   na baseline antes de escrever, não presumir. E texto interpolado é um nó só:
+   `${a} · ${b}` num template vira uma linha, enquanto `{a} · {b}` em JSX vira três, o
+   que obriga a template literal dentro da chave.
+4. `integracao-frota`. 5. `dashboard-semanal`, onde entra o Chart.js. 6. `ata-reuniao`.
+   7. `manutencao-frota`. 8. `formulario-registro`, onde o nome do asset muda nas provas
+   das fases 2 e 4.
 9. Limpeza. Somem `visual-telas.ts`, `handlers.ts` e a captura do legado; o `include`
    do tsconfig fecha em `apps/web/src/**`; a tabela no fim deste arquivo fecha a fase.
 

@@ -101,27 +101,6 @@ const TELAS: Tela[] = [
     noScript: [],
   },
   {
-    nome: 'documentos-frota',
-    origem: 'documentos-frota.html',
-    modulo: 'apps/web/src/js/documentos-frota.ts',
-    estaticas: [],
-    noScript: [
-      // `verDocCard` abria o PDF de dois jeitos: `data:` em base64 ia para uma janela
-      // com iframe de 100vh, o resto ia direto. Depois da fase 2 nenhum src e `data:`,
-      // porque o PDF vive no servidor e chega por URL. O ramo do iframe virou codigo
-      // que nunca roda, e as cinco tags dele saem junto.
-      [
-        '\n<html>\n<body style="margin:0">\n<iframe src="${}" style="width:100%;height:100vh;border:none;">\n</iframe>\n</body>\n</html>',
-        '',
-      ],
-      // `abrirModalManual` e `abrirModalPlano` ja eram codigo morto em `ca90d06`:
-      // nenhum `on*=` as chamava, e `renderManuais` e `renderPlanos` desenham link
-      // direto. As duas carregavam template de `innerHTML`, entao apaga-las tira 14
-      // tags da lista sem tirar um pixel da tela.
-      ['\n<p style="font-size:.85rem;color:var(--txt-dim);margin-bottom:14px;">\n</p>\n<div class="form-group">\n<label>\n</label>\n<input type="url" id="docLink" class="inp" placeholder="https://drive.google.com/..." value="${}">\n</div>\n<p style="font-size:.75rem;color:var(--txt-muted);">\n</p>\n<div class="form-group">\n<label>\n</label>\n<input type="url" id="docLink" class="inp" placeholder="https://drive.google.com/..." value="${}">\n</div>', ''],
-    ],
-  },
-  {
     nome: 'integracao-frota',
     origem: 'integracao-frota.html',
     modulo: 'apps/web/src/js/integracao-frota.ts',
@@ -303,12 +282,12 @@ for (const tela of TELAS) {
 
 // `GUIA-CONFIGURACAO` entra aqui sem modulo porque nada nela mudou.
 //
-// `entrar` saiu desta lista no commit em que virou React. Esta prova compara texto de
-// arquivo com texto de arquivo, e a casca de uma tela React nao se parece com o que o
-// build entrega: o CSS vira `<link>` e o script sobe para o `<head>`. Quem cobra
-// `entrar` agora e `verificar/paridade.ts`, que compara o que o navegador montou, e
-// cobra mais: DOM, CSS, efeito de cada clique e os cinco estados. A cada tela portada
-// some uma linha daqui, e no fim o arquivo inteiro.
+// `entrar` e `documentos-frota` sairam desta lista nos commits em que viraram React.
+// Esta prova compara texto de arquivo com texto de arquivo, e a casca de uma tela React
+// nao se parece com o que o build entrega: o CSS vira `<link>` e o script sobe para o
+// `<head>`. Quem cobra as duas agora e `verificar/paridade.ts`, que compara o que o
+// navegador montou, e cobra mais: DOM, CSS, efeito de cada clique e cada estado do
+// roteiro. A cada tela portada some uma linha daqui, e no fim o arquivo inteiro.
 for (const nome of [...TELAS.map((t) => t.nome), 'GUIA-CONFIGURACAO']) {
   if (await buildFiel(nome)) continue
   falhas++

@@ -28,9 +28,10 @@
  * `onclick`. Isso vale so para esses botoes; `button.btn-edit`, `.btn-salvar`,
  * `.btn-cancelar`, `.nav-item` e o `select` recebem clique de mouse normalmente.
  *
- * Os cards sao localizados por `.doc-card` mais o texto da placa ou do nome, e os
- * botoes pelo proprio `onclick`. As duas coisas sobrevivem a reordenacao da grade e
- * dizem em voz alta o que o passo esta apertando.
+ * Os cards sao localizados por `.doc-card` mais o texto da placa ou do nome, a linha
+ * dentro do card pelo rotulo do documento, e o botao pelo `title` que ele ja mostra no
+ * hover. Nada disso depende de `onclick`: o porte apaga esse atributo, e um seletor
+ * escrito nele encontraria zero elementos e reprovaria a tela por causa da prova.
  *
  * O que foi acrescentado a mao na fixture, e por que. A base real nao exercita a
  * tela inteira: ela nao tem nenhum CRLV, nenhuma CNH e nenhum documento com arquivo
@@ -52,10 +53,19 @@
  * por nome com listas fixas dentro dele; trocar o nome apagaria o ramo. Os numeros de
  * CNH sao ficticios.
  */
+import type { Locator, Page } from 'playwright'
 import { lerFixtures, type Roteiro } from '../palco.ts'
 
 /** O mesmo PDF de uma linha que a fase 4 usa. Serve para o upload ter um arquivo de verdade. */
 const PDF = Buffer.from('%PDF-1.4\n%%EOF\n')
+
+/** O botao de uma linha de documento, dentro do card de uma placa. */
+function botaoDoDoc(p: Page, placa: string, rotulo: string, titulo: string): Locator {
+  return p
+    .locator('.doc-card', { hasText: placa })
+    .locator('.doc-linha', { hasText: rotulo })
+    .locator(`button[title="${titulo}"]`)
+}
 
 export const documentosFrota: Roteiro = {
   tela: 'documentos-frota',
@@ -88,7 +98,10 @@ export const documentosFrota: Roteiro = {
         // debaixo de um rastro de pilha que nao e o defeito.
         const escolha = p.waitForEvent('filechooser')
         escolha.catch(() => {})
-        await p.click('button[onclick*="segPdf"]')
+        await p
+          .locator('.modal-upload-row', { hasText: 'Arquivo da Apólice' })
+          .locator('button.btn-upload-doc')
+          .click()
         await (await escolha).setFiles({
           name: 'apolice-PTV0006.pdf',
           mimeType: 'application/pdf',
@@ -124,14 +137,14 @@ export const documentosFrota: Roteiro = {
       nome: 'doc-visto',
       cobre: ['verDocCard'],
       agir: async (p) => {
-        await p.locator(`[onclick*="verDocCard('PTV0006','tacografo')"]`).press('Enter')
+        await botaoDoDoc(p, 'PTV0006', 'Tacógrafo', 'Visualizar').press('Enter')
       },
     },
     {
       nome: 'doc-baixado',
       cobre: ['baixarDocCard'],
       agir: async (p) => {
-        await p.locator(`[onclick*="baixarDocCard('PTV0006','tacografo')"]`).press('Enter')
+        await botaoDoDoc(p, 'PTV0006', 'Tacógrafo', 'Baixar').press('Enter')
       },
     },
     {
@@ -139,7 +152,7 @@ export const documentosFrota: Roteiro = {
       cobre: ['importarDocCard', 'onDocCardChange'],
       agir: async (p) => {
         const escolha = p.waitForEvent('filechooser')
-        await p.locator(`[onclick*="importarDocCard('PTT0004','crlv')"]`).press('Enter')
+        await botaoDoDoc(p, 'PTT0004', 'CRLV', 'Importar PDF').press('Enter')
         await (await escolha).setFiles({
           name: 'crlv-PTT0004.pdf',
           mimeType: 'application/pdf',

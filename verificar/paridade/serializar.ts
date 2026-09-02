@@ -65,6 +65,12 @@ export async function serializarDom(page: Page): Promise<string> {
           continue
         }
 
+        // `selected` no `<option>` e a escolha inicial escrita no markup, e quem desenha
+        // e a propriedade, que sai adiante como `@selected`. Sao a mesma informacao em
+        // dois lugares, e so um deles sobrevive ao porte: o React escreve a propriedade
+        // e nunca o atributo. Guardar o atributo seria cobrar a forma de escrever.
+        if (attr.name === 'selected' && el instanceof HTMLOptionElement) continue
+
         if (attr.name === 'src' && COM_SRC.has(tag)) {
           lista.push(['src', attr.value.replace(ASSET, '$1$2-*$3')])
           continue
