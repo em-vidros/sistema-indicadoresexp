@@ -1,0 +1,6 @@
+carregarRegistro
+gerarPDF
+salvarProgresso
+selecionarColaborador
+selecionarFuncao
+toggleAtividade

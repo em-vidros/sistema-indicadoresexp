@@ -15,7 +15,14 @@
  * dois sao justamente o que prova `verDocCard` e `baixarDocCard`.
  */
 import { chromium } from 'playwright'
-import type { Browser, BrowserContext, Page, Request as PedidoHttp, Route } from 'playwright'
+import type {
+  Browser,
+  BrowserContext,
+  Download,
+  Page,
+  Request as PedidoHttp,
+  Route,
+} from 'playwright'
 
 export type Tela =
   | 'entrar'
@@ -200,6 +207,34 @@ function acharFixture(fixtures: Fixtures, chave: string): Fixture | null {
   return molde === undefined ? null : (fixtures[molde] ?? null)
 }
 
+/**
+ * De onde veio o arquivo que a tela mandou baixar.
+ *
+ * Um download que sai de `/api/...` e identificado pelo caminho. Um que sai de
+ * `URL.createObjectURL(new Blob(...))` nao tem caminho nenhum: o navegador sorteia um
+ * UUID por chamada, entao gravar a URL faria o passo divergir de si mesmo a cada
+ * captura. O que identifica esses e o conteudo, que e justamente o que a tela produziu
+ * e o que o porte precisa preservar, entao e ele que entra no efeito. Binario cai no
+ * tamanho e no resumo, porque PDF e ZIP carregam data de criacao dentro.
+ */
+async function origemDoDownload(baixado: Download): Promise<string> {
+  const url = baixado.url()
+  if (!url.startsWith('blob:') && !url.startsWith('data:')) {
+    try {
+      return `de ${new URL(url).pathname}`
+    } catch {
+      return `de ${url}`
+    }
+  }
+  const caminho = await baixado.path()
+  const bytes = new Uint8Array(await Bun.file(caminho).arrayBuffer())
+  const texto = new TextDecoder().decode(bytes)
+  if (texto.includes('�')) {
+    return `com ${bytes.length} bytes, sha256 ${Bun.SHA256.hash(bytes, 'hex').slice(0, 16)}`
+  }
+  return `com:\n${texto.replace(/\n$/, '').replace(/^/gm, '  ')}`
+}
+
 async function arquivoDoDisco(caminho: string): Promise<Uint8Array | null> {
   const arquivo = Bun.file(caminho)
   if (!(await arquivo.exists())) return null
@@ -362,15 +397,18 @@ export async function montarPalco(
     void caixa.accept(caixa.type() === 'prompt' ? '' : undefined).catch(() => {})
   })
 
+  // Ler o corpo e assincrono, e o passo fecha quando rede e efeitos param. Contar o
+  // download como voo segura o fechamento ate o efeito existir.
   pagina.on('download', (baixado) => {
-    let de = baixado.url()
-    try {
-      de = new URL(de).pathname
-    } catch {
-      // URL de blob ou data nao tem caminho; o que sobra ja identifica a origem.
-    }
-    registrar(`download ${baixado.suggestedFilename()} de ${de}`)
-    void baixado.delete().catch(() => {})
+    emVoo++
+    void (async () => {
+      try {
+        registrar(`download ${baixado.suggestedFilename()} ${await origemDoDownload(baixado)}`)
+      } finally {
+        emVoo--
+        await baixado.delete().catch(() => {})
+      }
+    })()
   })
 
   // O efeito do popup ja foi registrado pela rota, com o caminho. Aqui so guardamos

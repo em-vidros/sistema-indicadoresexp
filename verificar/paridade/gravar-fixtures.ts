@@ -19,11 +19,11 @@ import { TELAS, type Tela } from './palco.ts'
 const GETS_POR_TELA: Readonly<Record<Tela, readonly string[]>> = {
   'entrar': [],
   'documentos-frota': ['/api/documentos/catalogo', '/api/documentos'],
-  'integracao-frota': [],
-  'dashboard-semanal': [],
-  'ata-reuniao': [],
-  'manutencao-frota': [],
-  'formulario-registro': [],
+  'integracao-frota': ['/api/integracoes/catalogo', '/api/integracoes'],
+  'dashboard-semanal': ['/api/registros'],
+  'ata-reuniao': ['/api/atas/catalogo', '/api/atas'],
+  'manutencao-frota': ['/api/preventiva', '/api/registros?base=Raposa'],
+  'formulario-registro': ['/api/sessao'],
 }
 
 const BASE = Bun.env['BASE'] ?? 'http://localhost:3200'

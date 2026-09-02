@@ -1,0 +1,16 @@
+download relatorio-2026-09-02.txt com:
+  📊 RELATÓRIO LOGÍSTICO — EM VIDROS
+  Esta Semana · Raposa · 02/09/2026
+  
+  🚛 VIAGENS: 2 | Carga: R$ 70.000,00 | Custo: R$ 4.700,00
+     % Custo/Carga: 6.71% ✅ (meta < 7%)
+  
+  🔧 MANUTENÇÕES: R$ 2.000,00
+     % Manut/Produção: 2.86% ⚠️ (meta < 2%)
+  
+  ⛽ ABASTECIMENTO: R$ 888,00
+  
+  📦 QUEBRA: 1.14% ⚠️ (meta < 1%)
+  
+  ⏱️ PONTUALIDADE (2 viagens com status):
+     Adiantado: 50% | No Prazo: 0% | Atrasado: 50% (meta ≤ 5%)

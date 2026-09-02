@@ -1,0 +1,2 @@
+POST /api/registros {"registros":[{"tipo":"string","base":"string","data_entrada":"string","placa":"string","tipo_manutencao":"string","servico":"string","valor":"number","fornecedor":"string","km_odometro":"number"}]}
+alert ✅ 1 registros importados com sucesso!

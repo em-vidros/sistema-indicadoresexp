@@ -1,0 +1,2 @@
+confirm Remover este item?
+PUT /api/preventiva/a6eb4628-4bb8-5c50-a35a-8e3e00477a9d {"itens":[{"tipo":"string","intervalo_km":"number","alerta_km":"number","ultimo_km":"number","obs":"null"}]}

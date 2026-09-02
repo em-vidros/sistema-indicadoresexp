@@ -1,0 +1,400 @@
+{
+  "GET /api/preventiva": {
+    "corpo": {
+      "tipos": [
+        {
+          "id": "22f7d0bd-454a-5164-a6b9-07fcc9b256fb",
+          "tipo": "Alinhamento/Balanceamento",
+          "intervalo_km": 15000,
+          "alerta_km": 500
+        },
+        {
+          "id": "33a59a71-9a7f-55d7-9062-9fb8eae81bec",
+          "tipo": "Filtro de ar",
+          "intervalo_km": 30000,
+          "alerta_km": 1000
+        },
+        {
+          "id": "a897c90b-1edd-5802-a4ae-45c22ce7212d",
+          "tipo": "Filtro de combustível",
+          "intervalo_km": 30000,
+          "alerta_km": 1000
+        },
+        {
+          "id": "de0247ed-210d-529f-b86d-9eecb45502e9",
+          "tipo": "Lavagem",
+          "intervalo_km": 3000,
+          "alerta_km": 200
+        },
+        {
+          "id": "4967beee-5dd5-5b4e-a9fc-8dbf701f50b4",
+          "tipo": "Manutenção Preventiva Geral",
+          "intervalo_km": 30000,
+          "alerta_km": 3000
+        },
+        {
+          "id": "b1f653dd-1c0e-59e5-87d2-fc3c6b814d3b",
+          "tipo": "Revisão de freios",
+          "intervalo_km": 20000,
+          "alerta_km": 1000
+        },
+        {
+          "id": "dce3d36e-540c-52bc-9f39-0e5ab7226c84",
+          "tipo": "Tacógrafo (calibração)",
+          "intervalo_km": 30000,
+          "alerta_km": 1000
+        },
+        {
+          "id": "6c76f8bd-9e17-5d9d-9e9e-14d77ebeb670",
+          "tipo": "Troca de óleo",
+          "intervalo_km": 10000,
+          "alerta_km": 500
+        }
+      ],
+      "veiculos": [
+        {
+          "id": "d84e0e82-b094-55ad-bb3e-f6cdf910a208",
+          "placa": "DMG9D41",
+          "base": "Imperatriz",
+          "itens": []
+        },
+        {
+          "id": "d2eb4cdf-3cca-5b95-8805-880042d3d662",
+          "placa": "NXB2H55",
+          "base": "Imperatriz",
+          "itens": []
+        },
+        {
+          "id": "ad5be9ac-749f-56c5-a280-c94c2ac3a3c4",
+          "placa": "NXD4H26",
+          "base": "Imperatriz",
+          "itens": []
+        },
+        {
+          "id": "a6eb4628-4bb8-5c50-a35a-8e3e00477a9d",
+          "placa": "PTT0004",
+          "base": "Raposa",
+          "itens": [
+            {
+              "tipo_preventivo_id": "de0247ed-210d-529f-b86d-9eecb45502e9",
+              "tipo": "Lavagem",
+              "intervalo_km": 3000,
+              "alerta_km": 300,
+              "ultimo_km": 354277,
+              "obs": null
+            },
+            {
+              "tipo_preventivo_id": "4967beee-5dd5-5b4e-a9fc-8dbf701f50b4",
+              "tipo": "Manutenção Preventiva Geral",
+              "intervalo_km": 20000,
+              "alerta_km": 2000,
+              "ultimo_km": 300000,
+              "obs": "ACCELO 1316 2019 — EM Vidros: 20.000 km"
+            }
+          ]
+        },
+        {
+          "id": "3c640294-047f-5605-ba09-683d95c51a4a",
+          "placa": "PTV0006",
+          "base": "Raposa",
+          "itens": [
+            {
+              "tipo_preventivo_id": "de0247ed-210d-529f-b86d-9eecb45502e9",
+              "tipo": "Lavagem",
+              "intervalo_km": 3000,
+              "alerta_km": 300,
+              "ultimo_km": 408413,
+              "obs": null
+            },
+            {
+              "tipo_preventivo_id": "4967beee-5dd5-5b4e-a9fc-8dbf701f50b4",
+              "tipo": "Manutenção Preventiva Geral",
+              "intervalo_km": 20000,
+              "alerta_km": 21000,
+              "ultimo_km": 408413,
+              "obs": "ATEGO 3030 CE 2019 — EM Vidros: 20.000 km"
+            }
+          ]
+        },
+        {
+          "id": "25dec389-80fc-50d7-92db-1c620e0a1e95",
+          "placa": "ROW3A87",
+          "base": "Raposa",
+          "itens": [
+            {
+              "tipo_preventivo_id": "de0247ed-210d-529f-b86d-9eecb45502e9",
+              "tipo": "Lavagem",
+              "intervalo_km": 3000,
+              "alerta_km": 300,
+              "ultimo_km": 176585,
+              "obs": null
+            },
+            {
+              "tipo_preventivo_id": "4967beee-5dd5-5b4e-a9fc-8dbf701f50b4",
+              "tipo": "Manutenção Preventiva Geral",
+              "intervalo_km": 30000,
+              "alerta_km": 3000,
+              "ultimo_km": 176585,
+              "obs": "VW 26.260 2023 — EM Vidros: 30.000 km"
+            },
+            {
+              "tipo_preventivo_id": "6c76f8bd-9e17-5d9d-9e9e-14d77ebeb670",
+              "tipo": "Troca de óleo",
+              "intervalo_km": 10000,
+              "alerta_km": 500,
+              "ultimo_km": null,
+              "obs": null
+            }
+          ]
+        },
+        {
+          "id": "da67ce90-c14b-5047-aea1-5c02d584ffb3",
+          "placa": "ROW4J37",
+          "base": "Imperatriz",
+          "itens": []
+        },
+        {
+          "id": "df8b086b-a512-5c99-8780-3dd624113f0a",
+          "placa": "SM02J13",
+          "base": "Raposa",
+          "itens": [
+            {
+              "tipo_preventivo_id": "de0247ed-210d-529f-b86d-9eecb45502e9",
+              "tipo": "Lavagem",
+              "intervalo_km": 3000,
+              "alerta_km": 300,
+              "ultimo_km": null,
+              "obs": null
+            },
+            {
+              "tipo_preventivo_id": "4967beee-5dd5-5b4e-a9fc-8dbf701f50b4",
+              "tipo": "Manutenção Preventiva Geral",
+              "intervalo_km": 30000,
+              "alerta_km": 3000,
+              "ultimo_km": null,
+              "obs": "ATEGO 2429 2024 — EM Vidros: 30.000 km"
+            }
+          ]
+        },
+        {
+          "id": "3792bf91-d46a-57b1-8bcb-ac6910aa0d9c",
+          "placa": "SMM4A02",
+          "base": "Imperatriz",
+          "itens": []
+        },
+        {
+          "id": "1a72cd47-c8b1-56d4-aa06-0884317c9093",
+          "placa": "SMP2F01",
+          "base": "Belém",
+          "itens": []
+        },
+        {
+          "id": "b55a3aa5-9bd6-5bcc-9a75-7dfbafb72c40",
+          "placa": "SMP6F86",
+          "base": "Raposa",
+          "itens": [
+            {
+              "tipo_preventivo_id": "de0247ed-210d-529f-b86d-9eecb45502e9",
+              "tipo": "Lavagem",
+              "intervalo_km": 3000,
+              "alerta_km": 300,
+              "ultimo_km": 136720,
+              "obs": null
+            },
+            {
+              "tipo_preventivo_id": "4967beee-5dd5-5b4e-a9fc-8dbf701f50b4",
+              "tipo": "Manutenção Preventiva Geral",
+              "intervalo_km": 30000,
+              "alerta_km": 3000,
+              "ultimo_km": 136720,
+              "obs": "ATEGO 2429 2024 — EM Vidros: 30.000 km"
+            }
+          ]
+        },
+        {
+          "id": "4c779651-0727-5ea9-bd8a-c5b291e1f39f",
+          "placa": "SMQ2I80",
+          "base": "Raposa",
+          "itens": [
+            {
+              "tipo_preventivo_id": "de0247ed-210d-529f-b86d-9eecb45502e9",
+              "tipo": "Lavagem",
+              "intervalo_km": 3000,
+              "alerta_km": 300,
+              "ultimo_km": 40000,
+              "obs": null
+            },
+            {
+              "tipo_preventivo_id": "4967beee-5dd5-5b4e-a9fc-8dbf701f50b4",
+              "tipo": "Manutenção Preventiva Geral",
+              "intervalo_km": 30000,
+              "alerta_km": 3000,
+              "ultimo_km": 40000,
+              "obs": "ACCELO 1017 2024 — EM Vidros: 30.000 km"
+            }
+          ]
+        },
+        {
+          "id": "83ebaccf-bb76-53f0-b758-969774640fe6",
+          "placa": "SMR2H61",
+          "base": "Imperatriz",
+          "itens": []
+        },
+        {
+          "id": "ceae5b32-789c-5b91-acbf-90643da31f4a",
+          "placa": "SMW0B96",
+          "base": "Raposa",
+          "itens": [
+            {
+              "tipo_preventivo_id": "de0247ed-210d-529f-b86d-9eecb45502e9",
+              "tipo": "Lavagem",
+              "intervalo_km": 3000,
+              "alerta_km": 300,
+              "ultimo_km": null,
+              "obs": null
+            },
+            {
+              "tipo_preventivo_id": "4967beee-5dd5-5b4e-a9fc-8dbf701f50b4",
+              "tipo": "Manutenção Preventiva Geral",
+              "intervalo_km": 30000,
+              "alerta_km": 3000,
+              "ultimo_km": null,
+              "obs": "ATEGO 2429 2024 — EM Vidros: 30.000 km"
+            }
+          ]
+        },
+        {
+          "id": "0c296dcc-a8f9-5e06-a775-196e2701e8ba",
+          "placa": "SND9C34",
+          "base": "Imperatriz",
+          "itens": []
+        }
+      ]
+    }
+  },
+  "GET /api/registros?base=Raposa": {
+    "corpo": [
+      {
+        "id": "a1111111-0000-4000-8000-000000000001",
+        "base": "Raposa",
+        "tipo": "manutencao",
+        "tipo_manutencao": "corretiva",
+        "data_programada": null,
+        "data": "2026-08-28",
+        "data_entrada": "2026-08-28",
+        "hora_entrada": "08:00",
+        "data_saida": "2026-08-29",
+        "hora_saida": "17:00",
+        "dias_oficina": 1,
+        "placa": "PTT0004",
+        "servico": "Troca de amortecedor traseiro",
+        "valor": 1450.5,
+        "km_odometro": 354200,
+        "fornecedor": "Oficina Central Raposa",
+        "status_documental": "concluido",
+        "registrado_em": "2026-08-28T11:15:00.000Z"
+      },
+      {
+        "id": "a1111111-0000-4000-8000-000000000002",
+        "base": "Raposa",
+        "tipo": "manutencao",
+        "tipo_manutencao": "corretiva",
+        "data_programada": "2026-09-05",
+        "data": "2026-08-30",
+        "data_entrada": "2026-08-30",
+        "hora_entrada": null,
+        "data_saida": null,
+        "hora_saida": null,
+        "dias_oficina": null,
+        "placa": "PTV0006",
+        "servico": "Vazamento no sistema de ar",
+        "valor": 890,
+        "km_odometro": 408400,
+        "fornecedor": "",
+        "status_documental": "pendente",
+        "registrado_em": "2026-08-30T09:40:00.000Z"
+      },
+      {
+        "id": "a1111111-0000-4000-8000-000000000003",
+        "base": "Raposa",
+        "tipo": "manutencao",
+        "tipo_manutencao": "preventiva",
+        "data_programada": null,
+        "data": "2026-08-20",
+        "data_entrada": "2026-08-20",
+        "hora_entrada": "07:30",
+        "data_saida": "2026-08-20",
+        "hora_saida": "12:00",
+        "dias_oficina": 0,
+        "placa": "ROW3A87",
+        "servico": "Manutenção Preventiva Geral 30.000 km",
+        "valor": 620,
+        "km_odometro": 176585,
+        "fornecedor": "Concessionária Volkswagen",
+        "status_documental": "concluido",
+        "registrado_em": "2026-08-20T15:05:00.000Z"
+      }
+    ]
+  },
+  "PUT /api/preventiva/3c640294-047f-5605-ba09-683d95c51a4a": {
+    "corpo": {
+      "id": "3c640294-047f-5605-ba09-683d95c51a4a",
+      "placa": "PTV0006",
+      "base": "Raposa",
+      "itens": [
+        {
+          "tipo_preventivo_id": "de0247ed-210d-529f-b86d-9eecb45502e9",
+          "tipo": "Lavagem",
+          "intervalo_km": 3000,
+          "alerta_km": 300,
+          "ultimo_km": 408413,
+          "obs": null
+        },
+        {
+          "tipo_preventivo_id": "4967beee-5dd5-5b4e-a9fc-8dbf701f50b4",
+          "tipo": "Manutenção Preventiva Geral",
+          "intervalo_km": 20000,
+          "alerta_km": 21000,
+          "ultimo_km": 408413,
+          "obs": "ATEGO 3030 CE 2019 — EM Vidros: 20.000 km"
+        },
+        {
+          "tipo_preventivo_id": "22f7d0bd-454a-5164-a6b9-07fcc9b256fb",
+          "tipo": "Alinhamento/Balanceamento",
+          "intervalo_km": 15000,
+          "alerta_km": 500,
+          "ultimo_km": null,
+          "obs": null
+        }
+      ]
+    }
+  },
+  "PUT /api/preventiva/a6eb4628-4bb8-5c50-a35a-8e3e00477a9d": {
+    "corpo": {
+      "id": "a6eb4628-4bb8-5c50-a35a-8e3e00477a9d",
+      "placa": "PTT0004",
+      "base": "Raposa",
+      "itens": [
+        {
+          "tipo_preventivo_id": "4967beee-5dd5-5b4e-a9fc-8dbf701f50b4",
+          "tipo": "Manutenção Preventiva Geral",
+          "intervalo_km": 20000,
+          "alerta_km": 2000,
+          "ultimo_km": 300000,
+          "obs": "ACCELO 1316 2019 — EM Vidros: 20.000 km"
+        }
+      ]
+    }
+  },
+  "POST /api/registros": {
+    "corpo": [
+      {
+        "id": "a1111111-0000-4000-8000-000000000004",
+        "tipo": "manutencao"
+      }
+    ]
+  },
+  "GET /api/registros?base=Imperatriz": {
+    "corpo": []
+  }
+}

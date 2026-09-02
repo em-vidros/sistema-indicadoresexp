@@ -511,12 +511,20 @@ E a configuração passada ao `Chart` contra o JSON congelado, porque pixel de c
 está no DOM. O screenshot de cada estado fica salvo na baseline para inspeção; diff de
 pixel com limiar entra só se o DOM não bastar.
 
+Cada passo também congela os efeitos que o clique disparou, e um deles precisou de
+decisão. Download que sai de `URL.createObjectURL(new Blob(...))` traz uma URL com UUID
+sorteado por chamada, e gravar a URL faria o passo divergir de si mesmo. O palco grava o
+conteúdo do arquivo no lugar dela, que é o que a tela produziu e o que o porte tem que
+preservar. O relatório do `dashboard-semanal` entra na baseline linha por linha por causa
+disso, e é a única coisa que hoje cobra o texto dele.
+
 A baseline congela uma vez, antes de existir React, a partir do build de hoje, e entra
 no git. Depois disso a prova não precisa do código velho, o que é o que permite apagar
 `<tela>.html` e `js/<tela>.ts` no commit da própria tela. `bun verificar/paridade.ts
---mutar` planta duas mutações numa cópia temporária do fonte, um `gap:5px` virando
-`gap:50px` num template e um `onClick` removido, e exige vermelho de cada uma; sem isso a
-prova é uma afirmação sobre si mesma. Os bugs de hoje entram na baseline como estão. Há
+--mutar` planta uma mutação por tela numa cópia temporária do fonte e exige vermelho de
+cada uma; sem isso a prova é uma afirmação sobre si mesma. São as duas famílias que a
+fase 2 deixou passar: um pixel dentro de template, um `gap` ou uma `margin` crescendo dez
+vezes, e um handler que sai do `Object.assign(window, ...)` e vira enfeite. Os bugs de hoje entram na baseline como estão. Há
 pelo menos um em `documentos-frota`: o `querySelectorAll('.form-group input')` que
 adiciona a classe `inp` roda na carga do módulo com o modal vazio e não faz nada. O React
 tem que reproduzir isso; corrigir é decisão separada, com a Lívia.
@@ -546,8 +554,8 @@ faixa `~1.2.x` que o Vite declara.
    verificar` inteiro verde com o `dist` de hoje, e este plano com a fase escrita.
 1. A baseline congela. `playwright` entra; o harness em `verificar/paridade/`, os
    roteiros e as fixtures das sete telas, os arquivos de `verificar/baseline/`. Zero React
-   de tela. Prova: capturar duas vezes dá os mesmos bytes, e as duas mutações plantadas
-   no legado reprovam.
+   de tela. Prova: capturar duas vezes dá os mesmos bytes, e a mutação plantada em cada
+   tela reprova. Fechado com 81 passos congelados e sete mutações pegas.
 2. `entrar`, a menor, e a que exercita o recorte público. Nasce `verificar/publicos.ts`.
 3. `documentos-frota`. 4. `integracao-frota`. 5. `dashboard-semanal`, onde entra o
    Chart.js. 6. `ata-reuniao`. 7. `manutencao-frota`. 8. `formulario-registro`, onde o

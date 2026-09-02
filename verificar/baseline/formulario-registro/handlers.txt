@@ -1,0 +1,15 @@
+abrirGerenciarUsuarios
+adicionarSlotAbastecimento
+calcularCustoViagem
+calcularTotaisAbastecimento
+exportarDados
+fazerLogout
+fecharModal
+limparHoje
+onRotaAbastecimentoChange
+onToggleViagemLonga
+registrar
+salvarUsuarios
+selecionarBase
+selecionarTipo
+selecionarTipoManutencao

@@ -1,0 +1,110 @@
+{
+  "GET /api/registros": {
+    "corpo": [
+      {
+        "tipo": "viagem",
+        "base": "Raposa",
+        "data_saida": "2026-09-01",
+        "motorista": "Carlos Eduardo Lima",
+        "veiculo": "RPS1A23",
+        "rota": "Raposa-Imperatriz",
+        "km_rodados": 480,
+        "valor_carga": 50000,
+        "custo_viagem": 2500,
+        "pct_custo": 5,
+        "atraso_min": -20
+      },
+      {
+        "tipo": "viagem",
+        "base": "Imperatriz",
+        "data_saida": "2026-09-01",
+        "motorista": "Marcos Vinícius Rocha",
+        "veiculo": "IMP4B56",
+        "rota": "Imperatriz-Bacabal",
+        "km_rodados": 210,
+        "valor_carga": 30000,
+        "custo_viagem": 2000,
+        "pct_custo": 6.67,
+        "atraso_min": 5
+      },
+      {
+        "tipo": "viagem",
+        "base": "Raposa",
+        "data_saida": "2026-09-02",
+        "motorista": "Carlos Eduardo Lima",
+        "veiculo": "RPS7C89",
+        "rota": "Raposa-Barra do Corda",
+        "km_rodados": 610,
+        "valor_carga": 20000,
+        "custo_viagem": 2200,
+        "pct_custo": 11,
+        "atraso_min": 40
+      },
+      {
+        "tipo": "viagem",
+        "base": "Imperatriz",
+        "data_saida": "2026-08-31",
+        "motorista": "Josenilson Pereira da Silva",
+        "veiculo": "IMP2D34",
+        "rota": "Imperatriz-Timon",
+        "km_rodados": 95,
+        "valor_carga": 5000,
+        "custo_viagem": 425,
+        "pct_custo": 8.5,
+        "atraso_min": null
+      },
+      {
+        "tipo": "manutencao",
+        "base": "Raposa",
+        "data": "2026-09-01",
+        "placa": "RPS1A23",
+        "servico": "Troca de pneus",
+        "valor": 2000,
+        "fornecedor": "Borracharia Central"
+      },
+      {
+        "tipo": "manutencao",
+        "base": "Imperatriz",
+        "data": "2026-09-02",
+        "placa": "IMP4B56",
+        "servico": "Revisão geral",
+        "valor": 1500,
+        "fornecedor": "Oficina Sul"
+      },
+      {
+        "tipo": "abastecimento",
+        "base": "Raposa",
+        "data": "2026-09-01",
+        "placa": "RPS1A23",
+        "litros": 150.5,
+        "vl_litro": 5.899,
+        "valor_total": 888,
+        "km": 125000
+      },
+      {
+        "tipo": "abastecimento",
+        "base": "Imperatriz",
+        "data": "2026-09-02",
+        "placa": "IMP4B56",
+        "litros": 200,
+        "vl_litro": 5.75,
+        "valor_total": 1150,
+        "km": 98000
+      },
+      {
+        "tipo": "quebra",
+        "base": "Raposa",
+        "data": "2026-09-01",
+        "m2_expedido": 700,
+        "m2_quebrado": 8
+      },
+      {
+        "tipo": "quebra",
+        "base": "Imperatriz",
+        "data": "2026-09-02",
+        "m2_expedido": 300,
+        "m2_quebrado": 7
+      }
+    ]
+  }
+}

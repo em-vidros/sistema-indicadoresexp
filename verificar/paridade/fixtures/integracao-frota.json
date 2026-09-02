@@ -1,0 +1,1097 @@
+{
+  "GET /api/integracoes/catalogo": {
+    "corpo": {
+      "colaboradores": [
+        {
+          "id": "7b5158f1-076d-51a5-b8df-f8315b06b76e",
+          "nome": "Adinaldo de Souza de Jesus",
+          "cargo": "Motorista Carreteiro",
+          "admissao": "2026-04-01",
+          "funcao": "motorista"
+        },
+        {
+          "id": "e0c1f6fb-87b7-5c23-8e92-4f00b01508c6",
+          "nome": "Adriel da Silva Santos",
+          "cargo": null,
+          "admissao": null,
+          "funcao": "motorista"
+        },
+        {
+          "id": "8965f67c-ce0c-5a51-a7d4-fbf67892c1ff",
+          "nome": "Alejandro Marques Alves",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2026-05-27",
+          "funcao": "ajudante"
+        },
+        {
+          "id": "f79b7e33-99de-56a9-ae8f-27eabfe7d9d4",
+          "nome": "Anderson Penha Dos Anjos",
+          "cargo": "Motorista I",
+          "admissao": "2023-11-29",
+          "funcao": "motorista"
+        },
+        {
+          "id": "faa29f70-c6c6-5842-a65a-b9d5e9af7d13",
+          "nome": "Carlos Augusto Ferreira",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2023-10-13",
+          "funcao": "ajudante"
+        },
+        {
+          "id": "13da5e02-0388-5ab3-9cdc-a7c0c00128f7",
+          "nome": "Edmilson Fonseca Ribeiro",
+          "cargo": "Ajudante de Entrega IV",
+          "admissao": "2015-01-05",
+          "funcao": "ajudante"
+        },
+        {
+          "id": "0122a298-5479-53a0-8f17-9236b6f3c884",
+          "nome": "Emerson Hugo Silva Rodrigues",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2026-08-17",
+          "funcao": "ajudante"
+        },
+        {
+          "id": "d6d83872-8f4f-5777-b890-221bad488c8d",
+          "nome": "Erizelton Abreu Ferreira",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2026-06-22",
+          "funcao": "ajudante"
+        },
+        {
+          "id": "9dadf0a5-e6ce-5104-9028-97bada86e19e",
+          "nome": "Esteves Gabriel de Sousa de Assis",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2025-04-16",
+          "funcao": "ajudante"
+        },
+        {
+          "id": "eefe8c95-8919-5a82-aa43-1c81b985398b",
+          "nome": "Evandro de Oliveira Cardim",
+          "cargo": null,
+          "admissao": null,
+          "funcao": "motorista"
+        },
+        {
+          "id": "9dd4b2dc-91c1-57f2-9c07-88f492ba9394",
+          "nome": "Francisco Pereira dos Santos",
+          "cargo": null,
+          "admissao": null,
+          "funcao": "motorista"
+        },
+        {
+          "id": "776cfbb5-e982-5997-b62d-cc697afd34b0",
+          "nome": "Francisco de Sousa Cabral",
+          "cargo": null,
+          "admissao": null,
+          "funcao": "motorista"
+        },
+        {
+          "id": "5c9a55fe-e840-5650-b608-976782512cf4",
+          "nome": "Gabriel Reis Costa",
+          "cargo": "Motorista I",
+          "admissao": "2026-02-12",
+          "funcao": "motorista"
+        },
+        {
+          "id": "89f90ecc-c2e7-53e6-8f97-3d9dda9e5c7e",
+          "nome": "Italo Melo Sales",
+          "cargo": null,
+          "admissao": null,
+          "funcao": "motorista"
+        },
+        {
+          "id": "d8ed4a37-1790-5671-9f49-2c5b0b5adcf2",
+          "nome": "Josenilson Pereira da Silva",
+          "cargo": "Ajudante de Entrega IV",
+          "admissao": "2020-08-24",
+          "funcao": "ajudante"
+        },
+        {
+          "id": "78b35590-e3aa-52b1-8ea3-e386e044265f",
+          "nome": "Kleryson Cleber Pereira Isaias",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2026-05-06",
+          "funcao": "ajudante"
+        },
+        {
+          "id": "cd0ab21f-6ea0-5664-83f6-3aca9f306fa5",
+          "nome": "Laurenilson Pereira Dias",
+          "cargo": "Ajudante de Entrega II",
+          "admissao": "2021-08-25",
+          "funcao": "ajudante"
+        },
+        {
+          "id": "2d511eb6-03b9-5a9c-88e5-e8154a56ba79",
+          "nome": "Leandro do Nascimento Brito",
+          "cargo": "Motorista II",
+          "admissao": "2020-07-17",
+          "funcao": "motorista"
+        },
+        {
+          "id": "b19d92d4-ca0f-5a8b-98d0-57783628d26e",
+          "nome": "Nataniel Pereira Rocha",
+          "cargo": null,
+          "admissao": null,
+          "funcao": "motorista"
+        },
+        {
+          "id": "38c7f678-6f70-5fc7-ad58-bc0c0e307349",
+          "nome": "Railton da Silva Batista",
+          "cargo": null,
+          "admissao": null,
+          "funcao": "motorista"
+        },
+        {
+          "id": "b684e671-da73-5fef-b02b-7ac40da0c6f5",
+          "nome": "Raimundo Correia Ferreira",
+          "cargo": "Motorista I",
+          "admissao": "2026-04-24",
+          "funcao": "motorista"
+        },
+        {
+          "id": "d72e7c1e-f46b-5d85-b7c9-0787ec854e91",
+          "nome": "Raimundo Nonato da Silva Divino",
+          "cargo": "Motorista II",
+          "admissao": "2022-10-03",
+          "funcao": "motorista"
+        },
+        {
+          "id": "28b79ea8-432f-59d5-b87d-395d6612f20c",
+          "nome": "Saturnino Assumpção Dias Filho",
+          "cargo": "Motorista I",
+          "admissao": "2026-04-07",
+          "funcao": "motorista"
+        },
+        {
+          "id": "9340d99c-8426-5fe7-9145-bda174981fdf",
+          "nome": "Sebastiao de Brito Matos",
+          "cargo": null,
+          "admissao": null,
+          "funcao": "motorista"
+        },
+        {
+          "id": "16a78550-866c-59a1-9af9-4bb0ad29d235",
+          "nome": "Severino Manoel Barata do Nascimento",
+          "cargo": null,
+          "admissao": null,
+          "funcao": "motorista"
+        },
+        {
+          "id": "58b5000a-d651-58cf-bd86-04bc8556c64c",
+          "nome": "Silio Vinicius Cruz Castro",
+          "cargo": "Motorista I",
+          "admissao": "2024-04-08",
+          "funcao": "motorista"
+        },
+        {
+          "id": "47505757-3b48-524b-ad75-d5b737da588c",
+          "nome": "Terles Sousa Dias",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2018-08-22",
+          "funcao": "ajudante"
+        },
+        {
+          "id": "1d845742-34fc-5584-910d-cec9a3c3d779",
+          "nome": "Victor Gonçalves Vasconcelos",
+          "cargo": "Motorista I",
+          "admissao": "2025-10-15",
+          "funcao": "motorista"
+        }
+      ],
+      "programas": [
+        {
+          "id": "bb8e5bdf-b3f9-5b6e-9d6e-2c013f0dad95",
+          "funcao": "ajudante",
+          "titulo": "Ajudante de Entrega / Carga e Descarga",
+          "semanas": [
+            {
+              "numero": 1,
+              "titulo": "Semana 1 — Integração, Segurança (EPIs), Leitura de Etiquetas, Tipos de Vidro e Balcão",
+              "atividades": [
+                {
+                  "id": "c07f24cd-0009-54b2-9eb0-f13741166588",
+                  "codigo": "a1a",
+                  "titulo": "Boas-vindas e Regulamento Interno",
+                  "descricao": "Apresentação da equipe de logística e RH, normas da empresa, horários, uso correto do uniforme e conduta."
+                },
+                {
+                  "id": "fecc4c63-27bf-5295-a976-b1b1fd4e3714",
+                  "codigo": "a1b",
+                  "titulo": "Segurança e EPIs",
+                  "descricao": "Treinamento obrigatório sobre uso de Luvas de Proteção, Botina de Aço/Compósito, Óculos de Proteção e Protetor Auricular. Orientação sobre ergonomia ao levantar peso."
+                },
+                {
+                  "id": "dbebc8f8-0f14-58cc-97ad-77b8bdf6ebd3",
+                  "codigo": "a1c",
+                  "titulo": "Conhecimento dos Materiais (Tipos de Vidro)",
+                  "descricao": "Introdução aos produtos movimentados, compreendendo as especificidades, particularidades de manuseio, fragilidade e diferenças entre vidro comum, temperado e laminado."
+                },
+                {
+                  "id": "646953a6-0a72-50b1-ad01-9754b4a92449",
+                  "codigo": "a1d",
+                  "titulo": "Sistema de Leitura e Conferência de Etiquetas",
+                  "descricao": "Treinamento prático no sistema de leitura de etiquetas para identificação de dimensões, tamanhos, especificações técnicas e conferência precisa dos materiais."
+                },
+                {
+                  "id": "8505b45f-0664-5a8d-94b8-cd46c9698361",
+                  "codigo": "a1e",
+                  "titulo": "Prática Orientada",
+                  "descricao": "Acompanhamento e atuação prática junto a uma equipe experiente, com supervisão direta da coordenação na forragem de peças e início do manuseio de peças temperadas no depósito/expedição, sem atuação direta em rotas ou carregamentos."
+                },
+                {
+                  "id": "4570fac9-6629-5c00-b632-67bdb4ee8ab2",
+                  "codigo": "a1f",
+                  "titulo": "Acompanhamento no Balcão da Fábrica",
+                  "descricao": "Acompanhamento presencial no atendimento a clientes em retiradas no balcão da fábrica, observando a rotina de conferência com o cliente, postura de atendimento e liberação de mercadorias."
+                }
+              ]
+            },
+            {
+              "numero": 2,
+              "titulo": "Semana 2 — Separação, Romaneios, Transferência entre Filiais e Carregamento",
+              "atividades": [
+                {
+                  "id": "90eb7694-4edd-544c-90a5-40795132d72c",
+                  "codigo": "a2a",
+                  "titulo": "Separação e Leitura de Carga",
+                  "descricao": "Acompanhamento prático da rotina de separação de mercadorias no depósito, leitura de etiquetas e conferência de materiais para expedição."
+                },
+                {
+                  "id": "90ba2c0b-8b04-59ff-8260-80763790ca91",
+                  "codigo": "a2b",
+                  "titulo": "Romaneios de Entrega e Transferência",
+                  "descricao": "Treinamento no manuseio e conferência de romaneios de entrega e documentação de carga para o transporte de transferência entre as filiais Angelim e Guajajaras."
+                },
+                {
+                  "id": "3be3f4aa-073a-5d16-82bd-38d31de05936",
+                  "codigo": "a2c",
+                  "titulo": "Checklist de Saída e Arrumação",
+                  "descricao": "Aprendizado do processo de conferência visual de itens antes da amarração, prática na disposição dos produtos nos carrinhos móveis e cavalete do veículo para evitar deslocamentos e avarias."
+                },
+                {
+                  "id": "91ab4ad5-3f7c-58c5-9e13-6ff052d0aa5c",
+                  "codigo": "a2d",
+                  "titulo": "Amarração, Proteção e Lógica LIFO",
+                  "descricao": "Uso de cantoneiras e proteções de borracha, além da organização do carregamento pela ordem de entrega."
+                }
+              ]
+            },
+            {
+              "numero": 3,
+              "titulo": "Semana 3 — Rotina de Rota, Conferência de Mercadoria e Documentação",
+              "atividades": [
+                {
+                  "id": "7919e1be-f8b2-5a75-84c5-90d7fd7b81ea",
+                  "codigo": "a3a",
+                  "titulo": "Primeiras Saídas em Rota",
+                  "descricao": "Acompanhamento presencial no transporte e entregas sob supervisão direta da coordenação e acompanhamento de equipe experiente."
+                },
+                {
+                  "id": "b5ede83d-7066-52d7-8818-8f85910594b8",
+                  "codigo": "a3b",
+                  "titulo": "Conferência no Cliente",
+                  "descricao": "Validação das quantidades, etiquetas e especificações de cada nota fiscal/pedido antes de descarregar a mercadoria no cliente."
+                },
+                {
+                  "id": "59c0ee48-0a3a-54e0-b86d-782d6a7e2f7d",
+                  "codigo": "a3c",
+                  "titulo": "Manuseio na Descarga",
+                  "descricao": "Técnicas corretas para descarregar o material de forma segura até o local de depósito indicado pelo cliente."
+                },
+                {
+                  "id": "57b2ea7f-b7fb-5aad-815d-7cdf7edcb650",
+                  "codigo": "a3d",
+                  "titulo": "Assinatura e Recebimento",
+                  "descricao": "Coleta de assinaturas, nomes legíveis e RG/CPF no canhoto da nota fiscal ou comprovante digital de entrega."
+                }
+              ]
+            },
+            {
+              "numero": 4,
+              "titulo": "Semana 4 — Atendimento ao Cliente, Ocorrências e Devoluções",
+              "atividades": [
+                {
+                  "id": "0ae0645e-77d3-5561-93b3-3d7a08488cff",
+                  "codigo": "a4a",
+                  "titulo": "Postura Profissional",
+                  "descricao": "Cordialidade, comunicação clara com os responsáveis pelo recebimento e respeito às regras internas do cliente."
+                },
+                {
+                  "id": "87f541ed-a9a0-529a-8f52-1193f3822ad3",
+                  "codigo": "a4b",
+                  "titulo": "Gestão de Ocorrências",
+                  "descricao": "Procedimento padrão em caso de avaria detectada, ausência do cliente, recusa de mercadoria ou divergência de pedido."
+                },
+                {
+                  "id": "f7964cb3-799e-5098-a27e-fee7c577f75c",
+                  "codigo": "a4c",
+                  "titulo": "Comunicação com a Central",
+                  "descricao": "Reporte imediato à coordenação/expedição antes de deixar o local caso haja problemas no recebimento."
+                },
+                {
+                  "id": "d54e08d4-fdc6-5d60-b41d-52424a0309f8",
+                  "codigo": "a4d",
+                  "titulo": "Acondicionamento de Devoluções",
+                  "descricao": "Organização do material recusado ou avariado no veículo para retornar em segurança à fábrica/depósito."
+                }
+              ]
+            },
+            {
+              "numero": 5,
+              "titulo": "Semana 5 — Autonomia Progressiva e Agilidade Operacional",
+              "atividades": [
+                {
+                  "id": "d2dd1e90-f3e4-5173-9a1c-ae3cfeb889cd",
+                  "codigo": "a5a",
+                  "titulo": "Atuação Direta",
+                  "descricao": "Execução das tarefas de carga, amarração, conferência e descarga com acompanhamento periódico da coordenação."
+                },
+                {
+                  "id": "ae1ffed5-0be0-5916-a1a8-a87a1f442b20",
+                  "codigo": "a5b",
+                  "titulo": "Gestão de Tempo",
+                  "descricao": "Foco no ritmo de descarregamento e cumprimento de prazos de rotas programadas."
+                },
+                {
+                  "id": "ddaf3cf1-3864-54e1-ab15-87d4c79875c0",
+                  "codigo": "a5c",
+                  "titulo": "Organização do Veículo no Retorno",
+                  "descricao": "Limpeza do espaço de carga ao final do expediente, recolhimento de fitas, proteções e sobras de embalagens."
+                }
+              ]
+            },
+            {
+              "numero": 6,
+              "titulo": "Semana 6 — Consolidação de Processos e Avaliação do Período (45 dias)",
+              "atividades": [
+                {
+                  "id": "8d4710ff-fa40-5a21-a822-e8740d27214b",
+                  "codigo": "a6a",
+                  "titulo": "Revisão Geral",
+                  "descricao": "Execução completa e autônoma da rotina semanal de entregas."
+                },
+                {
+                  "id": "99f0b48d-7702-51f4-8af0-94538b0dee0e",
+                  "codigo": "a6b",
+                  "titulo": "Avaliação de Desempenho",
+                  "descricao": "Reunião conjunta com a coordenação de logística e Recursos Humanos (RH) para analisar os primeiros 45 dias."
+                },
+                {
+                  "id": "8173da76-28df-57e2-8907-66ccc9d2dc69",
+                  "codigo": "a6c",
+                  "titulo": "Decisão de Renovação/Efetivação",
+                  "descricao": "Feedback estruturado sobre pontos fortes e oportunidades de melhoria para a continuidade do contrato de experiência."
+                }
+              ]
+            }
+          ],
+          "criterios": [
+            {
+              "criterio": "Segurança e EPIs",
+              "padrao": "Uso 100% correto de botas, luvas e óculos durante carga/descarga.",
+              "frequencia": "Diária"
+            },
+            {
+              "criterio": "Cuidado com a Carga",
+              "padrao": "Zero avarias por manuseio inadequado ou amarração incorreta dos tipos de vidro.",
+              "frequencia": "Semanal"
+            },
+            {
+              "criterio": "Conferência de Etiquetas e Romaneios",
+              "padrao": "100% de precisão na leitura das etiquetas/romaneios e divergência zero nas transferências entre filiais e entregas.",
+              "frequencia": "Diária"
+            },
+            {
+              "criterio": "Assiduidade e Pontualidade",
+              "padrao": "Cumprimento rigoroso dos horários de carregamento e saída.",
+              "frequencia": "Semanal"
+            }
+          ]
+        },
+        {
+          "id": "59405742-39ba-5d20-a3eb-03333ec9bbed",
+          "funcao": "motorista",
+          "titulo": "Motorista de Entrega / Transporte Logístico",
+          "semanas": [
+            {
+              "numero": 1,
+              "titulo": "Semana 1 — Integração, Segurança (EPIs), Checklist Veicular, Leitura de Etiquetas e Tipos de Vidro",
+              "atividades": [
+                {
+                  "id": "bc7b4e7c-6e23-5ed0-bf80-832fb431d4dd",
+                  "codigo": "m1a",
+                  "titulo": "Boas-vindas e Regulamento Interno",
+                  "descricao": "Apresentação da equipe de logística e RH, normas da empresa, jornada de trabalho, políticas de frota e conduta profissional."
+                },
+                {
+                  "id": "7accacb0-e6c0-5a07-bf16-5dc5e0b096ab",
+                  "codigo": "m1b",
+                  "titulo": "Segurança e EPIs",
+                  "descricao": "Treinamento obrigatório sobre o uso de Luvas de Proteção, Botina de Aço/Compósito, Óculos de Proteção e Protetor Auricular, bem como posturas ergométricas para o transporte e condução."
+                },
+                {
+                  "id": "3d9d29ab-375f-5e0d-96ab-fa813e783145",
+                  "codigo": "m1c",
+                  "titulo": "Conhecimento dos Materiais (Tipos de Vidro)",
+                  "descricao": "Apresentação detalhada dos tipos de produto transportados, entendendo a fragilidade, comportamento da carga durante o transporte e diferenças entre vidro comum, temperado e laminado."
+                },
+                {
+                  "id": "1d1941cd-2357-5a48-bfd2-182e837c7ffb",
+                  "codigo": "m1d",
+                  "titulo": "Sistema de Leitura e Conferência de Etiquetas",
+                  "descricao": "Treinamento no sistema de conferência e leitura de etiquetas para identificação de dimensões, quantidades e destino dos materiais na expedição."
+                },
+                {
+                  "id": "14a4791b-141c-5709-8be9-13f4fcc4e667",
+                  "codigo": "m1e",
+                  "titulo": "Checklist Veicular Obrigatório",
+                  "descricao": "Instrução sobre a rotina diária de verificação dos itens de segurança e funcionamento do veículo (pneus, freios, luzes, fluidos, equipamentos obrigatórios e conservação dos cavaletes)."
+                },
+                {
+                  "id": "36c50487-c150-54a0-896e-39993a2d0ff8",
+                  "codigo": "m1f",
+                  "titulo": "Prática Orientada com Motorista Experiente",
+                  "descricao": "Acompanhamento e atuação prática junto a um motorista sênior na rotina de pátio, forragem de peças, inspeção de veículos e movimentação interna na fábrica/depósito, sem atuação direta em rotas longas."
+                }
+              ]
+            },
+            {
+              "numero": 2,
+              "titulo": "Semana 2 — Carregamento, Amarração, Distribuição de Carga e Transferências entre Filiais",
+              "atividades": [
+                {
+                  "id": "ad1f7447-11da-58dc-b8d8-e41da1fb5e36",
+                  "codigo": "m2a",
+                  "titulo": "Foco em Carregamento e Distribuição de Peso",
+                  "descricao": "Instrução e prática na correta disposição das peças de vidro nos cavaletes e carrinhos móveis do veículo, respeitando os limites de peso e estabilidade."
+                },
+                {
+                  "id": "be9d9a2a-cfff-58b0-8a56-a6b3197bf03b",
+                  "codigo": "m2b",
+                  "titulo": "Técnicas de Amarração e Proteção de Carga",
+                  "descricao": "Aplicação prática de cantoneiras, proteções de borracha, cintas e catracas para travamento seguro dos vidros, eliminando folgas e riscos de avarias durante a movimentação."
+                },
+                {
+                  "id": "0a93f733-7300-5718-9f31-6fe94804c441",
+                  "codigo": "m2c",
+                  "titulo": "Separação, Leitura e Romaneios de Entrega",
+                  "descricao": "Treinamento no manuseio de romaneios de carga, leitura das notas fiscais e conferência do manifesto de transporte."
+                },
+                {
+                  "id": "5f5d8df8-11d2-5daa-8348-de6ad9feb99e",
+                  "codigo": "m2d",
+                  "titulo": "Rotas de Transferência entre Filiais",
+                  "descricao": "Execução supervisionada de viagens de transferência de carga e insumos entre as filiais Angelim e Guajajaras, aplicando a lógica LIFO de arrumação por ordem de descarregamento."
+                }
+              ]
+            },
+            {
+              "numero": 3,
+              "titulo": "Semana 3 — Roteiros de Rotas Urbanas, Condução e Documentação",
+              "atividades": [
+                {
+                  "id": "99172472-9f8d-5c4d-9595-c73c7afc3d19",
+                  "codigo": "m3a",
+                  "titulo": "Primeiras Saídas em Rotas Urbanas",
+                  "descricao": "Acompanhamento e condução do veículo dentro da cidade sob supervisão direta de um motorista experiente e suporte da coordenação."
+                },
+                {
+                  "id": "56360e06-a472-5550-a647-e2615e0c9f17",
+                  "codigo": "m3b",
+                  "titulo": "Planejamento e Otimização de Roteiros",
+                  "descricao": "Leitura e interpretação dos roteiros de rota diários, análise de itinerários, rotas permitidas para veículos pesados/médios e gestão do tempo de viagem."
+                },
+                {
+                  "id": "d302595b-e918-5f42-bf2f-4ecec0576bbb",
+                  "codigo": "m3c",
+                  "titulo": "Procedimentos no Cliente",
+                  "descricao": "Validação dos romaneios/etiquetas e coordenação da descarga junto à equipe de ajudantes, garantindo o manuseio seguro no local de entrega."
+                },
+                {
+                  "id": "b5f85899-9a85-582f-8e4d-e3bdf40ba7ea",
+                  "codigo": "m3d",
+                  "titulo": "Conferência de Documentação e Canhotos",
+                  "descricao": "Coleta correta de assinaturas, nomes legíveis e documento (RG/CPF) nos canhotos de notas fiscais e comprovantes digitais de entrega."
+                }
+              ]
+            },
+            {
+              "numero": 4,
+              "titulo": "Semana 4 — Gestão de Ocorrências em Rota, Devoluções e Postura Profissional",
+              "atividades": [
+                {
+                  "id": "deef7cbb-47f6-52c9-988b-dbb0c0137abf",
+                  "codigo": "m4a",
+                  "titulo": "Postura Profissional e Dirigibilidade Defensiva",
+                  "descricao": "Prática de condução defensiva, respeito às leis de trânsito e postura adequada no atendimento presencial ao cliente."
+                },
+                {
+                  "id": "90570044-652c-52e4-9795-f6ea8bb7d114",
+                  "codigo": "m4b",
+                  "titulo": "Gestão de Ocorrências no Trânsito e Entregas",
+                  "descricao": "Procedimento operacional para reporte imediato à coordenação em casos de avarias em trajeto, divergências no pedido, cliente ausente ou recusa de mercadorias."
+                },
+                {
+                  "id": "cbf252b4-227a-5095-ae07-a397c35f5845",
+                  "codigo": "m4c",
+                  "titulo": "Comunicação com a Central/Logística",
+                  "descricao": "Reporte contínuo do status do roteiro, ocorrências em rota e previsão de retorno à base."
+                },
+                {
+                  "id": "dd7c1d09-2333-541b-b0ca-40cff35face3",
+                  "codigo": "m4d",
+                  "titulo": "Acondicionamento e Retorno de Devoluções",
+                  "descricao": "Procedimento para amarração e proteção de produtos recusados ou avariados para transporte seguro de volta à fábrica."
+                }
+              ]
+            },
+            {
+              "numero": 5,
+              "titulo": "Semana 5 — Autonomia Progressiva na Condução e Cumprimento de Roteiros",
+              "atividades": [
+                {
+                  "id": "a455b2dc-800c-59cf-8203-491464fce2f6",
+                  "codigo": "m5a",
+                  "titulo": "Gestão de Tempo e Eficiência na Rota",
+                  "descricao": "Cumprimento da programação de entregas previstas no roteiro mantendo a segurança e integridade do veículo e da carga."
+                },
+                {
+                  "id": "c8731c4b-dcd3-50a8-a5d7-f0052a69aa55",
+                  "codigo": "m5b",
+                  "titulo": "Encerramento de Rota e Checklist de Retorno",
+                  "descricao": "Organização do veículo no final do expediente, limpeza da área de carga, organização de cintas/cantoneiras e registro de divergências no checklist final."
+                }
+              ]
+            },
+            {
+              "numero": 6,
+              "titulo": "Semana 6 — Consolidação de Processos e Avaliação do Período (45 dias)",
+              "atividades": [
+                {
+                  "id": "c062542a-6f8c-523f-9488-ffaf7c978b59",
+                  "codigo": "m6a",
+                  "titulo": "Revisão Geral do Desempenho Operacional",
+                  "descricao": "Execução autônoma da rotina completa de checklist veicular, carregamento, amarração, condução por roteiro e entregas."
+                },
+                {
+                  "id": "9087780f-ebd1-5b42-8001-046239ec9d55",
+                  "codigo": "m6b",
+                  "titulo": "Avaliação Formal de Desempenho",
+                  "descricao": "Reunião conjunta com a coordenação de logística, gerência e Recursos Humanos (RH) para análise dos 45 dias de experiência."
+                },
+                {
+                  "id": "d5733de6-883b-5d16-9325-0766e05adce9",
+                  "codigo": "m6c",
+                  "titulo": "Decisão de Renovação/Efetivação",
+                  "descricao": "Feedback estruturado com definição sobre a continuidade do contrato de trabalho."
+                }
+              ]
+            }
+          ],
+          "criterios": [
+            {
+              "criterio": "Segurança, EPIs e Condução Defensiva",
+              "padrao": "Uso 100% correto de EPIs e cumprimento rigoroso das normas de trânsito e segurança.",
+              "frequencia": "Diária"
+            },
+            {
+              "criterio": "Checklist e Conservação do Veículo",
+              "padrao": "Execução diária do checklist pré-saída e manutenção do veículo em perfeitas condições de uso.",
+              "frequencia": "Diária"
+            },
+            {
+              "criterio": "Cuidado no Carregamento e Amarração",
+              "padrao": "Zero avarias ou acidentes causados por má distribuição de peso ou amarração inadequada.",
+              "frequencia": "Semanal"
+            },
+            {
+              "criterio": "Acurácia de Rotas e Documentação",
+              "padrao": "Cumprimento dos roteiros planejados e 100% dos canhotos/romaneios devidamente conferidos e assinados.",
+              "frequencia": "Diária"
+            },
+            {
+              "criterio": "Assiduidade e Pontualidade",
+              "padrao": "Cumprimento rigoroso dos horários de apresentação, carregamento e saídas de rota.",
+              "frequencia": "Semanal"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "GET /api/integracoes": {
+    "corpo": [
+      {
+        "id": "reg-completo-ajudante-001",
+        "colaboradorId": "8965f67c-ce0c-5a51-a7d4-fbf67892c1ff",
+        "programaId": "bb8e5bdf-b3f9-5b6e-9d6e-2c013f0dad95",
+        "funcao": "ajudante",
+        "nome": "Alejandro Marques Alves",
+        "cargo": "Ajudante de Entrega I",
+        "admissao": "2026-05-27",
+        "inicio": "2026-07-20",
+        "coord": "Raimundo Pontes Pereira",
+        "gerente": "Lívia Maria de Castro Cutrim Lima",
+        "rh": "Fernanda Alves",
+        "salvoEm": "2026-08-15T09:00:00-03:00",
+        "atividades": [
+          {
+            "atividadeId": "c07f24cd-0009-54b2-9eb0-f13741166588",
+            "codigo": "a1a",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "fecc4c63-27bf-5295-a976-b1b1fd4e3714",
+            "codigo": "a1b",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "dbebc8f8-0f14-58cc-97ad-77b8bdf6ebd3",
+            "codigo": "a1c",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "646953a6-0a72-50b1-ad01-9754b4a92449",
+            "codigo": "a1d",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "8505b45f-0664-5a8d-94b8-cd46c9698361",
+            "codigo": "a1e",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "4570fac9-6629-5c00-b632-67bdb4ee8ab2",
+            "codigo": "a1f",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "90eb7694-4edd-544c-90a5-40795132d72c",
+            "codigo": "a2a",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "90ba2c0b-8b04-59ff-8260-80763790ca91",
+            "codigo": "a2b",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "3be3f4aa-073a-5d16-82bd-38d31de05936",
+            "codigo": "a2c",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "91ab4ad5-3f7c-58c5-9e13-6ff052d0aa5c",
+            "codigo": "a2d",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "7919e1be-f8b2-5a75-84c5-90d7fd7b81ea",
+            "codigo": "a3a",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "b5ede83d-7066-52d7-8818-8f85910594b8",
+            "codigo": "a3b",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "59c0ee48-0a3a-54e0-b86d-782d6a7e2f7d",
+            "codigo": "a3c",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "57b2ea7f-b7fb-5aad-815d-7cdf7edcb650",
+            "codigo": "a3d",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "0ae0645e-77d3-5561-93b3-3d7a08488cff",
+            "codigo": "a4a",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "87f541ed-a9a0-529a-8f52-1193f3822ad3",
+            "codigo": "a4b",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "f7964cb3-799e-5098-a27e-fee7c577f75c",
+            "codigo": "a4c",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "d54e08d4-fdc6-5d60-b41d-52424a0309f8",
+            "codigo": "a4d",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "d2dd1e90-f3e4-5173-9a1c-ae3cfeb889cd",
+            "codigo": "a5a",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "ae1ffed5-0be0-5916-a1a8-a87a1f442b20",
+            "codigo": "a5b",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "ddaf3cf1-3864-54e1-ab15-87d4c79875c0",
+            "codigo": "a5c",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "8d4710ff-fa40-5a21-a822-e8740d27214b",
+            "codigo": "a6a",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "99f0b48d-7702-51f4-8af0-94538b0dee0e",
+            "codigo": "a6b",
+            "feito": true,
+            "data": "2026-08-10"
+          },
+          {
+            "atividadeId": "8173da76-28df-57e2-8907-66ccc9d2dc69",
+            "codigo": "a6c",
+            "feito": true,
+            "data": "2026-08-10"
+          }
+        ]
+      },
+      {
+        "id": "reg-parcial-motorista-002",
+        "colaboradorId": "5c9a55fe-e840-5650-b608-976782512cf4",
+        "programaId": "59405742-39ba-5d20-a3eb-03333ec9bbed",
+        "funcao": "motorista",
+        "nome": "Gabriel Reis Costa",
+        "cargo": "Motorista I",
+        "admissao": "2026-02-12",
+        "inicio": "2026-08-01",
+        "coord": "Raimundo Pontes Pereira",
+        "gerente": "Lívia Maria de Castro Cutrim Lima",
+        "rh": null,
+        "salvoEm": "2026-08-28T14:30:00-03:00",
+        "atividades": [
+          {
+            "atividadeId": "bc7b4e7c-6e23-5ed0-bf80-832fb431d4dd",
+            "codigo": "m1a",
+            "feito": true,
+            "data": "2026-08-05"
+          },
+          {
+            "atividadeId": "7accacb0-e6c0-5a07-bf16-5dc5e0b096ab",
+            "codigo": "m1b",
+            "feito": true,
+            "data": "2026-08-05"
+          },
+          {
+            "atividadeId": "3d9d29ab-375f-5e0d-96ab-fa813e783145",
+            "codigo": "m1c",
+            "feito": true,
+            "data": "2026-08-05"
+          },
+          {
+            "atividadeId": "1d1941cd-2357-5a48-bfd2-182e837c7ffb",
+            "codigo": "m1d",
+            "feito": true,
+            "data": "2026-08-05"
+          },
+          {
+            "atividadeId": "14a4791b-141c-5709-8be9-13f4fcc4e667",
+            "codigo": "m1e",
+            "feito": true,
+            "data": "2026-08-05"
+          },
+          {
+            "atividadeId": "36c50487-c150-54a0-896e-39993a2d0ff8",
+            "codigo": "m1f",
+            "feito": true,
+            "data": "2026-08-05"
+          },
+          {
+            "atividadeId": "ad1f7447-11da-58dc-b8d8-e41da1fb5e36",
+            "codigo": "m2a",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "be9d9a2a-cfff-58b0-8a56-a6b3197bf03b",
+            "codigo": "m2b",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "0a93f733-7300-5718-9f31-6fe94804c441",
+            "codigo": "m2c",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "5f5d8df8-11d2-5daa-8348-de6ad9feb99e",
+            "codigo": "m2d",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "99172472-9f8d-5c4d-9595-c73c7afc3d19",
+            "codigo": "m3a",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "56360e06-a472-5550-a647-e2615e0c9f17",
+            "codigo": "m3b",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "d302595b-e918-5f42-bf2f-4ecec0576bbb",
+            "codigo": "m3c",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "b5f85899-9a85-582f-8e4d-e3bdf40ba7ea",
+            "codigo": "m3d",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "deef7cbb-47f6-52c9-988b-dbb0c0137abf",
+            "codigo": "m4a",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "90570044-652c-52e4-9795-f6ea8bb7d114",
+            "codigo": "m4b",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "cbf252b4-227a-5095-ae07-a397c35f5845",
+            "codigo": "m4c",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "dd7c1d09-2333-541b-b0ca-40cff35face3",
+            "codigo": "m4d",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "a455b2dc-800c-59cf-8203-491464fce2f6",
+            "codigo": "m5a",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "c8731c4b-dcd3-50a8-a5d7-f0052a69aa55",
+            "codigo": "m5b",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "c062542a-6f8c-523f-9488-ffaf7c978b59",
+            "codigo": "m6a",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "9087780f-ebd1-5b42-8001-046239ec9d55",
+            "codigo": "m6b",
+            "feito": false,
+            "data": null
+          },
+          {
+            "atividadeId": "d5733de6-883b-5d16-9325-0766e05adce9",
+            "codigo": "m6c",
+            "feito": false,
+            "data": null
+          }
+        ]
+      }
+    ]
+  },
+  "POST /api/integracoes": {
+    "corpo": {
+      "id": "reg-novo-motorista-003",
+      "colaboradorId": "7b5158f1-076d-51a5-b8df-f8315b06b76e",
+      "programaId": "59405742-39ba-5d20-a3eb-03333ec9bbed",
+      "funcao": "motorista",
+      "nome": "Adinaldo de Souza de Jesus",
+      "cargo": "Motorista Carreteiro",
+      "admissao": "2026-04-01",
+      "inicio": "2026-09-02",
+      "coord": "Raimundo Pontes Pereira",
+      "gerente": "Lívia Maria de Castro Cutrim Lima",
+      "rh": null,
+      "salvoEm": "2026-09-02T12:00:00-03:00",
+      "atividades": [
+        {
+          "atividadeId": "bc7b4e7c-6e23-5ed0-bf80-832fb431d4dd",
+          "codigo": "m1a",
+          "feito": true,
+          "data": "2026-09-02"
+        },
+        {
+          "atividadeId": "7accacb0-e6c0-5a07-bf16-5dc5e0b096ab",
+          "codigo": "m1b",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "3d9d29ab-375f-5e0d-96ab-fa813e783145",
+          "codigo": "m1c",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "1d1941cd-2357-5a48-bfd2-182e837c7ffb",
+          "codigo": "m1d",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "14a4791b-141c-5709-8be9-13f4fcc4e667",
+          "codigo": "m1e",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "36c50487-c150-54a0-896e-39993a2d0ff8",
+          "codigo": "m1f",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "ad1f7447-11da-58dc-b8d8-e41da1fb5e36",
+          "codigo": "m2a",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "be9d9a2a-cfff-58b0-8a56-a6b3197bf03b",
+          "codigo": "m2b",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "0a93f733-7300-5718-9f31-6fe94804c441",
+          "codigo": "m2c",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "5f5d8df8-11d2-5daa-8348-de6ad9feb99e",
+          "codigo": "m2d",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "99172472-9f8d-5c4d-9595-c73c7afc3d19",
+          "codigo": "m3a",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "56360e06-a472-5550-a647-e2615e0c9f17",
+          "codigo": "m3b",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "d302595b-e918-5f42-bf2f-4ecec0576bbb",
+          "codigo": "m3c",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "b5f85899-9a85-582f-8e4d-e3bdf40ba7ea",
+          "codigo": "m3d",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "deef7cbb-47f6-52c9-988b-dbb0c0137abf",
+          "codigo": "m4a",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "90570044-652c-52e4-9795-f6ea8bb7d114",
+          "codigo": "m4b",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "cbf252b4-227a-5095-ae07-a397c35f5845",
+          "codigo": "m4c",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "dd7c1d09-2333-541b-b0ca-40cff35face3",
+          "codigo": "m4d",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "a455b2dc-800c-59cf-8203-491464fce2f6",
+          "codigo": "m5a",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "c8731c4b-dcd3-50a8-a5d7-f0052a69aa55",
+          "codigo": "m5b",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "c062542a-6f8c-523f-9488-ffaf7c978b59",
+          "codigo": "m6a",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "9087780f-ebd1-5b42-8001-046239ec9d55",
+          "codigo": "m6b",
+          "feito": false,
+          "data": null
+        },
+        {
+          "atividadeId": "d5733de6-883b-5d16-9325-0766e05adce9",
+          "codigo": "m6c",
+          "feito": false,
+          "data": null
+        }
+      ]
+    }
+  }
+}
