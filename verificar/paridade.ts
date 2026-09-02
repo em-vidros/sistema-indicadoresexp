@@ -29,7 +29,8 @@ import {
 } from './paridade/palco.ts'
 import { MUTACOES, type Mutacao } from './paridade/mutacoes.ts'
 import { ROTEIROS } from './paridade/roteiros/todos.ts'
-import { canvas, estilo, serializarDom } from './paridade/serializar.ts'
+import { recortesDe } from './paridade/fora-da-prova.ts'
+import { estilo, serializarDom } from './paridade/serializar.ts'
 import type { Browser } from 'playwright'
 
 const BASELINE = `${RAIZ}verificar/baseline`
@@ -141,9 +142,8 @@ async function rodarTela(
       await palco.page.clock.runFor(passo.esperaMs ?? 3500)
       await palco.assentar(onde)
 
-      texto.set(`${passo.nome}.html`, await serializarDom(palco.page))
+      texto.set(`${passo.nome}.html`, await serializarDom(palco.page, recortesDe(roteiro.tela)))
       texto.set(`${passo.nome}.efeitos.txt`, palco.efeitos().map((e) => `${e}\n`).join(''))
-      texto.set(`${passo.nome}.canvas.json`, `${JSON.stringify(await canvas(palco.page), null, 2)}\n`)
       // `caret: 'initial'` porque o default esconde o cursor mexendo no `style` do
       // elemento com foco e devolve um `style=""` que nao estava la. O PNG nunca e
       // comparado, mas o proximo passo serializa o residuo e a captura deixa de bater

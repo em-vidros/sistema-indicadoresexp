@@ -14,9 +14,14 @@
  */
 import type { Page } from 'playwright'
 
-/** Uma linha por no, dois espacos por profundidade, `document.body` na raiz. */
-export async function serializarDom(page: Page): Promise<string> {
-  return await page.evaluate(() => {
+/**
+ * Uma linha por no, dois espacos por profundidade, `document.body` na raiz.
+ *
+ * `recortes` sao os seletores de `fora-da-prova.ts`: o elemento que casa continua com
+ * todos os atributos dele e o conteudo vira uma linha so. Le o porque la, nao aqui.
+ */
+export async function serializarDom(page: Page, recortes: readonly string[]): Promise<string> {
+  return await page.evaluate((recortes: readonly string[]) => {
     // As quatro nao desenham nada por si, e o que elas mandam na tela ja chega ao
     // resto da serializacao pelo estilo computado.
     const PULADAS = new Set(['script', 'link', 'style', 'noscript'])
@@ -133,16 +138,17 @@ export async function serializarDom(page: Page): Promise<string> {
       const escritos = atributos(no).map(([nome, valor]) => ` ${nome}="${escapar(valor)}"`)
       linhas.push(recuo + tag + escritos.join(''))
 
-      // O filho do `<canvas>` e o fallback de quem nao tem contexto 2d, e o desenho de
-      // verdade sai por outro caminho, no `.canvas.json`.
-      if (tag === 'canvas') return
+      if (recortes.some((seletor) => no.matches(seletor))) {
+        linhas.push(`${'  '.repeat(nivel + 1)}<fora da prova>`)
+        return
+      }
 
       for (const filho of Array.from(no.childNodes)) visitar(filho, nivel + 1)
     }
 
     visitar(document.body, 0)
     return `${linhas.join('\n')}\n`
-  })
+  }, recortes)
 }
 
 /**
@@ -171,36 +177,4 @@ export async function estilo(page: Page): Promise<string> {
       })
       .join('\n/* --- */\n'),
   )
-}
-
-/**
- * O pixel de cada `<canvas>`, que e a unica parte da tela que so existe em bitmap.
- */
-export async function canvas(page: Page): Promise<Record<string, string>> {
-  return await page.evaluate(() => {
-    const caminho = (alvo: Element): string => {
-      const degraus: string[] = []
-      let no: Element | null = alvo
-      while (no !== null && no !== document.body) {
-        const atual: Element = no
-        const pai: Element | null = atual.parentElement
-        const irmaos =
-          pai === null ? [atual] : Array.from(pai.children).filter((f) => f.tagName === atual.tagName)
-        degraus.unshift(`${atual.tagName.toLowerCase()}:nth-of-type(${irmaos.indexOf(atual) + 1})`)
-        no = pai
-      }
-      return degraus.join(' > ')
-    }
-
-    const saida: Record<string, string> = {}
-    for (const alvo of Array.from(document.querySelectorAll('canvas'))) {
-      const base = alvo.id !== '' ? `#${alvo.id}` : caminho(alvo)
-      // Dois ids iguais sao HTML invalido que acontece, e a segunda chave apagaria a
-      // primeira sem ninguem perceber que um canvas saiu da prova.
-      let chave = base
-      for (let n = 2; saida[chave] !== undefined; n++) chave = `${base} (${n})`
-      saida[chave] = alvo.toDataURL()
-    }
-    return saida
-  })
 }
