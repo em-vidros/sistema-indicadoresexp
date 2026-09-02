@@ -21,7 +21,8 @@
     "start": "bun server.ts"
   },
   "devDependencies": {
-    "typescript": "^5.9.2",
-    "@types/bun": "^1.2.20"
+    "@neon/config": "^1.2.0",
+    "@types/bun": "^1.2.20",
+    "typescript": "^5.9.2"
   }
 }

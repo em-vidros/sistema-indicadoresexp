@@ -9,6 +9,7 @@
     "apps/web/*.ts",
     "verificar/**/*.ts",
     "infra/**/*.ts",
-    "server.ts"
+    "server.ts",
+    "neon.ts"
   ]
 }
