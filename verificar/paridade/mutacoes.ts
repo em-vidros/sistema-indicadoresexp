@@ -3,11 +3,12 @@
  * de um jeito que a paridade TEM que pegar, e `--mutar` reprova se alguma passar.
  *
  * A revisao da fase 2 achou exatamente este buraco trocando `gap:5px` por `gap:50px`
- * num template do modal: a prova de entao passou verde. As duas mutacoes abaixo sao
- * as duas familias que interessam, o pixel que muda sem ninguem declarar e o handler
- * que some do escopo global e transforma o botao em enfeite.
+ * num template do modal: a prova de entao passou verde. Sao tres familias. O pixel que
+ * nasce dentro do modulo e nenhuma comparacao de arquivo enxerga. O handler que some do
+ * escopo global e transforma o botao em enfeite. E a regra de folha de estilo, que nao
+ * aparece no DOM e so o `estilo.css` da baseline cobra.
  *
- * A cada tela portada, a linha dela passa a apontar para o `.tsx`.
+ * A cada tela portada, a linha dela passa a apontar para o `.tsx` ou para o `.css`.
  */
 import type { Tela } from './palco.ts'
 
@@ -23,6 +24,14 @@ export type Mutacao = {
 }
 
 export const MUTACOES: readonly Mutacao[] = [
+  {
+    tela: 'entrar',
+    arquivo: 'apps/web/src/entrar.html',
+    de: '.login-box{background:#fff;border-radius:16px;padding:36px 40px;',
+    para: '.login-box{background:#fff;border-radius:4px;padding:36px 40px;',
+    motivo:
+      'o canto da caixa de login deixa de ser redondo e nada no DOM muda; so o `estilo.css` da baseline pega, e sem esta linha essa comparacao nunca ficou vermelha',
+  },
   {
     tela: 'documentos-frota',
     arquivo: 'apps/web/src/js/documentos-frota.ts',
