@@ -1,5 +1,6 @@
 import { readdirSync } from 'node:fs'
-import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite-plus'
 
 const RAIZ = new URL('src/', import.meta.url).pathname
 
@@ -17,6 +18,7 @@ if (Object.keys(entradas).length === 0) throw new Error('nenhum .html em apps/we
 
 export default defineConfig({
   root: 'src',
+  plugins: [react()],
   // Nao ha publicDir. `docs/` continua na raiz do repositorio e quem serve e o
   // Hono, atras da sessao. Um publicDir aqui copiaria os 11 MB de PDF para dentro
   // do bundle, que e exatamente o que a fase 1 desfaz.
