@@ -110,11 +110,19 @@ export const MUTACOES: readonly Mutacao[] = [
   },
   {
     tela: 'manutencao-frota',
-    arquivo: 'apps/web/src/js/manutencao-frota.ts',
-    de: 'margin-left:8px',
-    para: 'margin-left:80px',
+    arquivo: 'apps/web/src/telas/manutencao-frota.tsx',
+    de: "marginLeft: '8px'",
+    para: "marginLeft: '80px'",
     motivo:
-      'o espaco entre a placa e o modelo do veiculo cresce dez vezes e ninguem declarou; nasce dentro do modulo, em `renderCardVeiculo`, e nenhuma comparacao de arquivo enxerga',
+      'o espaco entre a placa e o modelo do veiculo cresce dez vezes e ninguem declarou; nasce dentro do componente, no cartao do veiculo, e nenhuma comparacao de arquivo enxerga',
+  },
+  {
+    tela: 'manutencao-frota',
+    arquivo: 'apps/web/src/telas/manutencao-frota.tsx',
+    de: 'className="btn-sm btn-config-sm" onClick={() => abrirConfig(cartao.placa)}',
+    para: 'className="btn-sm btn-config-sm"',
+    motivo:
+      'o botao Configurar do cartao para de abrir o plano preventivo da placa; depois do porte o handler nao some mais de `window`, some de uma prop, e some do mesmo jeito calado',
   },
   {
     tela: 'formulario-registro',

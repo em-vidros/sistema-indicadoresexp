@@ -681,8 +681,32 @@ faixa `~1.2.x` que o Vite declara.
    `check.checked` no DOM como antes. O React guarda só a classe `marcado` do rótulo, que
    é o que muda de desenho. E a contagem de `" "` na baseline deu 2, os dois em volta do
    botão "+ Adicionar linha", que é `inline-block` num pai que não é flex.
-7. `manutencao-frota`. 8. `formulario-registro`, onde o nome do asset
-   muda nas provas das fases 2 e 4.
+7. `manutencao-frota`, a tela com três painéis e dois modais. Fechada, 17 passos, em
+   dois commits, sendo o primeiro de prova. Três coisas que ela decidiu.
+
+   O painel que não está na aba escolhida guarda o desenho velho. `renderTudo` só
+   redesenhava o painel ativo, então trocar de base com o Histórico aberto deixava a
+   grade de veículos com os cartões da base anterior, e ela só se atualizava no clique
+   que voltava para Preventivas. A baseline cobra isso: `base-trocada.html` tem a grade
+   da Raposa dentro de um `#painelPreventivas` escondido, com a base já em Imperatriz.
+   Derivar os três painéis do mesmo estado encheria a tela onde a baseline a tem velha,
+   então são três fotos separadas.
+
+   O atributo `style` do painel tem três formas e não duas. `#painelPreventivas` nasce
+   sem atributo nenhum; depois do primeiro `mudarAba` ele volta com `style=""`, porque
+   `el.style.display = ''` cria o atributo vazio em vez de apagá-lo. `{}` e
+   `{ display: 'none' }` dão exatamente esses três estados na ordem certa, porque o React
+   não escreve atributo para um objeto de estilo vazio na montagem e, no update, zera a
+   propriedade sem tirar o atributo que já existe.
+
+   E o `" "` da baseline refina a regra do commit 3. A blocificação que apaga o nó de
+   texto em branco só acontece quando o filho é mesmo um item de flex, e dentro de um
+   `display:none` não há caixa nenhuma: `#grupoOutroTipo` é `.form-group`, o mesmo flex
+   das outras três, e é o único cujo `<label>` volta a computar `inline`. Os cinco `" "`
+   de cada passo com o modal aberto são três ali dentro e dois em volta do botão
+   "+ Adicionar item", que é `inline-block` num pai que não é flex. As outras
+   `.form-group`, visíveis, têm zero.
+8. `formulario-registro`, onde o nome do asset muda nas provas das fases 2 e 4.
 9. Limpeza. Somem `visual-telas.ts`, `handlers.ts` e a captura do legado; o `include`
    do tsconfig fecha em `apps/web/src/**`; a tabela no fim deste arquivo fecha a fase.
 

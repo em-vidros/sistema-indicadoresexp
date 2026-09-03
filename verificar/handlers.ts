@@ -16,10 +16,7 @@
  * Ela le os dois lados: os atributos do HTML estatico e os que o proprio modulo
  * escreve dentro de `innerHTML`, que sao metade deles.
  */
-const TELAS = [
-  'formulario-registro',
-  'manutencao-frota',
-] as const
+const TELAS = ['formulario-registro'] as const
 
 /**
  * O que o navegador ja tem e nao precisa vir do modulo. `event` e `this` sao do

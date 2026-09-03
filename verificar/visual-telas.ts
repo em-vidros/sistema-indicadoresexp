@@ -71,13 +71,6 @@ const TELAS: Tela[] = [
       ],
     ],
   },
-  {
-    nome: 'manutencao-frota',
-    origem: 'manutencao-frota.html',
-    modulo: 'apps/web/src/js/manutencao-frota.ts',
-    estaticas: [],
-    noScript: [],
-  },
 ]
 
 const ORIGEM = 'ca90d06'
@@ -246,7 +239,8 @@ for (const tela of TELAS) {
 
 // `GUIA-CONFIGURACAO` entra aqui sem modulo porque nada nela mudou.
 //
-// `entrar` e `documentos-frota` sairam desta lista nos commits em que viraram React.
+// `entrar`, `documentos-frota`, `integracao-frota`, `dashboard-semanal`, `ata-reuniao` e
+// `manutencao-frota` sairam desta lista nos commits em que viraram React.
 // Esta prova compara texto de arquivo com texto de arquivo, e a casca de uma tela React
 // nao se parece com o que o build entrega: o CSS vira `<link>` e o script sobe para o
 // `<head>`. Quem cobra as duas agora e `verificar/paridade.ts`, que compara o que o
