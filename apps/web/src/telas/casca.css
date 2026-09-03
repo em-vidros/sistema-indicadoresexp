@@ -1,0 +1,23 @@
+/* A barra lateral, a topbar e a area de conteudo, que as seis telas com menu dividem.
+ *
+ * Cada regra daqui e a intersecao das seis: propriedade que todas escreviam com o mesmo
+ * valor. Quem escrevia algo a mais mantem o que e seu, depois do import, e nenhuma tela
+ * precisa desescrever nada. Onde uma tela dizia `#c8ccd6` e outra `var(--txt-side)` para
+ * a mesma cor, fica a forma com variavel, que agora existe em toda tela por causa do
+ * `base.css`.
+ */
+.sidebar{width:220px;background:var(--bg-side);color:var(--txt-side);display:flex;flex-direction:column;position:fixed;height:100vh;left:0;top:0;z-index:10}
+.brand{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.brand-name{font-weight:700;font-size:1rem;color:#fff}
+.brand-sub{font-size:.72rem;color:var(--txt-side-dim);margin-top:3px}
+.nav{flex:1;padding:12px 0}
+.nav-label{padding:8px 20px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--txt-side-dim);font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:.86rem;color:var(--txt-side);transition:.12s;border-left:3px solid transparent}
+.nav-item:hover{background:var(--bg-side-hover);color:#fff}
+.nav-item.ativo{background:var(--bg-side-hover);color:#fff;border-left-color:var(--accent)}
+.nav-item .ico{width:18px;text-align:center;font-size:1rem}
+.sidebar-bottom{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:.72rem;color:var(--txt-side-dim)}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column}
+.topbar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
+.topbar h1{font-size:1.05rem;font-weight:700}
+.content{padding:24px 28px;flex:1}

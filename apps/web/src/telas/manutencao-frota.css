@@ -1,44 +1,18 @@
-:root{
-  --bg-app:#f5f7fa;--bg-side:#1a1d2e;--bg-side-hover:#2a2f47;--bg-side-active:#2563eb;
-  --txt-side:#c8ccd6;--txt-side-dim:#7a8194;--txt-side-bright:#fff;
-  --bg-card:#fff;--txt-main:#1a1d2e;--txt-dim:#6b7280;--txt-muted:#9ca3af;
-  --border:#e5e7eb;--accent:#2563eb;--accent-soft:#dbeafe;
-  --green:#16a34a;--green-soft:#dcfce7;
-  --orange:#ea580c;--orange-soft:#ffedd5;
-  --red:#dc2626;--red-soft:#fee2e2;
-  --yellow:#ca8a04;--yellow-soft:#fef9c3;
-  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(--txt-main);font-size:13px;display:flex;min-height:100vh;}
+@import './base.css';
+@import './casca.css';
 
-/* SIDEBAR */
-.sidebar{width:220px;background:var(--bg-side);color:var(--txt-side);display:flex;flex-direction:column;position:fixed;height:100vh;left:0;top:0;z-index:10;}
-.brand{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.08);}
-.brand-name{font-weight:700;font-size:1rem;color:#fff;display:flex;align-items:center;gap:8px;}
-.brand-sub{font-size:.72rem;color:var(--txt-side-dim);margin-top:3px;}
-.nav{flex:1;padding:12px 0;overflow-y:auto;}
-.nav-label{padding:8px 20px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--txt-side-dim);font-weight:600;}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:.86rem;color:var(--txt-side);transition:.12s;border-left:3px solid transparent;}
-.nav-item:hover{background:var(--bg-side-hover);color:#fff;}
-.nav-item.ativo{background:var(--bg-side-hover);color:#fff;border-left-color:var(--accent);}
-.nav-item .ico{width:18px;text-align:center;font-size:1rem;}
-.sidebar-bottom{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:.72rem;color:var(--txt-side-dim);}
+.brand-name{display:flex;align-items:center;gap:8px}
+.nav{overflow-y:auto}
+.main{min-height:100vh}
+.topbar{gap:16px;flex-wrap:wrap}
+
 .user-chip{padding:10px 20px;border-top:1px solid rgba(255,255,255,.08);}
 .user-nome{font-size:.8rem;color:#fff;font-weight:600;}
 .user-base{font-size:.7rem;color:var(--txt-side-dim);}
-
-/* MAIN */
-.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
-.topbar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
-.topbar h1{font-size:1.05rem;font-weight:700;}
-.content{padding:24px 28px;flex:1;}
-
 /* ABAS */
 .tabs{display:flex;gap:4px;background:var(--bg-app);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content;margin-bottom:20px;}
 .tab-btn{padding:8px 20px;border-radius:7px;border:none;background:transparent;font-size:.85rem;font-weight:600;cursor:pointer;color:var(--txt-dim);font-family:inherit;transition:.12s;}
 .tab-btn.ativo{background:var(--bg-card);color:var(--accent);box-shadow:var(--shadow);}
-
 /* FILTROS */
 .filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:center;}
 .base-chip{border:2px solid var(--border);background:var(--bg-card);border-radius:8px;padding:6px 14px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--txt-dim);transition:.12s;font-family:inherit;}
@@ -46,7 +20,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(
 .base-chip.ativo-raposa{border-color:#2563eb;background:#dbeafe;color:#2563eb;}
 .base-chip.ativo-imperatriz{border-color:#16a34a;background:#dcfce7;color:#16a34a;}
 .base-chip.ativo-belem{border-color:#ea580c;background:#ffedd5;color:#ea580c;}
-
 /* CARDS VEÍCULO */
 .veiculos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
 .veiculo-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
@@ -68,7 +41,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(
 .btn-registrar-sm:hover{background:#1d4ed8;}
 .btn-config-sm{background:var(--bg-card);border:1.5px solid var(--border);color:var(--txt-dim);}
 .btn-config-sm:hover{border-color:var(--accent);color:var(--accent);}
-
 /* LISTA CORRETIVAS / HISTORICO */
 .lista-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;}
 .lista-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
@@ -86,7 +58,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(
 .doc-ok{color:var(--green);}
 .doc-pendente{color:var(--red);}
 .reg-data{font-size:.72rem;color:var(--txt-muted);white-space:nowrap;}
-
 /* MODAL CONFIG */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;display:none;align-items:center;justify-content:center;}
 .modal-overlay.aberto{display:flex;}
@@ -108,12 +79,10 @@ input.inp:focus,select.inp:focus{outline:none;border-color:var(--accent);backgro
 .item-linha .item-nome{flex:1;font-size:.85rem;font-weight:600;}
 .item-linha .item-detalhe{font-size:.75rem;color:var(--txt-dim);}
 .btn-del{background:var(--red-soft);color:var(--red);border:none;border-radius:5px;padding:4px 8px;cursor:pointer;font-size:.8rem;font-family:inherit;}
-
 /* IMPORT */
 .import-zone{border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:.12s;}
 .import-zone:hover{border-color:var(--accent);background:var(--accent-soft);}
 .import-zone input{display:none;}
-
 /* SUMMARY CHIPS */
 .summary-chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
 .summary-chip{background:var(--bg-card);border:1.5px solid var(--border);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:8px;}
@@ -123,5 +92,4 @@ input.inp:focus,select.inp:focus{outline:none;border-color:var(--accent);backgro
 .chip-alerta .chip-num{color:var(--yellow);}
 .chip-ok .chip-num{color:var(--green);}
 .chip-pendente-doc .chip-num{color:var(--orange);}
-
 @media(max-width:768px){.veiculos-grid{grid-template-columns:1fr;} .main{margin-left:0;}}

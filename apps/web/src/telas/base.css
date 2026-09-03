@@ -1,0 +1,15 @@
+/* As variaveis e o reset que as sete telas dividem.
+ *
+ * A lista e a uniao, e nao a escolha de uma tela: cada bloco `:root` de antes tinha um
+ * subconjunto diferente destas 23, e escolher um deles apagaria cor de quem tinha mais.
+ * Variavel que a tela nao usa nao desenha nada, entao dar todas a todas nao muda pixel,
+ * e `verificar/paridade.ts` prova isso comparando estilo computado contra a folha de
+ * antes da consolidacao.
+ *
+ * `--shadow` era a unica com dois valores. Fica aqui a de cinco telas, e integracao e
+ * ata redeclaram a delas depois do import.
+ */
+:root{--bg-app:#f5f7fa;--bg-side:#1a1d2e;--bg-side-hover:#2a2f47;--bg-side-active:#2563eb;--txt-side:#c8ccd6;--txt-side-dim:#7a8194;--txt-side-bright:#fff;--bg-card:#fff;--txt-main:#1a1d2e;--txt-dim:#6b7280;--txt-muted:#9ca3af;--border:#e5e7eb;--accent:#2563eb;--accent-soft:#dbeafe;--green:#16a34a;--green-soft:#dcfce7;--orange:#ea580c;--orange-soft:#ffedd5;--red:#dc2626;--red-soft:#fee2e2;--shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);--yellow:#ca8a04;--yellow-soft:#fef9c3}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(--txt-main);font-size:13px;display:flex;min-height:100vh}

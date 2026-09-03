@@ -1,29 +1,10 @@
-/* ===================== TELA ===================== */
-:root{
-  --bg-app:#f5f7fa;--bg-side:#1a1d2e;--bg-side-hover:#2a2f47;
-  --bg-card:#fff;--txt-main:#1a1d2e;--txt-dim:#6b7280;--txt-muted:#9ca3af;
-  --border:#e5e7eb;--accent:#2563eb;--accent-soft:#dbeafe;
-  --green:#16a34a;--green-soft:#dcfce7;
-  --shadow:0 1px 3px rgba(0,0,0,.06);
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(--txt-main);font-size:13px;display:flex;min-height:100vh;}
+@import './base.css';
+@import './casca.css';
 
-/* SIDEBAR */
-.sidebar{width:220px;background:var(--bg-side);color:#c8ccd6;display:flex;flex-direction:column;position:fixed;height:100vh;left:0;top:0;z-index:10;}
-.brand{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.08);}
-.brand-name{font-weight:700;font-size:1rem;color:#fff;}
-.brand-sub{font-size:.72rem;color:#7a8194;margin-top:3px;}
-.nav{flex:1;padding:12px 0;overflow-y:auto;}
-.nav-label{padding:8px 20px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:#7a8194;font-weight:600;}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:.86rem;color:#c8ccd6;transition:.12s;border-left:3px solid transparent;}
-.nav-item:hover{background:var(--bg-side-hover);color:#fff;}
-.nav-item.ativo{background:var(--bg-side-hover);color:#fff;border-left-color:var(--accent);}
-.sidebar-bottom{padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);font-size:.72rem;color:#7a8194;}
-.main{margin-left:220px;flex:1;display:flex;flex-direction:column;}
-.topbar{background:var(--bg-card);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
-.topbar h1{font-size:1.05rem;font-weight:700;}
-.content{padding:24px 28px;flex:1;max-width:900px;}
+:root{--shadow:0 1px 3px rgba(0,0,0,.06)}
+.nav{overflow-y:auto}
+.topbar{flex-wrap:wrap;gap:10px}
+.content{max-width:900px}
 
 /* FORMULÁRIO */
 .card{background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px;box-shadow:var(--shadow);}
@@ -35,7 +16,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(
 .form-group label{font-size:.72rem;font-weight:600;color:var(--txt-dim);text-transform:uppercase;letter-spacing:.4px;}
 .form-group input,.form-group select,.form-group textarea{background:var(--bg-app);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:.9rem;color:var(--txt-main);font-family:inherit;width:100%;resize:vertical;}
 .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--accent);}
-
 /* TÓPICOS */
 .topico{background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:12px;box-shadow:var(--shadow);position:relative;}
 .topico-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
@@ -43,7 +23,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(
 .topico-titulo{font-weight:700;font-size:.95rem;flex:1;}
 .btn-remover{background:none;border:none;cursor:pointer;color:var(--txt-muted);font-size:1.1rem;padding:4px;border-radius:6px;transition:.12s;}
 .btn-remover:hover{background:#fee2e2;color:#dc2626;}
-
 /* PARTICIPANTES */
 .part-lista{display:flex;flex-direction:column;gap:6px;}
 .part-row{display:flex;gap:8px;align-items:center;}
@@ -61,8 +40,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(
 .btn-gerar{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;transition:.12s;}
 .btn-gerar:hover{opacity:.9;}
 .acoes{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;}
-
-
 /* ===================== IMPRESSÃO ===================== */
 @media print {
   @page { size: A4; margin: 18mm 18mm 18mm 18mm; }
@@ -123,17 +100,15 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(
   .print-header, .print-fields, .print-participantes { display: block !important; }
   .print-topicos { display: block !important; }
 }
-
 /* Ocultar elementos só de impressão em tela */
 .print-header, .print-fields, .print-topicos, .print-participantes { display: none; }
-
 /* ABAS */
 .tabs-bar{display:flex;gap:6px;padding:14px 28px 0;background:var(--bg-card);border-bottom:1px solid var(--border);}
 .tab-btn{padding:9px 20px;border:none;background:none;cursor:pointer;font-family:inherit;font-size:.86rem;font-weight:600;color:var(--txt-dim);border-bottom:2.5px solid transparent;transition:.12s;margin-bottom:-1px;}
 .tab-btn.ativa{color:var(--accent);border-bottom-color:var(--accent);}
 .tab-badge{background:var(--accent);color:#fff;border-radius:99px;font-size:.7rem;padding:1px 7px;margin-left:6px;font-weight:700;}
-.panel{display:none;}.panel.ativa{display:block;}
-
+.panel{display:none;}
+.panel.ativa{display:block;}
 /* HISTÓRICO */
 .hist-card{background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:12px;display:flex;align-items:flex-start;gap:16px;box-shadow:var(--shadow);}
 .hist-date{background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:8px 12px;text-align:center;flex-shrink:0;min-width:56px;}
@@ -149,10 +124,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg-app);color:var(
 .badge-ok{background:var(--green-soft);color:var(--green);}
 .btn-hist{padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-app);cursor:pointer;font-size:.78rem;font-family:inherit;font-weight:600;color:var(--txt-main);transition:.12s;}
 .btn-hist:hover{border-color:var(--accent);color:var(--accent);}
-.btn-hist.danger{color:#dc2626;}.btn-hist.danger:hover{border-color:#dc2626;background:#fee2e2;}
+.btn-hist.danger{color:#dc2626;}
+.btn-hist.danger:hover{border-color:#dc2626;background:#fee2e2;}
 .btn-hist.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
 .hist-empty{text-align:center;padding:48px 0;color:var(--txt-dim);}
-
 /* MODAL IMPORTAR ATA */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center;}
 .modal-overlay.hidden{display:none;}
