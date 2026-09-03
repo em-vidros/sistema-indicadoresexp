@@ -1,0 +1,17 @@
+inicial: 236 elementos, desenha igual a referencia
+config-aberto: 277 elementos, desenha igual a referencia
+config-item-adicionado: 282 elementos, desenha igual a referencia
+config-modal-fechado: 282 elementos, desenha igual a referencia
+config-ptt0004-aberto: 277 elementos, desenha igual a referencia
+config-item-removido: 272 elementos, desenha igual a referencia
+config-salvo: 272 elementos, desenha igual a referencia
+import-aberto: 272 elementos, desenha igual a referencia
+import-cancelado: 272 elementos, desenha igual a referencia
+import-reaberto: 272 elementos, desenha igual a referencia
+import-processado: 274 elementos, desenha igual a referencia
+import-confirmado: 272 elementos, desenha igual a referencia
+aba-corretivas: 287 elementos, desenha igual a referencia
+aba-historico-filtrada: 302 elementos, desenha igual a referencia
+base-trocada: 287 elementos, desenha igual a referencia
+aba-preventivas-restaurada: 234 elementos, desenha igual a referencia
+ir-para-registro: saiu da tela, a referencia nao vale aqui

@@ -1,0 +1,19 @@
+inicial: 340 elementos, desenha igual a referencia
+base-raposa-selecionada: 465 elementos, desenha igual a referencia
+tipo-abastecimento: 465 elementos, desenha igual a referencia
+viagem-longa-marcada: 465 elementos, desenha igual a referencia
+abastecimento-totais: 465 elementos, desenha igual a referencia
+slot-adicionado: 465 elementos, desenha igual a referencia
+rota-local-selecionada: 465 elementos, desenha igual a referencia
+tipo-manutencao: 465 elementos, desenha igual a referencia
+manutencao-corretiva: 465 elementos, desenha igual a referencia
+tipo-quebra: 465 elementos, desenha igual a referencia
+tipo-viagem: 465 elementos, desenha igual a referencia
+custo-viagem-calculado: 465 elementos, desenha igual a referencia
+registro-enviado: 465 elementos, desenha igual a referencia
+dados-exportados: 465 elementos, desenha igual a referencia
+historico-limpo: 465 elementos, desenha igual a referencia
+usuarios-modal-aberto: 580 elementos, desenha igual a referencia
+usuarios-modal-fechado: 580 elementos, desenha igual a referencia
+usuarios-salvos: 580 elementos, desenha igual a referencia
+logout: saiu da tela, a referencia nao vale aqui

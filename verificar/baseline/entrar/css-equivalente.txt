@@ -1,0 +1,5 @@
+inicial: 17 elementos, desenha igual a referencia
+erro: 17 elementos, desenha igual a referencia
+erro-sumiu: 17 elementos, desenha igual a referencia
+sucesso: saiu da tela, a referencia nao vale aqui
+sucesso-com-destino: saiu da tela, a referencia nao vale aqui

@@ -178,3 +178,89 @@ export async function estilo(page: Page): Promise<string> {
       .join('\n/* --- */\n'),
   )
 }
+
+/**
+ * O que o CSS de hoje desenha, comparado com o que o CSS congelado desenhava.
+ *
+ * `estilo.css` compara o texto da folha, e texto igual e prova forte enquanto ninguem
+ * mexe na folha de proposito. A fase 3 mexe: o mesmo desenho passa a sair de arquivos
+ * compartilhados, e o texto muda em toda tela. A pergunta deixa de ser "a folha e a
+ * mesma" e passa a ser "a folha nova pinta o que a velha pintava", que so o navegador
+ * responde.
+ *
+ * O percurso e este. Le o estilo computado de cada elemento com a folha de hoje, troca
+ * as folhas pela referencia congelada, le de novo, e devolve o que divergiu. As duas
+ * leituras e as duas trocas acontecem dentro de um `evaluate` so, sem `await` no meio:
+ * o navegador nao pinta quadro nenhum entre elas, entao nenhuma transicao dispara e a
+ * pagina volta ao estado exato em que estava para o proximo passo do roteiro.
+ *
+ * Propriedade custom fica de fora. Ela nao desenha por si, e a fase 3 poe a uniao das
+ * variaveis em toda tela de proposito: uma tela que ganha `--yellow` sem usar em lugar
+ * nenhum pinta igual, e reprovar por isso seria reprovar a consolidacao que a fase
+ * pede. Quando a variavel e usada, quem muda e a propriedade que a consome, e essa
+ * esta na comparacao.
+ *
+ * `::before` e `::after` entram porque desenham, e uma tela daqui usa `::after` para a
+ * barra do titulo de secao.
+ */
+export async function diferencasDeDesenho(
+  page: Page,
+  referencia: string,
+): Promise<{ readonly elementos: number; readonly achados: readonly string[] }> {
+  return await page.evaluate((referencia: string) => {
+    const PULADAS = new Set(['SCRIPT', 'LINK', 'STYLE', 'NOSCRIPT'])
+    const PSEUDOS: readonly (string | null)[] = [null, '::before', '::after']
+    // Enraizado no `body`, como o percurso do DOM, e pelo mesmo motivo: nada dentro do
+    // `<head>` desenha. E ha um motivo a mais aqui. Desligar as folhas para ler a
+    // referencia faz o Chromium reserializar a fonte padrao do navegador, que sai
+    // `Times` com folha e `"Times New Roman"` sem nenhuma. Isso alcanca exatamente os
+    // elementos que nenhuma regra veste, `html`, `head`, `meta` e `title`, e apareceria
+    // como 15 divergencias que nao desenham pixel nenhum. `:root` esta fora junto, e
+    // nao custa nada: o bloco dele so declara variavel, e variavel ja esta fora.
+    const alvos = [document.body, ...Array.from(document.body.querySelectorAll('*'))].filter(
+      (el) => !PULADAS.has(el.tagName),
+    )
+
+    const ler = (): string[][] =>
+      alvos.flatMap((el) =>
+        PSEUDOS.map((pseudo) => {
+          const cs = getComputedStyle(el, pseudo)
+          const valores: string[] = []
+          for (let i = 0; i < cs.length; i++) {
+            const prop = cs[i]!
+            if (prop.startsWith('--')) continue
+            valores.push(`${prop}:${cs.getPropertyValue(prop)}`)
+          }
+          return valores
+        }),
+      )
+
+    const agora = ler()
+    const folhas = Array.from(document.styleSheets).filter((f) => !f.disabled)
+    for (const folha of folhas) folha.disabled = true
+    const injetada = document.createElement('style')
+    injetada.textContent = referencia
+    document.head.append(injetada)
+    const antes = ler()
+    injetada.remove()
+    for (const folha of folhas) folha.disabled = false
+
+    const ondeEsta = (indice: number): string => {
+      const el = alvos[Math.floor(indice / PSEUDOS.length)]!
+      const pseudo = PSEUDOS[indice % PSEUDOS.length] ?? ''
+      const classe = typeof el.className === 'string' && el.className !== '' ? `.${el.className.trim().split(/\s+/).join('.')}` : ''
+      return `${Math.floor(indice / PSEUDOS.length)} ${el.tagName.toLowerCase()}${classe}${pseudo}`
+    }
+
+    const achados: string[] = []
+    for (let i = 0; i < Math.max(agora.length, antes.length); i++) {
+      const a = antes[i] ?? []
+      const b = agora[i] ?? []
+      for (let j = 0; j < Math.max(a.length, b.length); j++) {
+        if (a[j] === b[j]) continue
+        achados.push(`${ondeEsta(i)}: referencia ${a[j] ?? '<sem a propriedade>'}, agora ${b[j] ?? '<sem a propriedade>'}`)
+      }
+    }
+    return { elementos: alvos.length, achados }
+  }, referencia)
+}

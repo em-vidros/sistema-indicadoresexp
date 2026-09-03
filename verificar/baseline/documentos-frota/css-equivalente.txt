@@ -1,0 +1,10 @@
+inicial: 413 elementos, desenha igual a referencia
+veiculo-modal: 466 elementos, desenha igual a referencia
+veiculo-pdf-escolhido: 466 elementos, desenha igual a referencia
+veiculo-salvo: 466 elementos, desenha igual a referencia
+motorista-modal: 436 elementos, desenha igual a referencia
+motorista-modal-fechado: 436 elementos, desenha igual a referencia
+doc-visto: 436 elementos, desenha igual a referencia
+doc-baixado: 436 elementos, desenha igual a referencia
+doc-importado: 436 elementos, desenha igual a referencia
+base-trocada: 346 elementos, desenha igual a referencia

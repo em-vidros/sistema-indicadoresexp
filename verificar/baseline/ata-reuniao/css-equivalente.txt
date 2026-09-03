@@ -1,0 +1,17 @@
+inicial: 271 elementos, desenha igual a referencia
+topico-adicionado: 289 elementos, desenha igual a referencia
+topico-removido: 271 elementos, desenha igual a referencia
+colaborador-marcado: 271 elementos, desenha igual a referencia
+todos-marcados: 271 elementos, desenha igual a referencia
+participante-extra: 274 elementos, desenha igual a referencia
+pdf-gerado: 367 elementos, desenha igual a referencia
+pdf-anexado: 395 elementos, desenha igual a referencia
+historico-visto: 395 elementos, desenha igual a referencia
+pdf-substituido: 395 elementos, desenha igual a referencia
+ata-baixada: 395 elementos, desenha igual a referencia
+ata-excluida: 381 elementos, desenha igual a referencia
+import-modal-aberto: 429 elementos, desenha igual a referencia
+import-linha-adicionada: 434 elementos, desenha igual a referencia
+import-pdf-escolhido: 434 elementos, desenha igual a referencia
+import-modal-fechado: 434 elementos, desenha igual a referencia
+importadas-salvas: 442 elementos, desenha igual a referencia

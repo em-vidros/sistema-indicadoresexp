@@ -1,0 +1,7 @@
+inicial: 307 elementos, desenha igual a referencia
+colaborador-selecionado: 307 elementos, desenha igual a referencia
+atividade-marcada: 307 elementos, desenha igual a referencia
+progresso-salvo: 314 elementos, desenha igual a referencia
+registro-carregado: 306 elementos, desenha igual a referencia
+funcao-motorista: 314 elementos, desenha igual a referencia
+pdf-gerado: 532 elementos, desenha igual a referencia

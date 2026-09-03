@@ -30,12 +30,13 @@ import {
 import { MUTACOES, type Mutacao } from './paridade/mutacoes.ts'
 import { ROTEIROS } from './paridade/roteiros/todos.ts'
 import { recortesDe } from './paridade/fora-da-prova.ts'
-import { estilo, serializarDom } from './paridade/serializar.ts'
+import { diferencasDeDesenho, estilo, serializarDom } from './paridade/serializar.ts'
 import type { Browser } from 'playwright'
 
 const BASELINE = `${RAIZ}verificar/baseline`
 const FOTOS = `${RAIZ}var/paridade-fotos`
 const DIST = `${RAIZ}apps/web/dist`
+const REFERENCIA = 'estilo-referencia.css'
 
 // ===================== handlers =====================
 
@@ -73,10 +74,12 @@ async function rodarTela(
   roteiro: Roteiro,
   dist: string,
   comImagem: boolean,
+  referencia: string | null,
 ): Promise<Artefatos> {
   const palco = await montarPalco(navegador, roteiro, dist)
   const texto = new Map<string, string>()
   const imagens = new Map<string, Uint8Array>()
+  const desenho: string[] = []
   try {
     await palco.page.goto(ORIGEM + roteiro.url)
     await palco.assentar(`${roteiro.tela} antes do primeiro passo`)
@@ -109,6 +112,28 @@ async function rodarTela(
 
       texto.set(`${passo.nome}.html`, await serializarDom(palco.page, recortesDe(roteiro.tela)))
       texto.set(`${passo.nome}.efeitos.txt`, palco.efeitos().map((e) => `${e}\n`).join(''))
+      // A folha muda de arquivo na fase 3 e continua tendo que pintar igual. Cada passo
+      // conta o que conferiu, entao um estado que pare de ser alcancado aparece como
+      // linha que mudou, e nao como silencio.
+      //
+      // O passo que navega para outra tela sai do alcance desta referencia: o login
+      // termina em `dashboard-semanal.html`, que o palco nao serve, e comparar a folha
+      // do login contra uma pagina sem folha nenhuma daria 157 divergencias que nao
+      // dizem nada. Quem cobre o outro lado dessa navegacao e o roteiro da outra tela.
+      if (referencia !== null) {
+        if (palco.page.url() !== ORIGEM + roteiro.url) {
+          desenho.push(`${passo.nome}: saiu da tela, a referencia nao vale aqui`)
+        } else {
+          const { elementos, achados } = await diferencasDeDesenho(palco.page, referencia)
+          desenho.push(
+            achados.length === 0
+              ? `${passo.nome}: ${elementos} elementos, desenha igual a referencia`
+              : `${passo.nome}: ${elementos} elementos, ${achados.length} divergencia(s)`,
+            ...achados.map((a) => `  ${a}`),
+          )
+        }
+      }
+
       // `caret: 'initial'` porque o default esconde o cursor mexendo no `style` do
       // elemento com foco e devolve um `style=""` que nao estava la. O PNG nunca e
       // comparado, mas o proximo passo serializa o residuo e a captura deixa de bater
@@ -131,6 +156,8 @@ async function rodarTela(
       if (texto.get('estilo.css') === undefined) texto.set('estilo.css', await estilo(palco.page))
     }
 
+    if (referencia !== null) texto.set('css-equivalente.txt', desenho.map((l) => `${l}\n`).join(''))
+
     const faltando = palco.faltando()
     if (faltando.length > 0) {
       throw new Error(`fixture faltando em ${roteiro.tela}: ${faltando.join(', ')}`)
@@ -140,6 +167,18 @@ async function rodarTela(
   }
 
   return { texto, imagens }
+}
+
+/**
+ * A folha congelada contra a qual o desenho e conferido, ou `null` na tela que ainda
+ * nao tem uma. Ela nasce do `estilo.css` da fase 2 e nao e regravada por `--capturar`,
+ * pelo mesmo motivo do `handlers.txt`: a referencia so vale enquanto for anterior a
+ * mudanca que ela julga. Para mover a referencia, edite o arquivo, e saiba que isso e
+ * declarar que a tela passa a desenhar diferente.
+ */
+async function lerReferencia(tela: Tela): Promise<string | null> {
+  const arquivo = Bun.file(`${BASELINE}/${tela}/${REFERENCIA}`)
+  return (await arquivo.exists()) ? await arquivo.text() : null
 }
 
 // ===================== comparar =====================
@@ -176,6 +215,8 @@ async function divergencias(tela: Tela, artefatos: Artefatos): Promise<string[]>
     // O inventario de handlers nao e produzido a cada execucao, e sim congelado uma
     // vez; quem o cobra e `furosDaProva`.
     if (nome === 'handlers.txt') continue
+    // A referencia e entrada da prova, e nao artefato que a tela produz.
+    if (nome === REFERENCIA) continue
     if (artefatos.texto.has(nome)) continue
     achados.push(`  ${nome}: existe na baseline e o roteiro nao produz mais`)
   }
@@ -209,7 +250,7 @@ async function conferirTelas(navegador: Browser, filtro: string | null): Promise
       continue
     }
 
-    const artefatos = await rodarTela(navegador, roteiro, DIST, false)
+    const artefatos = await rodarTela(navegador, roteiro, DIST, false, await lerReferencia(tela))
 
     const inventario = await Bun.file(`${BASELINE}/${tela}/handlers.txt`).text()
     const furos = furosDaProva(roteiro, inventario.trim().split('\n').filter(Boolean))
@@ -251,8 +292,9 @@ async function capturarTelas(
       continue
     }
 
-    const primeira = await rodarTela(navegador, roteiro, DIST, true)
-    const segunda = await rodarTela(navegador, roteiro, DIST, false)
+    const referencia = await lerReferencia(tela)
+    const primeira = await rodarTela(navegador, roteiro, DIST, true, referencia)
+    const segunda = await rodarTela(navegador, roteiro, DIST, false, referencia)
 
     const instaveis: string[] = []
     for (const [nome, valor] of [...primeira.texto].sort()) {
@@ -264,6 +306,22 @@ async function capturarTelas(
       falhas++
       console.log(`${tela}: a tela nao e deterministica, nada foi gravado`)
       console.error(instaveis.join('\n'))
+      continue
+    }
+
+    // Recapturar e como a baseline aceita uma mudanca de markup, e nao pode ser como
+    // ela aceita uma mudanca de desenho. Sem esta recusa, quem trocasse uma cor e
+    // rodasse `--capturar --forcar` gravaria as divergencias como se fossem o novo
+    // certo, e a prova voltaria ao verde tendo mudado a tela. A referencia so anda
+    // quando alguem edita o arquivo dela de proposito.
+    const desenho = primeira.texto.get('css-equivalente.txt') ?? ''
+    if (desenho.includes('divergencia(s)')) {
+      falhas++
+      console.log(`${tela}: desenha diferente da referencia, nada foi gravado`)
+      console.error(
+        desenho.split('\n').filter((l) => l.includes('divergencia(s)')).map((l) => `  ${l}`).join('\n'),
+      )
+      console.error(`  para mover a referencia, edite ${BASELINE}/${tela}/${REFERENCIA}`)
       continue
     }
 
@@ -283,6 +341,7 @@ async function capturarTelas(
     await rm(pasta, { recursive: true, force: true })
     await mkdir(pasta, { recursive: true })
     await Bun.write(`${pasta}/handlers.txt`, inventario)
+    if (referencia !== null) await Bun.write(`${pasta}/${REFERENCIA}`, referencia)
     for (const [nome, valor] of primeira.texto) await Bun.write(`${pasta}/${nome}`, valor)
     for (const [nome, valor] of primeira.imagens) await Bun.write(`${FOTOS}/${tela}/${nome}`, valor)
     console.log(`${tela}: baseline gravada, ${roteiro.passos.length} passos, as duas passadas bateram`)
@@ -350,7 +409,7 @@ async function provarMutacoes(navegador: Browser, filtro: string | null): Promis
     }
     rodadas++
     const copia = await prepararCopia(indice, mutacao)
-    const artefatos = await rodarTela(navegador, roteiro, `${copia}/dist`, false)
+    const artefatos = await rodarTela(navegador, roteiro, `${copia}/dist`, false, await lerReferencia(mutacao.tela))
     const achados = await divergencias(mutacao.tela, artefatos)
     if (achados.length === 0) {
       falhas++
