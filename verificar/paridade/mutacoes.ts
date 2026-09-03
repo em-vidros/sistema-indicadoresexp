@@ -126,10 +126,18 @@ export const MUTACOES: readonly Mutacao[] = [
   },
   {
     tela: 'formulario-registro',
-    arquivo: 'apps/web/src/js/formulario-registro.ts',
-    de: '(comb + diar).toFixed(2)',
-    para: '(comb - diar).toFixed(2)',
+    arquivo: 'apps/web/src/telas/formulario-registro.tsx',
+    de: "decimal('v_combustivel') + decimal('v_diarias')",
+    para: "decimal('v_combustivel') - decimal('v_diarias')",
     motivo:
       'o custo total da viagem passa a subtrair as diarias em vez de somar; o campo continua com numero dentro, so o numero esta errado, e nenhuma comparacao de arquivo enxerga uma conta',
+  },
+  {
+    tela: 'formulario-registro',
+    arquivo: 'apps/web/src/telas/formulario-registro.tsx',
+    de: 'id="btnCorretiva" onClick={() => selecionarTipoManutencao(\'corretiva\')}',
+    para: 'id="btnCorretiva"',
+    motivo:
+      'o botao Corretiva para de trocar o tipo da manutencao; as duas cores ficam onde estavam e o registro sai marcado como preventiva, e depois do porte o handler nao some mais de `window`, some de uma prop, e some do mesmo jeito calado',
   },
 ]

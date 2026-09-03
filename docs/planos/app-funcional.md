@@ -706,7 +706,53 @@ faixa `~1.2.x` que o Vite declara.
    de cada passo com o modal aberto são três ali dentro e dois em volta do botão
    "+ Adicionar item", que é `inline-block` num pai que não é flex. As outras
    `.form-group`, visíveis, têm zero.
-8. `formulario-registro`, onde o nome do asset muda nas provas das fases 2 e 4.
+8. `formulario-registro`, a maior das sete e a única em que a sessão decide o que a
+   tela mostra antes de qualquer clique. Fechada, 19 passos, em dois commits, sendo o
+   primeiro de prova. Seis coisas que ela decidiu.
+
+   O `border` dos dois botões de tipo de manutenção não pode ser declarativo. O `style`
+   deles traz o atalho `border: 2px solid var(--green)`, e `btn.style.borderColor = ...`
+   por cima faz o CSSOM explodir o atalho em longhands vazias, que a baseline cobra
+   literalmente: `border-color: var(--border); border-top-style: ; border-top-width: ;`
+   e mais dez. Nenhum objeto de estilo do React produz esse texto, porque o React
+   remove o atalho antes de escrever a longhand. Então o objeto de estilo desses dois é
+   o original e nunca muda entre renders, e quem escreve cor é um `ref`, na mesma ordem
+   de antes. É o primeiro lugar do porte em que a forma do atributo depende do
+   histórico de mutação e não do valor final.
+
+   O `" "` refina de novo a regra do commit 3, agora pelo outro lado. O commit 7 disse
+   que `el.style.display = ''` deixa `style=""` no lugar de apagar o atributo. O que
+   falta na frase é que isso só vale quando já havia atributo: os quatro `.tipo-btn`
+   nascem sem `style` nenhum, `aplicarSessao` escreve `''` nos quatro, e a baseline os
+   tem sem atributo. O vazio do commit 7 veio do `display:none` que tinha sido escrito
+   antes, não do `''`.
+
+   Três desenhos são fotos, e não derivações. `renderizarHistorico` anda sempre colado
+   em `atualizarContador`, então os dois saem de uma foto só; `popularAutocompletistas`
+   não roda no "Limpar histórico" e no `selecionarBase` só roda para admin, então é
+   outra; e `atualizarDataAtual` só roda na sessão que já chega com base. A Livia é
+   administradora sem base fixa, então essa terceira nunca é chamada nos 19 passos:
+   `#diaAtual` fica vazio e `#labelHoje` fica no `"Hoje"` do markup, mesmo depois de
+   escolher a base. É bug de hoje e entra na baseline como está. Os totais do
+   abastecimento são a quarta foto, porque `calcularTotaisAbastecimento` sai cedo com a
+   caixa desmarcada e os números continuam na tela depois que o painel some.
+
+   O nome do chip e a letra do avatar são estados separados. `salvarUsuarios` escrevia
+   `#userNome` e nunca `#userAvatar`, então um estado só atualizaria os dois. Na
+   fixture a letra não muda e a baseline não denunciaria; o mecanismo denuncia.
+
+   O `disabled` das caixas do modal de administração era código morto. O
+   `${isAdmin?'disabled':''}` morava dentro do trecho que só era escrito quando
+   `!isAdmin`, então nunca produziu nada. Sumiu junto com o `esc`, que o JSX torna
+   desnecessário.
+
+   E o recorte público encolheu de cinco assets para quatro, achado por
+   `verificar/publicos.ts` no sentido que cobra nome que sobra. Com a última tela legada
+   fora, toda entrada do build passou a ser uma tela React, e o rolldown parou de emitir
+   `rolldown-runtime.js`: os ajudantes de interop que o Recharts trouxe agora vão dentro
+   do `modulepreload-polyfill.js`, que a login já carregava. A linha saiu de `PUBLICOS` e
+   de `SEM_HASH`. Se o pedaço voltar num rolldown futuro, ele volta com hash e o outro
+   sentido da mesma prova reprova, dizendo o nome novo.
 9. Limpeza. Somem `visual-telas.ts`, `handlers.ts` e a captura do legado; o `include`
    do tsconfig fecha em `apps/web/src/**`; a tabela no fim deste arquivo fecha a fase.
 

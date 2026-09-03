@@ -52,26 +52,7 @@ const CSS_LOGIN = `/* LOGIN */
 .login-erro{background:var(--red-soft);color:#991b1b;border-radius:8px;padding:10px 14px;font-size:.84rem;margin-top:12px;display:none;}
 .user-chip`
 
-const TELAS: Tela[] = [
-  {
-    nome: 'formulario-registro',
-    origem: 'formulario-registro.html',
-    modulo: 'apps/web/src/js/formulario-registro.ts',
-    estaticas: [
-      [CSS_LOGIN, '/* USUÁRIO NA SIDEBAR */\n.user-chip'],
-      ['<div id="formArea">', '<div id="formArea" style="display:none;">'],
-    ],
-    noScript: [
-      // O campo de senha do modal de administracao era `type="text"` com a senha em
-      // claro no `value`. Depois da fase 0 so existe hash, entao ele nasce vazio, e
-      // vazio quer dizer "nao muda".
-      [
-        '<input type="text" id="edit_senha_${}" value="${}" placeholder="Nova senha">',
-        '<input type="password" id="edit_senha_${}" value="" placeholder="Nova senha">',
-      ],
-    ],
-  },
-]
+const TELAS: Tela[] = []
 
 const ORIGEM = 'ca90d06'
 
@@ -239,8 +220,8 @@ for (const tela of TELAS) {
 
 // `GUIA-CONFIGURACAO` entra aqui sem modulo porque nada nela mudou.
 //
-// `entrar`, `documentos-frota`, `integracao-frota`, `dashboard-semanal`, `ata-reuniao` e
-// `manutencao-frota` sairam desta lista nos commits em que viraram React.
+// As sete telas sairam desta lista nos commits em que viraram React, e a lista fechou
+// vazia com `formulario-registro`.
 // Esta prova compara texto de arquivo com texto de arquivo, e a casca de uma tela React
 // nao se parece com o que o build entrega: o CSS vira `<link>` e o script sobe para o
 // `<head>`. Quem cobra as duas agora e `verificar/paridade.ts`, que compara o que o

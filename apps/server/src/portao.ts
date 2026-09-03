@@ -17,19 +17,19 @@ export const PAGINA_PADRAO = '/formulario-registro.html'
  * O logo esta aqui porque a tela de login o mostra antes de existir sessao. E o
  * unico arquivo de `docs/` publico, e por isso ele e nomeado, nao um padrao.
  *
- * Os cinco de `/assets/` sao o que a tela de login carrega para existir: o proprio
- * modulo, o CSS dela, o React, o shim de modulepreload e o runtime de interop do
- * rolldown. Eles saem do build sem hash de proposito, para caberem numa lista de nomes;
- * liberar `/assets/` inteiro seria o padrao que este portao nao usa, e entregaria de
- * graca o codigo das seis telas de dentro. `verificar/publicos.ts` cobra os dois
- * sentidos, entao arquivo que a login passe a pedir e nome que sobre aqui reprovam a
- * build.
+ * Os quatro de `/assets/` sao o que a tela de login carrega para existir: o proprio
+ * modulo, o CSS dela, o React e o shim de modulepreload. Eles saem do build sem hash de
+ * proposito, para caberem numa lista de nomes; liberar `/assets/` inteiro seria o
+ * padrao que este portao nao usa, e entregaria de graca o codigo das seis telas de
+ * dentro. `verificar/publicos.ts` cobra os dois sentidos, entao arquivo que a login
+ * passe a pedir e nome que sobre aqui reprovam a build.
  *
- * O runtime chegou com o Recharts, no porte do dashboard. Ele traz dependencia em CJS,
- * o rolldown precisou emitir os ajudantes de interop, e como todo pedaco os usa eles
- * viraram um pedaco compartilhado que a login tambem carrega. Sem esta linha o portao
- * devolve 302 para o proprio login, o navegador recebe HTML onde esperava JavaScript, e
- * so quem ainda nao entrou ve o defeito.
+ * Eram cinco ate o porte da setima tela. O quinto era `/assets/rolldown-runtime.js`, os
+ * ajudantes de interop que o Recharts trouxe em CJS e que o rolldown emitia num pedaco
+ * proprio. Com a ultima tela legada fora, toda entrada passou a ser uma tela React e o
+ * rolldown dobrou esses ajudantes dentro do `modulepreload-polyfill.js`, que ja estava
+ * nesta lista. Quem achou a linha morta foi `verificar/publicos.ts`, pelo sentido que
+ * cobra nome que sobra.
  */
 const PUBLICOS = new Set([
   ROTA_LOGIN,
@@ -40,7 +40,6 @@ const PUBLICOS = new Set([
   '/assets/entrar.css',
   '/assets/vendor-react.js',
   '/assets/modulepreload-polyfill.js',
-  '/assets/rolldown-runtime.js',
 ])
 
 /** O que `verificar/publicos.ts` confere contra o `dist/`. */

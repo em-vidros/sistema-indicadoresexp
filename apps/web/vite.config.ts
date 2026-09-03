@@ -22,7 +22,7 @@ if (Object.keys(entradas).length === 0) throw new Error('nenhum .html em apps/we
  * unicos sem hash no `dist/`, e `verificar/publicos.ts` cobra os dois sentidos: o que
  * a login pede tem que estar liberado, e o que esta liberado tem que ser pedido.
  */
-const SEM_HASH = new Set(['entrar', 'entrar.css', 'vendor-react', 'modulepreload-polyfill', 'rolldown-runtime'])
+const SEM_HASH = new Set(['entrar', 'entrar.css', 'vendor-react', 'modulepreload-polyfill'])
 
 function nome(base: string, extensao: string): string {
   const semExtensao = base.replace(/\.[^.]+$/, '')

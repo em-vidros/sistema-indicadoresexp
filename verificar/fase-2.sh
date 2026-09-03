@@ -95,7 +95,7 @@ conferir 'depois de limpar, nao sobra na outra sessao' '0' \
   "$(curl -s -b "$outra" "$BASE/api/registros?base=Raposa" 2>/dev/null \
      | grep -o '"observacao":"prova da fase 2"' | wc -l | tr -d ' ')"
 conferir 'e a tela chama a rota, nao a memoria' '1' \
-  "$(grep -c 'await apagarRegistrosDoDia' apps/web/src/js/formulario-registro.ts)"
+  "$(grep -c 'await apagarRegistrosDoDia' apps/web/src/telas/formulario-registro.tsx)"
 
 echo
 echo "o PDF sobe e volta com o mesmo conteudo"
