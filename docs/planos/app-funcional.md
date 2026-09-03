@@ -649,7 +649,39 @@ faixa `~1.2.x` que o Vite declara.
    atributo vazio porque a ternária troca um `<span>` por uma Fragment sem `key`, o React
    casa o primeiro filho com o `<span>` antigo pelo índice, e ao remover `style` ele zera
    as propriedades em vez de tirar o atributo. As duas pontas ganharam `key`.
-6. `ata-reuniao`. 7. `manutencao-frota`. 8. `formulario-registro`, onde o nome do asset
+6. `ata-reuniao`, a tela com mais handlers do porte. Fechada, 17 passos, num commit, com
+   os 17 estados batendo na primeira execução. Quatro coisas que ela decidiu.
+
+   O que a tela desenha nem sempre é o que a tela tem. `renderHistorico` era chamado em
+   quatro pontos e só neles, então `#listaHistorico` fica vazio na carga mesmo com uma
+   ata já na memória, e continua vazio depois de gerar o PDF. Derivar a lista do array
+   encheria a tela onde a baseline a tem vazia. Por isso são três coisas separadas: o
+   array numa ref mutada como a variável de módulo de antes, a foto que a tela desenha, e
+   o número da aba, que é uma terceira porque `atualizarBadge` era chamado noutros pontos
+   que `renderHistorico`. O passo `pdf-anexado` redesenha os cartões sem mexer no badge, e
+   o `pdf-gerado` faz o contrário.
+
+   Foto vazia não é foto que não existe. Com o histórico sem nada, `renderHistorico`
+   escrevia o cartão "Nenhuma ata registrada ainda"; antes da primeira chamada o
+   contêiner não tem filho nenhum. São dois desenhos diferentes, e um estado booleano
+   confundiria os dois. A foto é `null` até a primeira chamada.
+
+   O atributo `value` separa o campo que nasceu preenchido do campo que foi preenchido.
+   `f_convocada` tinha `value=` no markup e vira `defaultValue`; `f_num` não tinha e fica
+   sem nada; `f_data` e `f_horario` não tinham e recebiam a propriedade do script, então
+   continuam recebendo por `campo(id).value` dentro do efeito. `defaultValue=""` nos
+   campos do tópico não é ruído: o `innerHTML` de antes escrevia `value=""` e a baseline
+   o cobra. Os campos são lidos por id e não por ref porque metade deles nasce dentro de
+   um `map`, quatro por tópico e três por linha de importação, e ler os fixos de um jeito
+   e os dinâmicos de outro daria duas formas de ler o mesmo formulário.
+
+   O colaborador marcado é propriedade de um lado e estado do outro. O `<input>` nasceu
+   uma vez por `innerHTML` e nunca ganhou o atributo `checked`, nem no clique nem no
+   marcar todos, então ele continua não controlado e `marcarTodos` escreve
+   `check.checked` no DOM como antes. O React guarda só a classe `marcado` do rótulo, que
+   é o que muda de desenho. E a contagem de `" "` na baseline deu 2, os dois em volta do
+   botão "+ Adicionar linha", que é `inline-block` num pai que não é flex.
+7. `manutencao-frota`. 8. `formulario-registro`, onde o nome do asset
    muda nas provas das fases 2 e 4.
 9. Limpeza. Somem `visual-telas.ts`, `handlers.ts` e a captura do legado; o `include`
    do tsconfig fecha em `apps/web/src/**`; a tabela no fim deste arquivo fecha a fase.

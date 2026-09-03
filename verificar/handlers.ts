@@ -17,7 +17,6 @@
  * escreve dentro de `innerHTML`, que sao metade deles.
  */
 const TELAS = [
-  'ata-reuniao',
   'formulario-registro',
   'manutencao-frota',
 ] as const

@@ -94,11 +94,19 @@ export const MUTACOES: readonly Mutacao[] = [
   },
   {
     tela: 'ata-reuniao',
-    arquivo: 'apps/web/src/js/ata-reuniao.ts',
-    de: '  switchTab,\n',
-    para: '',
+    arquivo: 'apps/web/src/telas/ata-reuniao.tsx',
+    de: 'id="tabBtnHist"\n            onClick={() => switchTab(\'hist\')}',
+    para: 'id="tabBtnHist"',
     motivo:
-      'o handler sumiu de `window` e a aba Historico vira clique que nao faz nada; a tela abre, pinta certo, e so o console reclama',
+      'a aba Historico vira clique que nao faz nada; depois do porte o handler nao some mais de `window`, some de uma prop, e some do mesmo jeito calado',
+  },
+  {
+    tela: 'ata-reuniao',
+    arquivo: 'apps/web/src/telas/ata-reuniao.tsx',
+    de: "style={{ marginTop: '8px' }}",
+    para: "style={{ marginTop: '80px' }}",
+    motivo:
+      'o selo de PDF do cartao do historico descola dez vezes mais do titulo e ninguem declarou; ele nasce dentro do componente, no cartao que so existe depois de `mostrarHistorico`, e nenhuma comparacao de arquivo enxerga',
   },
   {
     tela: 'manutencao-frota',

@@ -72,28 +72,6 @@ const TELAS: Tela[] = [
     ],
   },
   {
-    nome: 'ata-reuniao',
-    origem: 'ata-reuniao.html',
-    modulo: 'apps/web/src/js/ata-reuniao.ts',
-    estaticas: [
-      // A frase dizia onde a ata ficava, e a fase 2 muda onde ela fica. Manter o
-      // texto antigo seria manter uma tela que mente para quem a le.
-      [
-        '<div style="font-size:.82rem;color:var(--txt-dim);">Atas salvas neste dispositivo.</div>',
-        '<div style="font-size:.82rem;color:var(--txt-dim);">Atas salvas com segurança no sistema.</div>',
-      ],
-    ],
-    noScript: [
-      // O checkbox de participante passou a carregar o id do colaborador. O nome
-      // deixou de identificar pessoa quando o cadastro virou tabela: ha homonimo
-      // entre bases, e o nome muda. Atributo `data-` nao desenha nada.
-      [
-        '<input type="checkbox" onchange="atualizarMarcado(this)">',
-        '<input type="checkbox" data-colaborador-id="${}" onchange="atualizarMarcado(this)">',
-      ],
-    ],
-  },
-  {
     nome: 'manutencao-frota',
     origem: 'manutencao-frota.html',
     modulo: 'apps/web/src/js/manutencao-frota.ts',
