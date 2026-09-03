@@ -23,6 +23,25 @@
  */
 import { lerFixtures, type Roteiro } from '../palco.ts'
 
+/**
+ * O botao de um tipo de registro. Os quatro passos `tipo-*` miravam
+ * `[onclick*="selecionarTipo('x'"]`, e o porte apaga esse atributo. O rotulo que a
+ * pessoa le mora no `.tipo-nome` de dentro do botao, e e por ele que o botao sai. O
+ * texto do botao inteiro nao serve: ele traz junto o emoji do `.tipo-ico`.
+ */
+function botaoDeTipo(nome: string): string {
+  return `.tipo-grid button:has(.tipo-nome:text-is("${nome}"))`
+}
+
+/**
+ * O item da lateral, achado pelo rotulo. Os tres que miravam `[onclick="f()"]` sao
+ * unicos pelo texto, e `.nav > .nav-item` deixa de fora o de Administracao, que esta
+ * dentro de `#menuAdmin` e sai pelo proprio id.
+ */
+function itemDaLateral(rotulo: string): string {
+  return `.nav > .nav-item:has-text("${rotulo}")`
+}
+
 export const formularioRegistro: Roteiro = {
   tela: 'formulario-registro',
   url: '/formulario-registro.html',
@@ -45,7 +64,7 @@ export const formularioRegistro: Roteiro = {
       nome: 'tipo-abastecimento',
       cobre: ['selecionarTipo'],
       agir: async (p) => {
-        await p.click(`[onclick*="selecionarTipo('abastecimento'"]`)
+        await p.click(botaoDeTipo('Abastecimento'))
       },
     },
     {
@@ -82,7 +101,7 @@ export const formularioRegistro: Roteiro = {
       nome: 'tipo-manutencao',
       cobre: [],
       agir: async (p) => {
-        await p.click(`[onclick*="selecionarTipo('manutencao'"]`)
+        await p.click(botaoDeTipo('Manutenção'))
       },
     },
     {
@@ -96,14 +115,14 @@ export const formularioRegistro: Roteiro = {
       nome: 'tipo-quebra',
       cobre: [],
       agir: async (p) => {
-        await p.click(`[onclick*="selecionarTipo('quebra'"]`)
+        await p.click(botaoDeTipo('Quebra'))
       },
     },
     {
       nome: 'tipo-viagem',
       cobre: [],
       agir: async (p) => {
-        await p.click(`[onclick*="selecionarTipo('viagem'"]`)
+        await p.click(botaoDeTipo('Viagem'))
       },
     },
     {
@@ -129,21 +148,21 @@ export const formularioRegistro: Roteiro = {
       nome: 'dados-exportados',
       cobre: ['exportarDados'],
       agir: async (p) => {
-        await p.click('[onclick="exportarDados()"]')
+        await p.click(itemDaLateral('Exportar dados'))
       },
     },
     {
       nome: 'historico-limpo',
       cobre: ['limparHoje'],
       agir: async (p) => {
-        await p.click('[onclick="limparHoje()"]')
+        await p.click(itemDaLateral('Limpar histórico'))
       },
     },
     {
       nome: 'usuarios-modal-aberto',
       cobre: ['abrirGerenciarUsuarios'],
       agir: async (p) => {
-        await p.click('[onclick="abrirGerenciarUsuarios()"]')
+        await p.click('#menuAdmin .nav-item')
       },
     },
     {
@@ -157,7 +176,7 @@ export const formularioRegistro: Roteiro = {
       nome: 'usuarios-salvos',
       cobre: ['salvarUsuarios'],
       agir: async (p) => {
-        await p.click('[onclick="abrirGerenciarUsuarios()"]')
+        await p.click('#menuAdmin .nav-item')
         await p.fill('#edit_nome_livia', 'Livia Lima')
         await p.click('.btn-salvar')
       },
@@ -166,7 +185,7 @@ export const formularioRegistro: Roteiro = {
       nome: 'logout',
       cobre: ['fazerLogout'],
       agir: async (p) => {
-        await p.click('[onclick="fazerLogout()"]')
+        await p.click('.btn-logout')
       },
     },
   ],
