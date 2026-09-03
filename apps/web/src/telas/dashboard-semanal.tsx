@@ -43,302 +43,40 @@ import {
   YAxis,
 } from 'recharts'
 import { listarRegistros } from '../js/registros-api.ts'
-import type { Registro } from '../js/registros-api.ts'
+import {
+  brl,
+  calcularKPIs,
+  faixaDe,
+  filtrarDados,
+  fmtPct,
+  lerItem,
+  parcela,
+  porRota,
+  semanasDoGrafico,
+} from '../dashboard/dominio.ts'
+import type { Item, Pontualidade, Tom } from '../dashboard/dominio.ts'
+import { PERIODOS } from '../dashboard/filtros.ts'
+import type { Periodo } from '../dashboard/filtros.ts'
 import './dashboard-semanal.css'
-
-// ===================== CONFIG =====================
-
-// Minutos de tolerancia antes de a chegada contar como atraso. E o parametro
-// `pontualidade_tolerancia_min`, semeado em 15. Nenhuma rota da API entrega
-// parametro ainda, entao o numero esta repetido aqui; quando houver, ele sai daqui.
-const TOLERANCIA_PONTUALIDADE_MIN = 15
-
-const PERIODOS = {
-  semana: 'Esta Semana',
-  ultima_semana: 'Semana Passada',
-  mes: 'Este Mês',
-  tudo: 'Todo o Período',
-} as const
 
 const TITULOS = { kpis: 'KPIs da Semana', viagens: 'Viagens', frota: 'Frota' } as const
 
-type Periodo = keyof typeof PERIODOS
 type TelaAtiva = keyof typeof TITULOS
 
 function ehPeriodo(valor: string): valor is Periodo {
   return valor in PERIODOS
 }
 
-// ===================== DADOS =====================
-
-type Pontualidade = 'adiantado' | 'no_prazo' | 'atrasado'
-
-/** O que os dois filtros do topo leem de qualquer registro, seja qual for o tipo. */
-type Comum = {
-  readonly base: string
-  /** `data_saida || data || registrado_em`: como o filtro de periodo data o registro. */
-  readonly quando: string
-}
-
 /**
- * Um registro da API depois de lido.
- *
- * `Registro` chega como `Record<string, unknown>`, entao a leitura de campo acontece uma
- * vez, aqui, e nao dentro de cada soma e de cada `<td>`. Um tipo que a tela nao desenha
- * cai em `outro`, que ainda conta no total de registros, como contava antes.
+ * A classe que a faixa vira nesta tela. O calculo mudou de casa para `dashboard/dominio.ts`
+ * junto com o resto do dominio, e a folha desta tela continua falando `ok`, `warn` e
+ * `crit`. As duas escritas se encontram aqui, e o encontro morre com a view velha.
  */
-type Item =
-  | (Comum & {
-    readonly tipo: 'viagem'
-    readonly dataSaida: string
-    readonly motorista: string
-    readonly veiculo: string
-    readonly rota: string
-    readonly km: number | null
-    readonly valorCarga: number
-    readonly custoViagem: number
-    readonly pctCusto: number
-    readonly pontualidade: Pontualidade | null
-  })
-  | (Comum & {
-    readonly tipo: 'manutencao'
-    readonly data: string
-    readonly placa: string
-    readonly servico: string
-    readonly valor: number
-    readonly fornecedor: string
-  })
-  | (Comum & {
-    readonly tipo: 'abastecimento'
-    readonly data: string
-    readonly placa: string
-    readonly litros: number
-    readonly vlLitro: number
-    readonly valorTotal: number
-    readonly km: number
-  })
-  | (Comum & { readonly tipo: 'quebra'; readonly m2Expedido: number; readonly m2Quebrado: number })
-  | (Comum & { readonly tipo: 'outro' })
-
-function numero(registro: Registro, chave: string): number {
-  const valor = registro[chave]
-  return typeof valor === 'number' ? valor : 0
-}
-
-function texto(registro: Registro, chave: string): string {
-  const valor = registro[chave]
-  return typeof valor === 'string' ? valor : ''
-}
-
-/**
- * A `pontualidade` que esta tela le era a escolha de um campo do formulario antigo,
- * gravada junto com a viagem. O banco nao guarda mais a escolha: guarda `atraso_min`, a
- * diferenca em minutos entre a chegada prevista e a real, e nula quando nao houve
- * previsao. Viagem sem previsao continua sem pontualidade, que e o mesmo que o campo em
- * branco fazia aqui, e ai sobra o que o registro antigo tiver gravado. A classificacao
- * repete `classificarPontualidade` do dominio.
- */
-function pontualidadeDe(registro: Registro): Pontualidade | null {
-  const atraso = registro.atraso_min
-  if (typeof atraso === 'number') {
-    const tolerancia = Math.abs(TOLERANCIA_PONTUALIDADE_MIN)
-    if (atraso > tolerancia) return 'atrasado'
-    if (atraso < -tolerancia) return 'adiantado'
-    return 'no_prazo'
-  }
-  const gravada = registro.pontualidade
-  return gravada === 'adiantado' || gravada === 'no_prazo' || gravada === 'atrasado' ? gravada : null
-}
-
-function kmDaViagem(registro: Registro): number | null {
-  const rodados = numero(registro, 'km_rodados')
-  if (rodados !== 0) return rodados
-  const chegada = numero(registro, 'km_chegada')
-  const saida = numero(registro, 'km_saida')
-  return chegada !== 0 && saida !== 0 ? chegada - saida : null
-}
-
-function lerItem(registro: Registro): Item {
-  const comum: Comum = {
-    base: texto(registro, 'base'),
-    quando: texto(registro, 'data_saida') || texto(registro, 'data') || texto(registro, 'registrado_em'),
-  }
-  if (registro.tipo === 'viagem') {
-    return {
-      ...comum,
-      tipo: 'viagem',
-      dataSaida: texto(registro, 'data_saida'),
-      motorista: texto(registro, 'motorista'),
-      veiculo: texto(registro, 'veiculo'),
-      rota: texto(registro, 'rota'),
-      km: kmDaViagem(registro),
-      valorCarga: numero(registro, 'valor_carga'),
-      custoViagem: numero(registro, 'custo_viagem'),
-      pctCusto: numero(registro, 'pct_custo'),
-      pontualidade: pontualidadeDe(registro),
-    }
-  }
-  if (registro.tipo === 'manutencao') {
-    return {
-      ...comum,
-      tipo: 'manutencao',
-      data: texto(registro, 'data'),
-      placa: texto(registro, 'placa'),
-      servico: texto(registro, 'servico'),
-      valor: numero(registro, 'valor'),
-      fornecedor: texto(registro, 'fornecedor'),
-    }
-  }
-  if (registro.tipo === 'abastecimento') {
-    return {
-      ...comum,
-      tipo: 'abastecimento',
-      data: texto(registro, 'data'),
-      placa: texto(registro, 'placa'),
-      litros: numero(registro, 'litros'),
-      vlLitro: numero(registro, 'vl_litro'),
-      valorTotal: numero(registro, 'valor_total'),
-      km: numero(registro, 'km'),
-    }
-  }
-  if (registro.tipo === 'quebra') {
-    return {
-      ...comum,
-      tipo: 'quebra',
-      m2Expedido: numero(registro, 'm2_expedido'),
-      m2Quebrado: numero(registro, 'm2_quebrado'),
-    }
-  }
-  return { ...comum, tipo: 'outro' }
-}
-
-function filtrarDados(itens: readonly Item[], base: string, periodo: Periodo): Item[] {
-  const agora = new Date()
-
-  let inicio: Date
-  if (periodo === 'semana') {
-    inicio = new Date(agora)
-    inicio.setDate(agora.getDate() - agora.getDay() + (agora.getDay() === 0 ? -6 : 1))
-    inicio.setHours(0, 0, 0, 0)
-  } else if (periodo === 'ultima_semana') {
-    inicio = new Date(agora)
-    inicio.setDate(agora.getDate() - agora.getDay() + (agora.getDay() === 0 ? -13 : -6))
-    inicio.setHours(0, 0, 0, 0)
-    const fim = new Date(inicio)
-    fim.setDate(fim.getDate() + 7)
-    return itens.filter((item) => {
-      if (base !== 'todas' && item.base !== base) return false
-      const quando = new Date(item.quando)
-      return quando >= inicio && quando < fim
-    })
-  } else if (periodo === 'mes') {
-    inicio = new Date(agora.getFullYear(), agora.getMonth(), 1)
-  } else {
-    inicio = new Date('2020-01-01')
-  }
-
-  return itens.filter((item) => {
-    if (base !== 'todas' && item.base !== base) return false
-    return new Date(item.quando) >= inicio
-  })
-}
-
-// ===================== KPIs =====================
-
-function calcularKPIs(dados: readonly Item[]) {
-  const viagens = dados.filter((d) => d.tipo === 'viagem')
-  const abasts = dados.filter((d) => d.tipo === 'abastecimento')
-  const manuts = dados.filter((d) => d.tipo === 'manutencao')
-  const quebras = dados.filter((d) => d.tipo === 'quebra')
-
-  const totalCarga = viagens.reduce((s, d) => s + d.valorCarga, 0)
-  const totalCustoV = viagens.reduce((s, d) => s + d.custoViagem, 0)
-  const totalManut = manuts.reduce((s, d) => s + d.valor, 0)
-  const totalAbast = abasts.reduce((s, d) => s + d.valorTotal, 0)
-  const m2Expedido = quebras.reduce((s, d) => s + d.m2Expedido, 0)
-  const m2Quebrado = quebras.reduce((s, d) => s + d.m2Quebrado, 0)
-
-  const pctCustoRota = totalCarga > 0 ? (totalCustoV / totalCarga) * 100 : null
-  const pctQuebra = m2Expedido > 0 ? (m2Quebrado / m2Expedido) * 100 : null
-  const pctManutProd = totalCarga > 0 ? (totalManut / totalCarga) * 100 : null
-
-  const pont = { adiantado: 0, no_prazo: 0, atrasado: 0, total: 0 }
-  for (const viagem of viagens) {
-    if (viagem.pontualidade === null) continue
-    pont[viagem.pontualidade]++
-    pont.total++
-  }
-
-  return { viagens, abasts, manuts, quebras, totalCarga, totalCustoV, totalManut, totalAbast, pctCustoRota, pctQuebra, pctManutProd, pont }
-}
-
-type Rota = { readonly rota: string; readonly n: number; readonly carga: number; readonly custo: number; readonly pct: number }
-
-function porRota(viagens: readonly Extract<Item, { tipo: 'viagem' }>[]): Rota[] {
-  const acumulado = new Map<string, { n: number; carga: number; custo: number }>()
-  for (const viagem of viagens) {
-    if (!viagem.rota) continue
-    const atual = acumulado.get(viagem.rota) ?? { n: 0, carga: 0, custo: 0 }
-    atual.n++
-    atual.carga += viagem.valorCarga
-    atual.custo += viagem.custoViagem
-    acumulado.set(viagem.rota, atual)
-  }
-  return [...acumulado]
-    .map(([rota, d]) => ({ rota, ...d, pct: d.carga > 0 ? (d.custo / d.carga) * 100 : 0 }))
-    .sort((a, b) => b.pct - a.pct)
-}
-
-/** As oito ultimas semanas do grafico de custo por carga. `pct` fica nulo na semana sem carga. */
-function semanasDoGrafico(dados: readonly Item[]): Array<{ label: string; pct: number | null }> {
-  const semanas: Array<{ label: string; pct: number | null }> = []
-  const viagens = dados.filter((d) => d.tipo === 'viagem')
-  for (let i = 7; i >= 0; i--) {
-    const d = new Date()
-    d.setDate(d.getDate() - i * 7)
-    const ini = new Date(d)
-    ini.setDate(d.getDate() - d.getDay() + (d.getDay() === 0 ? -6 : 1))
-    ini.setHours(0, 0, 0, 0)
-    const fim = new Date(ini)
-    fim.setDate(ini.getDate() + 7)
-    const daSemana = viagens.filter((v) => {
-      const quando = new Date(v.dataSaida || v.quando)
-      return quando >= ini && quando < fim
-    })
-    const carga = daSemana.reduce((s, v) => s + v.valorCarga, 0)
-    const custo = daSemana.reduce((s, v) => s + v.custoViagem, 0)
-    semanas.push({
-      label: ini.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-      pct: carga > 0 ? (custo / carga) * 100 : null,
-    })
-  }
-  return semanas
-}
-
-// ===================== FORMATO =====================
+const CLASSE_DA_FAIXA: Readonly<Record<Tom, string>> = { ok: 'ok', atencao: 'warn', critico: 'crit' }
 
 /** O `'kpi-card ' + cls` do modulo velho, sem o espaco solto quando nao ha faixa. */
-function comFaixa(classe: string, faixa: string): string {
-  return faixa === '' ? classe : `${classe} ${faixa}`
-}
-
-function faixaDe(valor: number | null, bom: number, atencao: number): string {
-  if (valor === null) return ''
-  return valor < bom ? 'ok' : valor < atencao ? 'warn' : 'crit'
-}
-
-function brl(valor: number): string {
-  if (valor <= 0) return '—'
-  return `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-}
-
-function fmtPct(valor: number | null): string {
-  return valor === null ? '—' : `${valor.toFixed(2)}%`
-}
-
-/** A fatia inteira que `parte` ocupa de `total`, como a tela sempre mostrou pontualidade. */
-function parcela(parte: number, total: number): number {
-  return Math.round((parte / total) * 100)
+function comFaixa(classe: string, faixa: Tom | null): string {
+  return faixa === null ? classe : `${classe} ${CLASSE_DA_FAIXA[faixa]}`
 }
 
 const FAIXA_PONTUALIDADE: Record<Pontualidade, string> = { adiantado: 'ok', no_prazo: 'info', atrasado: 'crit' }
@@ -391,7 +129,7 @@ function DashboardSemanal(): JSX.Element {
   function gerarRelatorio(): void {
     const txt = [
       `📊 RELATÓRIO LOGÍSTICO — EM VIDROS`,
-      `${PERIODOS[periodo]} · ${base === 'todas' ? 'Todas as Bases' : base} · ${new Date().toLocaleDateString('pt-BR')}`,
+      `${PERIODOS[periodo].noRelatorio} · ${base === 'todas' ? 'Todas as Bases' : base} · ${new Date().toLocaleDateString('pt-BR')}`,
       ``,
       `🚛 VIAGENS: ${kpis.viagens.length} | Carga: R$ ${kpis.totalCarga.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} | Custo: R$ ${kpis.totalCustoV.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       kpis.pctCustoRota !== null ? `   % Custo/Carga: ${kpis.pctCustoRota.toFixed(2)}% ${kpis.pctCustoRota < 7 ? '✅' : '⚠️'} (meta < 7%)` : '',
@@ -438,7 +176,7 @@ function DashboardSemanal(): JSX.Element {
 
     const txt = [
       `📊 *LOGÍSTICA EM VIDROS — ${base === 'todas' ? 'TODAS AS BASES' : base.toUpperCase()}*`,
-      `_${PERIODOS[periodo]} · ${data}_`,
+      `_${PERIODOS[periodo].noRelatorio} · ${data}_`,
       ``,
       `🚛 *VIAGENS*: ${kpis.viagens.length} viagem(ns)`,
       `   Carga: ${brl(kpis.totalCarga)}`,
@@ -486,7 +224,7 @@ function DashboardSemanal(): JSX.Element {
   const faixaQuebra = faixaDe(kpis.pctQuebra, 1, 2)
   const faixaManutProd = faixaDe(kpis.pctManutProd, 2, 3)
   const atrasoPct = kpis.pont.total > 0 ? parcela(kpis.pont.atrasado, kpis.pont.total) : 0
-  const faixaPont = kpis.pont.total > 0 ? (atrasoPct <= 5 ? 'ok' : 'warn') : ''
+  const faixaPont: Tom | null = kpis.pont.total > 0 ? (atrasoPct <= 5 ? 'ok' : 'atencao') : null
 
   // `fill` no proprio dado, e nao um `<Cell>` por fatia: o `Cell` esta depreciado e sai
   // no Recharts 4.
@@ -551,7 +289,7 @@ function DashboardSemanal(): JSX.Element {
         <div className="topbar">
           <div>
             <h1 id="topbarTitulo">{TITULOS[tela]}</h1>
-            <div className="sub" id="topbarSub">{`${PERIODOS[periodo]} · ${base === 'todas' ? 'Todas as Bases' : base} · ${dados.length} registro(s)`}</div>
+            <div className="sub" id="topbarSub">{`${PERIODOS[periodo].noRelatorio} · ${base === 'todas' ? 'Todas as Bases' : base} · ${dados.length} registro(s)`}</div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button className="btn-top" onClick={copiarWhatsApp} id="btnWpp" ref={btnWpp}>{copiado ? '✅ Copiado!' : '📱 Copiar p/ WhatsApp'}</button>
