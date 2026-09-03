@@ -162,9 +162,9 @@ const faltantes: string[] = [];
 const linhas: string[] = [];
 let total = 0;
 
-// Os HTMLs de origem sairam da raiz na fase 1 e saem do repositorio na fase 6. O commit
-// em que a Livia os entregou nao muda, entao ele e a fonte, e `constantes.json` continua
-// regeneravel a partir do que ja esta versionado. E o mesmo ref que `visual-telas.ts` usa.
+// Os HTMLs de origem sairam da raiz na fase 1 e o miolo deles saiu no porte da fase 6.
+// O commit em que a Livia os entregou nao muda, entao ele e a fonte, e `constantes.json`
+// continua regeneravel a partir do que ja esta versionado.
 const ORIGEM = "ca90d06";
 
 function daOrigem(arquivo: string): string {

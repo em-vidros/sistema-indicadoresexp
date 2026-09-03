@@ -27,15 +27,9 @@ conferir() {
 }
 
 echo "o visual das telas nao mudou, e o build tambem nao mexe nele"
-# Ate a fase 1 isto era `cmp` byte a byte aqui mesmo. A fase 2 tirou o script das
-# telas para modulos, e comparacao de texto deixou de dizer alguma coisa: quem sabe
-# o que mudou de proposito, e o que isso permite, e `visual-telas.ts`.
-if bun verificar/visual-telas.ts >/tmp/visual-fase1.txt 2>&1; then
-  conferir "as 6 telas e o build" 'igual' 'igual'
-else
-  conferir "as 6 telas e o build" 'igual' 'DIFERENTE'
-  sed 's/^/    /' /tmp/visual-fase1.txt
-fi
+# Era `visual-telas.ts` aqui, apagado no commit 9 da fase 6 com a ultima tela portada.
+# Quem cobra agora e `bash verificar/fase-6.sh`, via `verificar/paridade.ts`, que compara
+# o que o navegador monta em vez de texto de arquivo com texto de arquivo.
 
 echo
 echo "as sete telas exigem sessao, e antes seis nao pediam nada"

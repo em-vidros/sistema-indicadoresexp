@@ -36,43 +36,8 @@ import type { Browser } from 'playwright'
 const BASELINE = `${RAIZ}verificar/baseline`
 const FOTOS = `${RAIZ}var/paridade-fotos`
 const DIST = `${RAIZ}apps/web/dist`
-const FONTE_JS = `${RAIZ}apps/web/src/js`
 
 // ===================== handlers =====================
-
-// Copiadas de verificar/handlers.ts, nao importadas: aquele arquivo sai no commit 9
-// e a baseline precisa continuar sendo extraida do mesmo jeito depois disso.
-const ATRIBUTO =
-  /\bon(?:click|change|input|submit|keydown|keyup|keypress|focus|blur|dblclick)\s*=\s*(["'])([\s\S]*?)\1/gi
-
-const CHAMADA = /(?<![.\w$])([A-Za-z_$][\w$]*)\s*(?=\()/g
-
-const DO_NAVEGADOR = new Set([
-  'window', 'document', 'location', 'event', 'this', 'alert', 'confirm', 'print',
-  'history', 'console', 'Number', 'String', 'Boolean', 'JSON', 'Math', 'Date',
-  'parseInt', 'parseFloat', 'setTimeout', 'true', 'false', 'null', 'undefined',
-  'return', 'if', 'else', 'typeof', 'new', 'delete', 'void', 'in', 'of',
-])
-
-function chamados(texto: string): Set<string> {
-  const nomes = new Set<string>()
-  for (const attr of texto.matchAll(ATRIBUTO)) {
-    for (const chamada of attr[2]!.matchAll(CHAMADA)) {
-      const nome = chamada[1]!
-      if (!DO_NAVEGADOR.has(nome)) nomes.add(nome)
-    }
-  }
-  return nomes
-}
-
-async function handlersDaTela(tela: Tela, dist: string, fonteJs: string): Promise<string[]> {
-  const nomes = chamados(await Bun.file(`${dist}/${tela}.html`).text())
-  const modulo = Bun.file(`${fonteJs}/${tela}.ts`)
-  if (await modulo.exists()) {
-    for (const nome of chamados(await modulo.text())) nomes.add(nome)
-  }
-  return [...nomes].sort()
-}
 
 /**
  * A uniao dos `cobre` tem que ser exatamente o conjunto do handlers.txt. Sobra quer
@@ -302,14 +267,18 @@ async function capturarTelas(
       continue
     }
 
-    // O inventario de handlers e escrito uma vez e sobrevive a toda recaptura. Ele sai
-    // do markup velho, e depois do porte a extracao devolveria vazio: regravar apagaria
-    // em silencio a lista de comportamentos que o porte tem que manter. Para trocar um
-    // nome nele, edite o arquivo.
+    // O inventario de handlers e escrito uma vez e sobrevive a toda recaptura. Ele saiu
+    // do markup velho antes do porte, e a extracao que o gerou nao existe mais: o React
+    // nao deixa atributo `on*=` e ela devolveria vazio, apagando em silencio a lista de
+    // comportamentos que o porte tem que manter. Para trocar um nome nele, edite o arquivo.
     const congelado = Bun.file(`${pasta}/handlers.txt`)
-    const inventario = (await congelado.exists())
-      ? await congelado.text()
-      : (await handlersDaTela(tela, DIST, FONTE_JS)).map((n) => `${n}\n`).join('')
+    if (!(await congelado.exists())) {
+      falhas++
+      console.log(`${tela}: tem roteiro e nao tem handlers.txt`)
+      console.error('  o inventario nao e mais extraido; crie o arquivo a partir do markup velho')
+      continue
+    }
+    const inventario = await congelado.text()
 
     await rm(pasta, { recursive: true, force: true })
     await mkdir(pasta, { recursive: true })

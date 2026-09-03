@@ -36,33 +36,21 @@ entrar() {
 echo "o armazenamento do navegador saiu do caminho"
 # Nao e busca por elegancia: enquanto um modulo ler `emvidros_indicadores`, ele mostra
 # um numero que so existe naquele computador, e duas pessoas veem telas diferentes.
-for modulo in apps/web/src/js/*.ts; do
-  nome=$(basename "$modulo" .ts)
+for modulo in apps/web/src/js/*.ts apps/web/src/telas/*.tsx; do
+  nome=$(basename "$modulo"); nome=${nome%.*}
   conferir "$nome sem localStorage" '0' "$(grep -c 'localStorage' "$modulo")"
 done
 
 echo
 echo "o Apps Script e a planilha sairam do codigo"
 conferir 'nenhum modulo chama o Apps Script' '0' \
-  "$(grep -rl 'script\.google\|AKfycb' apps/web/src/js/ 2>/dev/null | wc -l | tr -d ' ')"
+  "$(grep -rl 'script\.google\|AKfycb' apps/web/src/js/ apps/web/src/telas/ 2>/dev/null | wc -l | tr -d ' ')"
 
 echo
-echo "todo clique do markup acha a funcao dele"
-if bun verificar/handlers.ts >/tmp/handlers-fase2.txt 2>&1; then
-  conferir 'os handlers das 6 telas' 'vivos' 'vivos'
-else
-  conferir 'os handlers das 6 telas' 'vivos' 'MORTOS'
-  sed 's/^/    /' /tmp/handlers-fase2.txt
-fi
-
-echo
-echo "o visual nao mudou, nem no markup que o codigo gera"
-if bun verificar/visual-telas.ts >/tmp/visual-fase2.txt 2>&1; then
-  conferir 'as 6 telas contra ca90d06' 'igual' 'igual'
-else
-  conferir 'as 6 telas contra ca90d06' 'igual' 'DIFERENTE'
-  sed 's/^/    /' /tmp/visual-fase2.txt
-fi
+echo "todo clique acha a funcao dele, e o visual nao mudou"
+# Eram `handlers.ts` e `visual-telas.ts` aqui, apagados no commit 9 da fase 6 com a
+# ultima tela portada. Quem cobra agora e `bash verificar/fase-6.sh`, via
+# `verificar/paridade.ts`, que exercita cada handler por clique de verdade.
 
 echo
 echo "o dado gravado numa sessao aparece em outra"

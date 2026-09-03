@@ -429,8 +429,8 @@ Henrique decidir; os workflows já saíram na fase 4.
 
 Decidido pelo Henrique em 2026-09-02, sabendo que a seção "a restrição que manda no
 desenho" descartava React de propósito. A restrição da Lívia continua valendo por
-inteiro. O que muda é quem gera o markup: os oito `.html` de tela saem de
-`apps/web/src`, cada tela vira um componente React 19, e a toolchain passa a ser o
+inteiro. O que muda é quem gera o markup: o miolo dos oito `.html` sai de
+`apps/web/src` e dá lugar a sete cascas de 17 linhas, cada tela vira um componente React 19, e a toolchain passa a ser o
 Vite+ da VoidZero (CLI `vp`, pacote `vite-plus`), com o Bun continuando como runtime e
 gerenciador de pacotes. O desenho saiu de um painel de três candidatos mais um juiz em
 2026-09-02, e o que segue é a síntese.
@@ -444,26 +444,28 @@ porque bookmark, `destino=` em voo e as três provas de fase dependem delas. Os 
 `*-api.ts` e seus testes ficam como estão. `portao.ts` e `paginas.ts` não ganham rota
 nova nem fallback.
 
-**A casca.** `apps/web/src/index.html` com uma dúzia de linhas e um `<div id="app">`.
-Um plugin do Vite copia `dist/index.html` para `dist/<tela>.html`, uma cópia por nome em
-`ROTAS`, e lança se o destino já existir, para a cópia nunca apagar uma tela que ainda
-não foi portada. Do ponto de vista do Hono, `dist/` tem os mesmos nomes de arquivo de
-hoje. `main.tsx` lê `location.pathname` uma vez, resolve o nome e monta o componente. A
-casca tem uma regra de CSS própria, `#app{display:contents}`, porque `body{display:flex}`
-das telas conta com `.sidebar` e `.main` como filhos diretos e o container do React
-entraria no meio. É a única mudança de estrutura, e ela está declarada na prova.
+**A casca.** Uma por tela, 17 linhas cada: `apps/web/src/<tela>.html` com um
+`<div id="app" style="display:contents">` e um `<script type="module">` para
+`./telas/<tela>.tsx`. O `style` inline existe porque `body{display:flex}` das telas
+conta com `.sidebar` e `.main` como filhos diretos e o container do React entraria no
+meio. É a única mudança de estrutura, e ela está declarada na prova. Do ponto de vista
+do Hono, `dist/` tem os mesmos nomes de arquivo de hoje, porque o Vite descobre as
+entradas por `*.html` em `src/`. Não há `index.html` único nem plugin de cópia: a
+primeira versão deste plano previa os dois, e o porte usou uma casca por tela, que é
+o que o `vite.config.ts` já sabia descobrir.
 
-**`ROTAS` é a barra de progresso.** `apps/web/src/telas/rotas.ts` tem o array das telas
-já portadas e o complemento. O plugin copia a casca só para quem está dentro, o
-`main.tsx` só resolve quem está dentro, a prova nova só cobra quem está dentro, e
-`visual-telas.ts` e `handlers.ts` cobram exatamente quem está fora. Um commit de tela é
-uma linha nesse array mais dois arquivos apagados. Nenhum dos cinco consumidores pede
-edição por commit.
+**Sem `rotas.ts`.** A mesma versão previa `apps/web/src/telas/rotas.ts` como barra de
+progresso, com `visual-telas.ts` e `handlers.ts` cobrando quem estava fora. O porte
+fez o contrário: cada commit de tela escreveu a casca e o componente, e as duas provas
+velhas encolheram uma linha por commit até esvaziarem. No commit 9, com a última tela
+portada, as duas saíram e a barra de progresso virou `bash verificar/fase-6.sh`.
 
 **Uma tela.** `telas/<tela>.tsx` mais `telas/<tela>.css`. O CSS é o recorte literal do
-`<style>` de hoje, feito por script, e entra no componente como `<style>{css}</style>`
-via `import css from './x.css?raw'`. O `?raw` entrega a string exata do arquivo; importar
-como folha passaria pelo minificador e juntaria os oito `:root` num arquivo só. O estado
+`<style>` de hoje, feito por script, e entra no componente como folha, via
+`import './x.css'`. O plano previa `?raw` dentro de `<style>` para fugir do
+minificador; o porte manteve `cssMinify: false` e a folha, e o build emite `<link>`,
+que `verificar/paridade.ts` cobra pelo `estilo.css` da baseline. Duas telas nunca
+compartilham documento, então os blocos `:root` diferentes nunca colidem. O estado
 de módulo de hoje vira `useState`; as quatro variáveis de modal viram uma união
 discriminada; `docsCfg`, que guarda placa e `'moto_'+nome` no mesmo objeto, vira dois
 mapas. Formulários ficam não controlados, `defaultValue` e leitura por `ref` no salvar,
@@ -473,8 +475,8 @@ sempre montado e alterna por `className`; o que hoje nasce de `innerHTML` inteir
 `.map()` ou condicional. Sem essa regra o snapshot do estado inicial reprova. Zero
 função em `window`, e a prova cobra isso por grep.
 
-**O login migra também, e é a única tela com casca própria.** `entrar.html` vira uma
-casca igual à outra apontando para `entrar.tsx`, com asset de nome fixo,
+**O login continua especial só no portão.** `entrar.html` é uma casca igual às outras,
+apontando para `entrar.tsx`, com asset de nome fixo,
 `assets/entrar.js`, e o React num chunk também nomeado, `assets/vendor-react.js`. Os dois
 entram em `PUBLICOS` por nome, como o logo. `verificar/publicos.ts` cobra as duas
 direções: tudo que `dist/entrar.html` carrega está em `PUBLICOS`, senão o login abre sem
@@ -754,7 +756,8 @@ faixa `~1.2.x` que o Vite declara.
    de `SEM_HASH`. Se o pedaço voltar num rolldown futuro, ele volta com hash e o outro
    sentido da mesma prova reprova, dizendo o nome novo.
 9. Limpeza. Somem `visual-telas.ts`, `handlers.ts` e a captura do legado; o `include`
-   do tsconfig fecha em `apps/web/src/**`; a tabela no fim deste arquivo fecha a fase.
+   do tsconfig fecha em `apps/web/src/**`; nasce `verificar/fase-6.sh` e os globs da
+   fase 2 passam a cobrir `telas/`; a tabela no fim deste arquivo fecha a fase.
 
 As fixtures e o servidor de desenvolvimento usam a branch `porte-react` da Neon, criada
 em 2026-09-02 a partir de `production`, com a string em `.env.porte.local`, fora do git.
@@ -776,11 +779,15 @@ passa a chegar pelo JavaScript; se incomodar a Lívia, a correção é uma regra
 casca, por rota. Playwright sob Bun é fato a confirmar no commit 1; se falhar, a prova
 roda com `node`. E o `GUIA-CONFIGURACAO.html` fica fora até decisão.
 
-**Prova.** `verificar/fase-6.sh`: nenhum `.html` de tela em `apps/web/src` além das
-duas cascas e do guia; `bun verificar/paridade.ts` verde e `--mutar` vermelho nas duas
-mutações; `verificar/publicos.ts` verde nos dois sentidos; zero `window.` de escrita em
-`apps/web/src/telas/`; e as provas das fases 1, 2 e 4 continuam passando contra o
-servidor.
+**Prova.** `bash verificar/fase-6.sh`: oito `.html` em `apps/web/src`, as sete cascas
+mais o guia, cada casca montando o seu `./telas/<tela>.tsx`; `visual-telas.ts` e
+`handlers.ts` apagados e o `include` do tsconfig em `apps/web/src/**/*`; src e dist
+do guia idênticos no `cmp`, que é a casa nova da única asserção viva da prova velha;
+`bun verificar/paridade.ts` verde e `--mutar` pegando as 14 mutações;
+`verificar/publicos.ts` verde nos dois sentidos; zero exposição de global em
+`apps/web/src/telas/` por grep, fora `window.location`, que é navegação decidida;
+e as provas das fases 1, 2 e 4 continuando verdes contra o servidor, cada uma no
+seu script.
 
 ## o schema
 
@@ -1020,8 +1027,8 @@ do passivo da fase 4 na origem, em vez de arrastá-lo até lá.
 | 2 banco | **pronta** | 2026-09-01 | |
 | 3 duplicação | não iniciada | | |
 | 4 publicar | **pronta** | 2026-09-02 | |
-| 5 andaime | não iniciada | | os globais saem pela fase 6; sobra o guia |
-| 6 react | em andamento | 2026-09-02 | commits 0 a 9, um por tela |
+| 5 andaime | não iniciada | | sobra o guia, por decisão pendente |
+| 6 react | **pronta** | 2026-09-03 | commits 0 a 9; o guia segue legado |
 
 Atualize esta tabela ao fim de cada fase. Plano que diverge da realidade engana a
 próxima sessão.
