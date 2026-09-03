@@ -29,6 +29,16 @@
  */
 import { lerFixtures, type Roteiro } from '../palco.ts'
 
+/**
+ * O botao do card de uma placa. Os tres passos que miravam `[onclick="abrirConfig(...)"]`
+ * liam a placa de dentro do atributo, e o porte apaga esse atributo. A placa continua na
+ * tela, no `.placa-badge` que a pessoa le, entao o card sai por ela e o botao pela classe
+ * que ja o distingue do vizinho.
+ */
+function botaoDoCard(placa: string, botao: string): string {
+  return `.veiculo-card:has(.placa-badge:text-is("${placa}")) ${botao}`
+}
+
 export const manutencaoFrota: Roteiro = {
   tela: 'manutencao-frota',
   url: '/manutencao-frota.html',
@@ -44,7 +54,7 @@ export const manutencaoFrota: Roteiro = {
       nome: 'config-aberto',
       cobre: ['abrirConfig'],
       agir: async (p) => {
-        await p.click(`[onclick="abrirConfig('PTV0006')"]`)
+        await p.click(botaoDoCard('PTV0006', '.btn-config-sm'))
       },
     },
     {
@@ -54,7 +64,7 @@ export const manutencaoFrota: Roteiro = {
         await p.selectOption('#novoTipo', 'Alinhamento/Balanceamento')
         await p.fill('#novoIntervalo', '15000')
         await p.fill('#novoAlerta', '500')
-        await p.click('[onclick="adicionarItemConfig()"]')
+        await p.click('#modalConfigBody .btn-registrar-sm')
       },
     },
     {
@@ -68,7 +78,7 @@ export const manutencaoFrota: Roteiro = {
       nome: 'config-ptt0004-aberto',
       cobre: [],
       agir: async (p) => {
-        await p.click(`[onclick="abrirConfig('PTT0004')"]`)
+        await p.click(botaoDoCard('PTT0004', '.btn-config-sm'))
       },
     },
     {
@@ -82,28 +92,28 @@ export const manutencaoFrota: Roteiro = {
       nome: 'config-salvo',
       cobre: ['salvarConfig'],
       agir: async (p) => {
-        await p.click('[onclick="salvarConfig()"]')
+        await p.click('#modalConfig .btn-salvar')
       },
     },
     {
       nome: 'import-aberto',
       cobre: ['abrirImport'],
       agir: async (p) => {
-        await p.click('[onclick="abrirImport()"]')
+        await p.click('.topbar .btn-config-sm')
       },
     },
     {
       nome: 'import-cancelado',
       cobre: ['fecharModalImport'],
       agir: async (p) => {
-        await p.click('[onclick="fecharModalImport()"]')
+        await p.click('#modalImport .btn-cancelar')
       },
     },
     {
       nome: 'import-reaberto',
       cobre: [],
       agir: async (p) => {
-        await p.click('[onclick="abrirImport()"]')
+        await p.click('.topbar .btn-config-sm')
       },
     },
     {
@@ -161,7 +171,7 @@ export const manutencaoFrota: Roteiro = {
       nome: 'ir-para-registro',
       cobre: ['irParaRegistro'],
       agir: async (p) => {
-        await p.click(`[onclick="irParaRegistro('DMG9D41')"]`)
+        await p.click(botaoDoCard('DMG9D41', '.btn-registrar-sm'))
       },
     },
   ],
