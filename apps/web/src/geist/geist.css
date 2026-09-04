@@ -98,6 +98,7 @@ body {
 .g-c13 { font-family: var(--g-sans); font-size: var(--g-c13-size); line-height: var(--g-c13-lh); letter-spacing: var(--g-c13-ls); font-weight: var(--g-c13-weight); }
 .g-tab { font-variant-numeric: tabular-nums; }
 .g-forte { font-weight: 500; }
+.g-fraco { color: var(--g-gray-900); }
 
 .g-tom-ok { color: var(--g-green-700); }
 .g-tom-atencao { color: var(--g-amber-700); }
@@ -633,6 +634,28 @@ body {
   font-weight: 500;
   color: var(--g-gray-1000);
 }
+
+/* ---------- barra de ferramentas e paginacao ---------- */
+
+.g-barra {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.g-barra-vao { flex: 1 1 auto; }
+
+.g-paginacao {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-top: 1px solid var(--g-gray-400);
+}
+
+.g-paginacao-conta { color: var(--g-gray-900); }
+.g-paginacao-botoes { display: flex; align-items: center; gap: 8px; }
 
 /* ---------- graficos ---------- */
 

@@ -39,7 +39,8 @@ export type Base = keyof typeof BASES
 
 export type Filtros = { readonly base: Base; readonly periodo: Periodo }
 
-const PADRAO: Filtros = { base: 'todas', periodo: 'semana' }
+/** O que a tela mostra sem query nenhuma, e para onde o botao de limpar leva. */
+export const FILTROS_PADRAO: Filtros = { base: 'todas', periodo: 'semana' }
 
 function ehBase(valor: string | null): valor is Base {
   return valor !== null && valor in BASES
@@ -69,8 +70,8 @@ export function lerFiltros(busca: string): Filtros {
   const base = params.get('base')
   const periodo = params.get('periodo')
   return {
-    base: ehBase(base) ? base : PADRAO.base,
-    periodo: ehPeriodo(periodo) ? periodo : PADRAO.periodo,
+    base: ehBase(base) ? base : FILTROS_PADRAO.base,
+    periodo: ehPeriodo(periodo) ? periodo : FILTROS_PADRAO.periodo,
   }
 }
 
