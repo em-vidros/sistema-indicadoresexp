@@ -12,7 +12,7 @@
  */
 import { Area, AreaChart, CartesianGrid, ReferenceDot, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 import type { JSX } from 'react'
-import { fmtPct } from './dominio.ts'
+import { porcento } from './dominio.ts'
 
 export type Semana = { readonly label: string; readonly pct: number | null }
 
@@ -55,7 +55,7 @@ export function GraficoCustoCarga({ semanas, meta = 7 }: {
             strokeOpacity={0.7}
             label={{
               value: `meta ${meta}%`,
-              position: 'insideBottomLeft',
+              position: 'insideTopLeft',
               fill: 'var(--g-red-700)',
               fontSize: 11,
               fontWeight: 500,
@@ -85,7 +85,7 @@ export function GraficoCustoCarga({ semanas, meta = 7 }: {
                 stroke="#FFFFFF"
                 strokeWidth={2}
                 label={{
-                  value: fmtPct(ultima.pct),
+                  value: porcento(ultima.pct),
                   position: 'top',
                   offset: 8,
                   fill: 'var(--g-gray-1000)',
@@ -127,8 +127,13 @@ export function Sparkline({ pontos, largura = 96, altura = 36 }: {
 
   const pares = valores.map((v) => `${px(v.i).toFixed(1)},${py(v.p).toFixed(1)}`)
   const linha = `M${pares.join(' L')}`
+  const comeco = valores[0]
   const fim = valores[valores.length - 1]
-  if (fim === undefined) return null
+  if (comeco === undefined || fim === undefined) return null
+  // A area fecha embaixo da linha desenhada, e nao embaixo da caixa inteira: com semana
+  // sem carga no comeco da serie, fechar em 0 e na largura total pinta uma cunha que nao
+  // corresponde a dado nenhum.
+  const area = `${linha} L${px(fim.i).toFixed(1)},${altura} L${px(comeco.i).toFixed(1)},${altura} Z`
 
   return (
     <svg
@@ -144,7 +149,7 @@ export function Sparkline({ pontos, largura = 96, altura = 36 }: {
           <stop offset="1" stopColor="var(--g-teal-600)" stopOpacity={0} />
         </linearGradient>
       </defs>
-      <path d={`${linha} L${largura},${altura} L0,${altura} Z`} fill="url(#g-sparkline-tinta)" />
+      <path d={area} fill="url(#g-sparkline-tinta)" />
       <path
         d={linha}
         fill="none"

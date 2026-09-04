@@ -13,9 +13,12 @@
  * nem um cartao que mudou de lugar.
  *
  * O que sai de uma prova ganha outra coisa no lugar, senao vira ponto cego: a paridade
- * fica verde com o grafico certo, com o errado e sem grafico nenhum. Aqui o que ficou no
- * lugar foi `verificar/olhar-graficos.ts`, que fotografa os dois cartoes para alguem
- * olhar. Rode depois de mexer no desenho.
+ * fica verde com o grafico certo, com o errado e sem grafico nenhum.
+ *
+ * A lista esta vazia hoje. O unico recorte que existiu foi o `.chart-wrap` do dashboard,
+ * dos dois graficos que trocaram Chart.js por Recharts em 2026-09-02; ele saiu junto com a
+ * tela, que foi redesenhada e nao e mais comparada com baseline nenhuma. O par de olhos que
+ * ficou no lugar e `verificar/olhar-dashboard.ts`. Rode depois de mexer no desenho.
  */
 import type { Tela } from './palco.ts'
 
@@ -27,24 +30,7 @@ export type Recorte = {
   readonly motivo: string
 }
 
-export const FORA_DA_PROVA: readonly Recorte[] = [
-  {
-    tela: 'dashboard-semanal',
-    seletor: '.chart-wrap',
-    motivo:
-      'os dois graficos passaram de Chart.js para Recharts, que desenha SVG no lugar de ' +
-      'bitmap. Nao ha comparacao possivel entre as duas saidas: nem o DOM, que deixa de ' +
-      'ter um `<canvas>` e passa a ter uma arvore de SVG, nem o pixel, porque `tension: .3` ' +
-      'do Chart.js nao e a mesma curva que o `monotone` do Recharts e os dois calculam ' +
-      'tick, legenda e raio de donut por algoritmos diferentes. A decisao de aceitar o ' +
-      'grafico desenhando diferente e de quem pediu a troca, e vale so para o desenho: o ' +
-      'cartao, o titulo, a grade e o tamanho de 180 px do `.chart-wrap` continuam cobrados. ' +
-      'O balao de valor entra nesse recorte tambem. Ele existia por padrao no Chart.js, ' +
-      'saiu no porte e voltou como `<Tooltip>` em 2026-09-02, com dois numeros que o ' +
-      'Chart.js nao daria: o percentual com duas casas, igual ao dos cartoes de cima, e o ' +
-      '`—` na semana sem carga, onde o Chart.js nao mostrava balao nenhum.',
-  },
-]
+export const FORA_DA_PROVA: readonly Recorte[] = []
 
 /** Os seletores que valem para uma tela, prontos para o `serializarDom`. */
 export function recortesDe(tela: Tela): readonly string[] {

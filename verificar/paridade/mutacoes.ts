@@ -13,6 +13,13 @@
  * esquecer. Nos dois casos a tela abre, pinta certo, e o clique nao faz nada.
  *
  * A cada tela portada, a linha dela passa a apontar para o `.tsx` ou para o `.css`.
+ *
+ * `dashboard-semanal` nao tem linha aqui, e a ausencia e deliberada. Ela saiu da paridade
+ * quando foi redesenhada, e mutacao de tela sem roteiro nao prova nada: `provarMutacoes` so
+ * imprimiria `sem roteiro ainda`. Pior, `prepararCopia` estoura quando a ancora nao casa
+ * exatamente uma vez, e a excecao nao e capturada, entao uma ancora apontando para a view
+ * velha derrubaria a prova de mutacao das telas que vem depois dela nesta lista. Quando o
+ * dashboard voltar a ser cobrado por alguma prova, a linha dele volta junto.
  */
 import type { Tela } from './palco.ts'
 
@@ -75,22 +82,6 @@ export const MUTACOES: readonly Mutacao[] = [
     para: 'id="btnMotorista"',
     motivo:
       'a aba Motorista para de trocar de programa; o clique nao muda a funcao, a subarvore das semanas nao remonta, e a ficha do ajudante que estava aberta continua na tela como se nada tivesse sido pedido',
-  },
-  {
-    tela: 'dashboard-semanal',
-    arquivo: 'apps/web/src/telas/dashboard-semanal.tsx',
-    de: "'nav-item ativo' : 'nav-item'} onClick={() => setAtiva('viagens')}",
-    para: "'nav-item ativo' : 'nav-item'}",
-    motivo:
-      'o item Viagens da lateral para de trocar de tela e a navegacao entre KPIs, Viagens e Frota vira clique que nao faz nada; depois do porte o handler nao some mais de `window`, some de uma prop, e some do mesmo jeito calado',
-  },
-  {
-    tela: 'dashboard-semanal',
-    arquivo: 'apps/web/src/telas/dashboard-semanal.tsx',
-    de: 'rotas.filter((r) => r.pct >= 7)',
-    para: 'rotas.filter((r) => r.pct >= 70)',
-    motivo:
-      'a mensagem do WhatsApp passa a jurar que toda rota esta dentro da meta enquanto a tabela da mesma tela mostra rota critica; o texto so existe na area de transferencia, entao nenhuma comparacao de DOM enxerga a contradicao',
   },
   {
     tela: 'ata-reuniao',

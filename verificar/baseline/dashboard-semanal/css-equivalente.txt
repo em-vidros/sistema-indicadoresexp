@@ -1,7 +1,0 @@
-inicial: 428 elementos, desenha igual a referencia
-atualizado-manual: 428 elementos, desenha igual a referencia
-base-filtrada: 387 elementos, desenha igual a referencia
-tela-viagens: 229 elementos, desenha igual a referencia
-relatorio-gerado: 229 elementos, desenha igual a referencia
-whatsapp-copiado: 229 elementos, desenha igual a referencia
-whatsapp-revertido: 229 elementos, desenha igual a referencia

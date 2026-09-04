@@ -49,6 +49,20 @@ function ehPeriodo(valor: string | null): valor is Periodo {
   return valor !== null && valor in PERIODOS
 }
 
+/**
+ * As opcoes de um seletor, tiradas da propria tabela. O `as K[]` e o buraco conhecido do
+ * `Object.keys`, que devolve `string[]` mesmo quando o tipo diz quais chaves existem; ele
+ * fica preso aqui dentro, e nao espalhado por um `as` em cada tela.
+ */
+function opcoesDe<K extends string>(
+  tabela: Readonly<Record<K, { readonly rotulo: string }>>,
+): ReadonlyArray<{ readonly valor: K; readonly rotulo: string }> {
+  return (Object.keys(tabela) as K[]).map((valor) => ({ valor, rotulo: tabela[valor].rotulo }))
+}
+
+export const OPCOES_DE_PERIODO = opcoesDe(PERIODOS)
+export const OPCOES_DE_BASE = opcoesDe(BASES)
+
 /** `busca` e o `location.search`, com `?` ou sem. */
 export function lerFiltros(busca: string): Filtros {
   const params = new URLSearchParams(busca)

@@ -7,9 +7,12 @@
 </head>
 <body>
 <!--
-  `display:contents` porque o `body` desta e das outras telas e um flex container: um
-  wrapper com caixa propria empurraria o layout de todas elas. O React monta aqui e a
-  arvore que sobra e a mesma de antes do porte.
+  `display:contents` fica, com motivo novo. Nas seis telas congeladas ele existe porque o
+  `body` delas e um flex container e um wrapper com caixa propria empurraria o layout;
+  aqui o `body` e o do `geist.css`, que nao e flex, e um wrapper de bloco nao mudaria
+  nada. O que ele garante e que a casca da tela (`.g-app`, altura minima de uma tela
+  cheia) seja filha direta do `body`, sem um elemento no meio para alguem esbarrar depois.
+  As sete cascas continuam com a mesma linha, que e uma coisa a menos para conferir.
 -->
 <div id="app" style="display:contents"></div>
 <script type="module" src="./telas/dashboard-semanal.tsx"></script>

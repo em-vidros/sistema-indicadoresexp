@@ -133,6 +133,7 @@ export type ItemDeMenu = { readonly rotulo: string; readonly aoEscolher: () => v
 export function Menu({ gatilho, itens, nome, aparencia = 'botao', direcao = 'abaixo' }: {
   readonly gatilho: ReactNode
   readonly itens: readonly ItemDeMenu[]
+  /** O nome do gatilho para quem nao ve a tela. So vale no botao quadrado, que nao tem texto. */
   readonly nome: string
   /** `switcher` e a linha de 48 px da sidebar; as outras duas sao o botao de 32. */
   readonly aparencia?: 'botao' | 'quadrado' | 'switcher'
@@ -167,7 +168,7 @@ export function Menu({ gatilho, itens, nome, aparencia = 'botao', direcao = 'aba
         className={naSidebar
           ? 'g-switcher'
           : classes('g-botao', 'g-botao-secundario', aparencia === 'quadrado' && 'g-botao-quadrado')}
-        aria-label={nome}
+        aria-label={aparencia === 'quadrado' ? nome : undefined}
         aria-expanded={aberto}
         aria-haspopup="menu"
         onClick={() => setAberto((estava) => !estava)}
@@ -205,13 +206,13 @@ export function Menu({ gatilho, itens, nome, aparencia = 'botao', direcao = 'aba
   )
 }
 
-export type Opcao = { readonly valor: string; readonly rotulo: string }
+export type Opcao<V extends string = string> = { readonly valor: V; readonly rotulo: string }
 
-export function Seletor({ rotulo, valor, opcoes, aoEscolher }: {
+export function Seletor<V extends string>({ rotulo, valor, opcoes, aoEscolher }: {
   readonly rotulo: string
-  readonly valor: string
-  readonly opcoes: readonly Opcao[]
-  readonly aoEscolher: (valor: string) => void
+  readonly valor: V
+  readonly opcoes: readonly Opcao<V>[]
+  readonly aoEscolher: (valor: V) => void
 }): JSX.Element {
   const escolhida = opcoes.find((o) => o.valor === valor)
   return (
@@ -369,7 +370,7 @@ export function Kpi({ rotulo, valor, grande = false, delta, apoio, meta, sparkli
   readonly rotulo: string
   readonly valor: string
   readonly grande?: boolean
-  readonly delta?: Delta
+  readonly delta?: Delta | undefined
   readonly apoio: string
   readonly meta: { readonly texto: string; readonly tom: Tom }
   readonly sparkline?: ReactNode

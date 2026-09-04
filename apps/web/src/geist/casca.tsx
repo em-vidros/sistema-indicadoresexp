@@ -89,15 +89,15 @@ function sair(): void {
   })
 }
 
-export function Casca({ ativa, consulta, base, selos = {}, children }: {
+export function Casca<B extends string>({ ativa, consulta, base, selos = {}, children }: {
   readonly ativa: IdDeItem | null
   /** A query dos filtros, com `?`, ou vazia. */
   readonly consulta: string
   readonly base: {
-    readonly valor: string
+    readonly valor: B
     readonly rotulo: string
-    readonly opcoes: readonly Opcao[]
-    readonly aoEscolher: (valor: string) => void
+    readonly opcoes: readonly Opcao<B>[]
+    readonly aoEscolher: (valor: B) => void
   }
   /** Contagem ao lado do item, quando a pagina souber uma. */
   readonly selos?: Readonly<Partial<Record<IdDeItem, string>>>
