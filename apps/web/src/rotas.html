@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rotas — EM Vidros</title>
+</head>
+<body>
+<!--
+  `display:contents` fica, com motivo novo. Nas seis telas congeladas ele existe porque o
+  `body` delas e um flex container e um wrapper com caixa propria empurraria o layout;
+  aqui o `body` e o do `geist.css`, que nao e flex, e um wrapper de bloco nao mudaria
+  nada. O que ele garante e que a casca da tela (`.g-app`, altura minima de uma tela
+  cheia) seja filha direta do `body`, sem um elemento no meio para alguem esbarrar depois.
+  Todas as cascas continuam com a mesma linha, que e uma coisa a menos para conferir.
+-->
+<div id="app" style="display:contents"></div>
+<script type="module" src="./telas/rotas.tsx"></script>
+</body>
+</html>
