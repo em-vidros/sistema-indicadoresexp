@@ -7,14 +7,21 @@
  * so uma tela inteira diferente. O motivo esta em `verificar/paridade/roteiros/todos.ts`.
  *
  * O que sai de uma prova precisa ganhar outra coisa no lugar, senao a regiao vira ponto
- * cego. O que ficou no lugar e um par de olhos, e esta e a ferramenta deles. Monta a tela
- * no mesmo palco da paridade, com a mesma fixture e o mesmo relogio congelado, em 1440 de
- * largura, e fotografa a pagina inteira:
+ * cego. O que ficou no lugar e um par de olhos, e esta e a ferramenta deles. Monta as
+ * quatro telas do painel no mesmo palco da paridade, com a mesma fixture e o mesmo relogio
+ * congelado, em 1440 de largura, e fotografa cada pagina inteira:
  *
  *   bun verificar/olhar-dashboard.ts
  *
- * Rode depois de mexer no desenho, e olhe a foto ao lado do artboard. Os artboards saem de
- * `cd var/design-dashboard && node build.mjs`.
+ * Rode depois de mexer no desenho, e olhe as fotos ao lado dos artboards. Os artboards
+ * saem de `cd var/design-dashboard && node build.mjs`, e sao tres: `Main` e a Visao geral,
+ * `Viagens` e `Rotas` sao as duas seguintes. Frota nao tem artboard, e o cabecalho de
+ * `apps/web/src/telas/frota.tsx` diz por qual analogia ela foi desenhada.
+ *
+ * Um palco por pagina, e nao um palco e quatro `goto`. O palco fixa o caminho do roteiro e
+ * responde qualquer outra tela com um documento de uma linha, para nao servir as fixtures
+ * de uma tela ao roteiro de outra. Aqui as quatro dividem a mesma fixture, mas remendar o
+ * palco para esta ferramenta enfraqueceria a prova que ele existe para sustentar.
  *
  * ----------------------------------------------------------------------------------------
  * A fixture, e por que ela e escrita a mao
@@ -43,8 +50,9 @@
  *     e uma passa dos 15 min de tolerancia, dando 33% de atraso, acima da meta de 5%.
  * Motorista, veiculo e fornecedor sao ficticios; datas e valores sao os unicos que importam.
  *
- * ----------------------------------------------------------------------------------------
- * As outras tres telas do painel entram nesta lista quando existirem.
+ * Sao dez registros, entao as tabelas saem curtas e a paginacao de Viagens nao tem o que
+ * paginar. Para ver tabela cheia, busca e paginacao, monte uma sonda descartavel com mais
+ * registros, como o desenvolvimento das telas fez; ela nao pertence ao repositorio.
  */
 import { abrirNavegador, lerFixtures, montarPalco, ORIGEM } from './paridade/palco.ts'
 import type { Roteiro } from './paridade/palco.ts'
@@ -53,38 +61,50 @@ type Pagina = { readonly nome: string; readonly url: string }
 
 const PAGINAS: readonly Pagina[] = [
   { nome: 'geral', url: '/dashboard-semanal.html' },
+  { nome: 'viagens', url: '/viagens.html' },
+  { nome: 'rotas', url: '/rotas.html' },
+  { nome: 'frota', url: '/frota.html' },
 ]
+
+const fixtures = await lerFixtures('dashboard-semanal')
 
 /**
  * O roteiro minimo mora aqui e nao em `roteiros/`, porque `roteiros/` e o registro do que a
  * paridade cobra, e nada aqui e cobrado. Um passo, que nao age: a foto e da tela parada.
  */
-const roteiro: Roteiro = {
-  tela: 'dashboard-semanal',
-  url: PAGINAS[0]?.url ?? '/dashboard-semanal.html',
-  agora: '2026-09-02T12:00:00-03:00',
-  fixtures: await lerFixtures('dashboard-semanal'),
-  passos: [{ nome: 'inicial', cobre: [], agir: async () => {} }],
+function roteiroDe(pagina: Pagina): Roteiro {
+  return {
+    tela: 'dashboard-semanal',
+    url: pagina.url,
+    agora: '2026-09-02T12:00:00-03:00',
+    fixtures,
+    passos: [{ nome: 'inicial', cobre: [], agir: async () => {} }],
+  }
 }
 
 const navegador = await abrirNavegador()
-const palco = await montarPalco(navegador, roteiro, `${process.cwd()}/apps/web/dist`)
 try {
-  await palco.page.setViewportSize({ width: 1440, height: 1080 })
   for (const pagina of PAGINAS) {
-    const foto = `${process.cwd()}/var/olhar-dashboard-${pagina.nome}.png`
-    await palco.page.goto(ORIGEM + pagina.url)
-    await palco.assentar(pagina.nome)
-    // Sem isto a foto pega a tela desenhada com a fonte de sistema, e cada medida de
-    // largura da pagina sai errada.
-    await palco.page.evaluate(() => document.fonts.ready)
-    await palco.page.screenshot({ path: foto, fullPage: true })
-    console.log(`${pagina.nome}: ${foto}`)
-  }
+    const palco = await montarPalco(navegador, roteiroDe(pagina), `${process.cwd()}/apps/web/dist`)
+    try {
+      await palco.page.setViewportSize({ width: 1440, height: 1080 })
+      const foto = `${process.cwd()}/var/olhar-dashboard-${pagina.nome}.png`
+      await palco.page.goto(ORIGEM + pagina.url)
+      await palco.assentar(pagina.nome)
+      // Sem isto a foto pega a tela desenhada com a fonte de sistema, e cada medida de
+      // largura da pagina sai errada.
+      await palco.page.evaluate(() => document.fonts.ready)
+      await palco.page.screenshot({ path: foto, fullPage: true })
+      console.log(`${pagina.nome}: ${foto}`)
 
-  const faltando = palco.faltando()
-  if (faltando.length > 0) console.log(`fixtures que a tela pediu e nao existem: ${faltando.join(', ')}`)
+      const faltando = palco.faltando()
+      if (faltando.length > 0) {
+        console.log(`  fixtures que ${pagina.nome} pediu e nao existem: ${faltando.join(', ')}`)
+      }
+    } finally {
+      await palco.fechar()
+    }
+  }
 } finally {
-  await palco.fechar()
   await navegador.close()
 }
