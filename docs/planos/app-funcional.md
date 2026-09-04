@@ -96,6 +96,12 @@ nova, não para reescrever tela existente.
 > 6 diz como isso acontece sem mudar um pixel. Os três fatos acima continuam verdadeiros
 > e continuam sendo o custo; o que mudou foi quem paga.
 
+> **Revisto em 2026-09-03.** A restrição cai para as quatro telas do Painel, e só para
+> elas. O Henrique decidiu redesenhar Visão geral, Viagens, Rotas e Frota contra o canvas
+> de `var/design-dashboard/`, e a fase 7 diz o que entra no lugar da prova que sai. As
+> seis telas legadas continuam congeladas, continuam com o layout que a Lívia aprovou e
+> continuam comparadas byte a byte contra a baseline a cada `bun verificar/paridade.ts`.
+
 Nota para quem executar: o Bun 1.4 tem servidor com import de HTML e bundling
 embutido, que faria o mesmo trabalho sem Vite. Segui com Vite porque foi o pedido, e
 porque o ecossistema de plugin é maior. A troca é reversível e custa umas 30 linhas.
@@ -789,6 +795,83 @@ do guia idênticos no `cmp`, que é a casa nova da única asserção viva da pro
 e as provas das fases 1, 2 e 4 continuando verdes contra o servidor, cada uma no
 seu script.
 
+### fase 7, o painel ganha visual novo
+
+Decidido pelo Henrique em 2026-09-03, sabendo que "a restrição que manda no desenho"
+existe para impedir exatamente isto. A reversão tem a mesma forma da que a fase 6
+registrou sobre React, e o mesmo tipo de custo. O que muda é o recorte. A restrição da
+Lívia continua valendo por inteiro para as seis telas legadas, e cai só para as quatro
+telas do Painel, Visão geral, Viagens, Rotas e Frota, que são as que ninguém desenhou
+para papel nenhum e que carregam os números que a diretoria olha.
+
+**O desenho vem de um canvas, e o canvas é a especificação.**
+`var/design-dashboard/build.mjs` gera três artboards, `Main`, `Viagens` e `Rotas`, com o
+sistema Geist (tipografia, ícones, grid de 12 colunas, materiais) vestido com a paleta
+EM Vidros do brandbook e a sidebar inset. Cada token, cada altura e cada raio saiu de lá
+sem arredondar para múltiplo de quatro e sem trocar cor. Frota não tem artboard, e saiu
+por analogia literal com Rotas; qual analogia está escrito no cabeçalho de
+`apps/web/src/telas/frota.tsx`, para quem abrir o arquivo daqui a um ano não achar que
+alguém inventou.
+
+**O sistema visual mora em `apps/web/src/geist/`, e não em `telas/`.** O motivo não é
+prever um segundo consumidor. É que a casca nova não cabe em `telas/casca.css`, que a
+paridade congela, e a sidebar do canvas lista os nove itens do app inteiro, então ela é
+do app e não do dashboard. O diretório separado é a garantia mecânica de que `base.css` e
+`casca.css` não são tocados. Dentro dele, `geist.css` tem os cinco `@font-face`, os
+tokens e as classes, todas com prefixo `g-`; `icones.tsx` é gerado por
+`infra/gerar-icones.ts` a partir do JSON do canvas, e emite só os ícones usados;
+`primitivos.tsx` tem botão, badge, seletor, menu, abas, entrada, grade, tabela, KPI e
+estatística, e nenhum deles conhece viagem, rota ou base. O que as quatro telas dividem e
+o Geist não pode saber ficou em `apps/web/src/dashboard/`, que é o domínio que saiu de
+dentro da view antiga.
+
+**Quatro páginas, e não uma.** Cada item do Painel é uma casca `.html` de 17 linhas,
+igual às sete de hoje. O botão voltar funciona, o mecanismo de "qual tela" continua sendo
+o único que o app já tem, uma casca monta um componente e a navegação é recarga completa,
+e o Recharts entra só no bundle da Visão geral, que é a única com gráfico. O preço é um
+`GET /api/registros` por navegação, e ele foi aceito porque a alternativa era um roteador
+que este app não tem em lugar nenhum.
+
+**Os dois filtros moram na query string.** `?base=Raposa&periodo=mes`, lidos na borda por
+`lerFiltros` com default e escritos por `consultaDe`. Não há estado de filtro em React.
+Isso é o que faz o filtro sobreviver à navegação entre as quatro telas sem uma linha de
+sincronia, pelo href da sidebar, e o que torna a troca idempotente, porque o que a tela
+mostra depende só da URL. Busca, pontualidade e número de página ficam em `useState`,
+porque não atravessam a navegação e não existem nas outras telas.
+
+**A prova que sai, e o que entra no lugar.** O dashboard saiu de
+`verificar/paridade.ts` no commit que trocou a view, de propósito e não por descuido.
+A paridade compara a tela de hoje com uma baseline gravada antes do redesenho, e uma tela
+inteira nova não produz divergência para investigar. Sair de uma prova sem colocar nada no
+lugar transforma a região em ponto cego, então entraram duas coisas.
+`verificar/olhar-dashboard.ts` monta as quatro telas no mesmo palco da paridade, com a
+mesma fixture e o mesmo relógio congelado, em 1440 de largura, e fotografa cada uma em
+`var/`; o cabeçalho dele diz em voz alta que aquilo não é prova, é um par de olhos.
+`verificar/fase-7.sh` é o portão, e a asserção que dá razão a ele é a que compara
+`telas/base.css` e `telas/casca.css` contra o commit `dc30556` da fase 3. O defeito que
+esta fase existe para evitar é alguém aproveitar uma medida do desenho novo mexendo numa
+das duas folhas compartilhadas, o que muda as seis telas aprovadas sem que ninguém tenha
+pedido.
+
+**O que o portão cobra.** As seis telas continuam iguais à baseline e as 12 mutações
+continuam sendo pegas; `base.css` e `casca.css` não mudaram desde `dc30556`; nenhuma tela
+do Painel importa as duas folhas e nenhuma congelada importa `geist.css`; as quatro cascas
+existem e montam o seu `.tsx`; nenhuma classe de `geist.css` sai sem o prefixo `g-`;
+nenhum global em `window` fora de `window.location`, agora nos três diretórios; e o
+`dist/` de Viagens, Rotas e Frota não carrega Recharts enquanto o da Visão geral carrega.
+`verificar/fase-6.sh` passa de 8 para 11 `.html` em `src` e ganha as três cascas novas na
+lista, com o motivo escrito no arquivo, para quem ler não achar que alguém afrouxou um
+portão fechado.
+
+**O preço, que é conhecido.** As quatro telas do Painel deixaram de ser provadas pixel a
+pixel. Uma regressão de desenho nelas não reprova nada, e só aparece quando alguém rodar
+`bun verificar/olhar-dashboard.ts` e olhar as fotos ao lado dos artboards. O portão da
+fase 7 cobre a fronteira, os globais, o CSS e o bundle, que são as coisas que dá para
+cobrar sem ver; o desenho em si ficou com o par de olhos. Junto vem a segunda janela
+branca antes da primeira pintura, pelo mesmo motivo da fase 6, e os 350 kB de Recharts
+que continuam no bundle da Visão geral, agora sozinhos, porque as outras três não o
+carregam mais.
+
 ## o schema
 
 Vale mais detalhar isto do que qualquer outra parte, porque é o que trava se estiver
@@ -1029,6 +1112,7 @@ do passivo da fase 4 na origem, em vez de arrastá-lo até lá.
 | 4 publicar | **pronta** | 2026-09-02 | |
 | 5 andaime | não iniciada | | sobra o guia, por decisão pendente |
 | 6 react | **pronta** | 2026-09-03 | commits 0 a 9; o guia segue legado |
+| 7 painel | **pronta** | 2026-09-03 | Frota saiu por analogia, sem artboard |
 
 Atualize esta tabela ao fim de cada fase. Plano que diverge da realidade engana a
 próxima sessão.
