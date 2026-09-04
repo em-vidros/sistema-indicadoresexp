@@ -20,6 +20,17 @@ export const TOLERANCIA_PONTUALIDADE_MIN = 15
 
 export type Pontualidade = 'adiantado' | 'no_prazo' | 'atrasado'
 
+/**
+ * Como cada classificacao se escreve na tela. Fica aqui e nao na tela porque Viagens
+ * escreve os tres no selo da linha e tambem no menu do filtro, e duas listas que precisam
+ * concordar sao uma lista.
+ */
+export const PONTUALIDADES = {
+  adiantado: { rotulo: 'Adiantado' },
+  no_prazo: { rotulo: 'No prazo' },
+  atrasado: { rotulo: 'Atrasado' },
+} as const satisfies Readonly<Record<Pontualidade, { readonly rotulo: string }>>
+
 /** O que os dois filtros do topo leem de qualquer registro, seja qual for o tipo. */
 export type Comum = {
   readonly base: string
@@ -217,16 +228,29 @@ export function calcularKPIs(dados: readonly Item[]) {
   return { viagens, abasts, manuts, quebras, totalCarga, totalCustoV, totalManut, totalAbast, pctCustoRota, pctQuebra, pctManutProd, pont }
 }
 
-export type Rota = { readonly rota: string; readonly n: number; readonly carga: number; readonly custo: number; readonly pct: number }
+export type Rota = {
+  readonly rota: string
+  readonly n: number
+  readonly carga: number
+  readonly custo: number
+  readonly pct: number
+  /** A saida mais recente da rota, como o registro a gravou. Vazia se nenhuma tem data. */
+  readonly ultima: string
+}
 
 export function porRota(viagens: readonly Extract<Item, { tipo: 'viagem' }>[]): Rota[] {
-  const acumulado = new Map<string, { n: number; carga: number; custo: number }>()
+  const acumulado = new Map<string, { n: number; carga: number; custo: number; ultima: string }>()
   for (const viagem of viagens) {
     if (!viagem.rota) continue
-    const atual = acumulado.get(viagem.rota) ?? { n: 0, carga: 0, custo: 0 }
+    const atual = acumulado.get(viagem.rota) ?? { n: 0, carga: 0, custo: 0, ultima: '' }
     atual.n++
     atual.carga += viagem.valorCarga
     atual.custo += viagem.custoViagem
+    // Comparacao de texto, e nao de `Date`: as datas chegam em `AAAA-MM-DD`, onde a ordem
+    // alfabetica ja e a cronologica, e `new Date` de uma data sem hora cai na meia-noite
+    // em UTC, o que devolve o dia anterior neste fuso.
+    const quando = viagem.dataSaida || viagem.quando
+    if (quando > atual.ultima) atual.ultima = quando
     acumulado.set(viagem.rota, atual)
   }
   return [...acumulado]
@@ -288,6 +312,23 @@ export function porcento(valor: number | null, casas = 2): string {
 /** A fatia inteira que `parte` ocupa de `total`, como a tela sempre mostrou pontualidade. */
 export function parcela(parte: number, total: number): number {
   return Math.round((parte / total) * 100)
+}
+
+/**
+ * O dia e o mes de uma data que chegou como `AAAA-MM-DD`, recortados do texto. Passar por
+ * `Date` custaria o desconto de fuso, que joga a data sem hora para o dia anterior aqui, e
+ * a tela mostraria a viagem de 01/09 como 31/08.
+ */
+export function diaMes(quando: string): string {
+  const [, mes, dia] = quando.slice(0, 10).split('-')
+  return dia === undefined || mes === undefined ? '—' : `${dia}/${mes}`
+}
+
+/** Como cada faixa se chama na coluna de status das rotas. */
+export const ROTULO_DA_FAIXA: Readonly<Record<Tom, string>> = {
+  ok: 'Dentro da meta',
+  atencao: 'Atenção',
+  critico: 'Crítico',
 }
 
 /**

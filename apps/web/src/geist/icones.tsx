@@ -64,10 +64,38 @@ export const ChevronDown: Desenho = {
   ),
 }
 
+export const ChevronLeft: Desenho = {
+  viewBox: '0 0 16 16',
+  corpo: (
+    <path fill="currentColor" fillRule="evenodd" d="m10.5 14.06-.53-.53-4.824-4.823a1 1 0 0 1 0-1.414L9.97 2.47l.53-.53L11.56 3l-.53.53L6.56 8l4.47 4.47.53.53z" clipRule="evenodd" />
+  ),
+}
+
+export const ChevronRight: Desenho = {
+  viewBox: '0 0 16 16',
+  corpo: (
+    <path fill="currentColor" fillRule="evenodd" d="m5.5 1.94.53.53 4.824 4.823a1 1 0 0 1 0 1.414L6.03 13.53l-.53.53L4.44 13l.53-.53L9.44 8 4.97 3.53 4.44 3z" clipRule="evenodd" />
+  ),
+}
+
+export const Download: Desenho = {
+  viewBox: '0 0 16 16',
+  corpo: (
+    <path fill="currentColor" fillRule="evenodd" d="M8.75 1v7.69l1.97-1.97.53-.53 1.06 1.06-.53.53-3.073 3.074a1 1 0 0 1-1.414 0L4.22 7.78l-.53-.53 1.06-1.06.53.53 1.97 1.97V1zm4.75 8.25v4.25h-11v-5H1V14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5h-1.5z" clipRule="evenodd" />
+  ),
+}
+
 export const FileText: Desenho = {
   viewBox: '0 0 16 16',
   corpo: (
     <path fill="currentColor" fillRule="evenodd" d="M14.5 13.5V5.414a1 1 0 0 0-.293-.707L9.793.293A1 1 0 0 0 9.086 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.121L12.379 5zM5.13 5h-.625v1.25h2.12V5zm-.625 3h7.12v1.25h-7.12zm.625 3h-.625v1.25h7.12V11z" clipRule="evenodd" />
+  ),
+}
+
+export const Filter: Desenho = {
+  viewBox: '0 0 16 16',
+  corpo: (
+    <path fill="currentColor" fillRule="evenodd" d="M1 0h14v3.31l-.22.22-4.28 4.28V16H8.782l-.185-.117-2.75-1.75-.347-.221V7.81L1.22 3.53 1 3.31zm1.5 1.5v1.19l4.28 4.28.22.22v5.898l2 1.273V7.19l.22-.22 4.28-4.28V1.5z" clipRule="evenodd" />
   ),
 }
 

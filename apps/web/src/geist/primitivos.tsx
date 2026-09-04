@@ -34,6 +34,17 @@ const PONTO_DO_TOM: Readonly<Record<Tom, string>> = {
   critico: 'g-ponto-critico',
 }
 
+/**
+ * O selo que cada faixa veste. E a unica traducao de `Tom` para cor de badge, e ela mora
+ * aqui porque as duas palavras sao do sistema visual; o rotulo que acompanha o selo e do
+ * dominio, e sai de `ROTULO_DA_FAIXA`.
+ */
+export const COR_DO_TOM: Readonly<Record<Tom, CorDeBadge>> = {
+  ok: 'verde',
+  atencao: 'ambar',
+  critico: 'vermelho',
+}
+
 const ICONE_DO_BADGE: Readonly<Record<CorDeBadge, Desenho | null>> = {
   cinza: null,
   teal: Information,

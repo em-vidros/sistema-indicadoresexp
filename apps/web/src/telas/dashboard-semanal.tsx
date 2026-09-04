@@ -25,6 +25,7 @@ import { createRoot } from 'react-dom/client'
 import { useRegistros } from '../dashboard/carregar.ts'
 import type { Sincronia } from '../dashboard/carregar.ts'
 import {
+  ROTULO_DA_FAIXA,
   brl,
   calcularKPIs,
   faixaDe,
@@ -53,6 +54,7 @@ import {
   Abas,
   Badge,
   Botao,
+  COR_DO_TOM,
   CabecalhoDeBloco,
   CabecalhoDePagina,
   Grade,
@@ -64,23 +66,11 @@ import {
   Td,
   Th,
 } from '../geist/primitivos.tsx'
-import type { Celula, CorDeBadge, Delta, Tom } from '../geist/primitivos.tsx'
+import type { Celula, Delta } from '../geist/primitivos.tsx'
 
 /** As tres janelas da aba do grafico, na ordem em que o canvas as desenhou. */
 const JANELAS = [8, 12, 26] as const
 const ROTULOS_DA_JANELA = ['8 semanas', '12', '26']
-
-const BADGE_DO_TOM: Readonly<Record<Tom, CorDeBadge>> = {
-  ok: 'verde',
-  atencao: 'ambar',
-  critico: 'vermelho',
-}
-
-const ROTULO_DO_TOM: Readonly<Record<Tom, string>> = {
-  ok: 'Dentro da meta',
-  atencao: 'Atenção',
-  critico: 'Crítico',
-}
 
 function comoSincronizou(sincronia: Sincronia): string {
   if (sincronia.estado === 'carregando') return 'carregando'
@@ -171,7 +161,7 @@ function TabelaDeRotas({ rotas, consulta }: {
                 <Td direita>
                   <span className={tom === 'ok' ? 'g-forte' : `g-forte g-tom-${tom}`}>{porcento(rota.pct)}</span>
                 </Td>
-                <Td><Badge rotulo={ROTULO_DO_TOM[tom]} cor={BADGE_DO_TOM[tom]} /></Td>
+                <Td><Badge rotulo={ROTULO_DA_FAIXA[tom]} cor={COR_DO_TOM[tom]} /></Td>
               </tr>
             )
           })}
