@@ -346,10 +346,12 @@ export function Tabela({ cabecalho, children }: {
   readonly children: ReactNode
 }): JSX.Element {
   return (
-    <table className="g-tabela">
-      <thead><tr>{cabecalho}</tr></thead>
-      <tbody>{children}</tbody>
-    </table>
+    <div className="g-rolagem">
+      <table className="g-tabela">
+        <thead><tr>{cabecalho}</tr></thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
   )
 }
 

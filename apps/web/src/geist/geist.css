@@ -479,6 +479,12 @@ body {
 
 /* ---------- tabela ---------- */
 
+/* A tabela de doze colunas nao encolhe: cada celula e `nowrap` e o recuo e de 24 px dos
+   dois lados, entao um nome de rota comprido a faz passar da celula do grid. Sem esta
+   caixa a coluna da direita sai por cima da borda do painel e some; com ela, a tabela
+   rola dentro do bloco e a moldura fica onde o canvas a desenhou. */
+.g-rolagem { overflow-x: auto; }
+
 .g-tabela { width: 100%; border-collapse: collapse; }
 
 .g-tabela th {
