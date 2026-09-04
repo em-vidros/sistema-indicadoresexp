@@ -1,5 +1,5 @@
 /**
- * As oito telas construidas, servidas de `apps/web/dist/`.
+ * As onze telas construidas, servidas de `apps/web/dist/`.
  *
  * Ate agora nenhum teste pedia nada por aqui: apagar a contencao de caminho de
  * `paginas.ts` inteira deixava a suite verde. As telas em si sao pouco mais que um
@@ -27,15 +27,19 @@ const TELAS = [
   'documentos-frota.html',
   'entrar.html',
   'formulario-registro.html',
+  'frota.html',
   'GUIA-CONFIGURACAO.html',
   'integracao-frota.html',
   'manutencao-frota.html',
+  'rotas.html',
+  'viagens.html',
 ]
 
-describe('as oito telas do build', () => {
-  // Contar oito nao prova nada; prova que sao estas oito. Tela nova entra na lista
-  // de proposito, e nao passa a existir sem ninguem ter escrito o nome dela.
-  test('sao exatamente as oito que o `dist` tem', async () => {
+describe('as onze telas do build', () => {
+  // Contar onze nao prova nada; prova que sao estas onze. Tela nova entra na lista
+  // de proposito, e nao passa a existir sem ninguem ter escrito o nome dela. Foi o que
+  // aconteceu com Viagens, Rotas e Frota, que a fase 7 acrescentou ao Painel.
+  test('sao exatamente as onze que o `dist` tem', async () => {
     const construidas = (await readdir(RAIZ)).filter((n) => n.endsWith('.html')).sort()
     expect(construidas).toEqual([...TELAS].sort())
   })
