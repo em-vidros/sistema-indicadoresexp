@@ -152,7 +152,9 @@ function TabelaDeRotas({ rotas, consulta }: {
     <>
       <CabecalhoDeBloco
         titulo="Rotas por custo / carga"
-        subtitulo="5 rotas com mais custo · ordenadas pelo % de custo"
+        subtitulo={rotas.length > 5
+          ? '5 rotas com mais custo · ordenadas pelo % de custo'
+          : 'Ordenadas pelo % de custo'}
         direita={<Link href={`rotas.html${consulta}`}>Ver todas as rotas</Link>}
       />
       <Tabela cabecalho={cabecalho}>
