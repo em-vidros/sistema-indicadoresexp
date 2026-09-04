@@ -17,7 +17,21 @@ import { criarApp } from './apps/server/src/index.ts'
 
 const app = criarApp()
 
-Bun.serve({
-  port: Number(process.env['PORTA_SERVIDOR'] ?? 3200),
-  fetch: app.fetch,
-})
+const porta = Number(process.env['PORTA_SERVIDOR'] ?? 3200)
+
+try {
+  const servidor = Bun.serve({
+    port: porta,
+    fetch: app.fetch,
+  })
+  console.log(`Servidor ouvindo em http://localhost:${servidor.port}`)
+} catch (erro) {
+  const codigo = (erro as NodeJS.ErrnoException)?.code
+  if (codigo === 'EADDRINUSE') {
+    console.error(
+      `A porta ${porta} ja esta em uso. Outro 'bun dev' rodando? Liste com 'lsof -i :${porta}' e encerre com 'kill <PID>'.`,
+    )
+    process.exit(1)
+  }
+  throw erro
+}
