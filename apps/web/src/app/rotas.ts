@@ -97,7 +97,7 @@ export const ROTAS: readonly Rota[] = [
     grupo: 'Registros',
     icone: Wrench,
     comFiltros: false,
-    carregar: () => import('../telas/em-construcao.tsx'),
+    carregar: () => import('../telas/manutencao.tsx'),
   },
   {
     id: 'documentos',
