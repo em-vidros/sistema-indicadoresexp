@@ -320,6 +320,14 @@ describe('escrita de base', () => {
     expect(tudo!.bases.find((item) => item.nome === BASES[0]!)?.ativo).toBe(false)
   })
 
+  test('nome de base repetido volta 409', async () => {
+    const resposta = await escrever(livia, 'bases', { nome: 'Raposa' })
+    expect(resposta.status).toBe(409)
+    expect(((await resposta.json()) as { erro: string }).erro).toBe(
+      'já existe uma base com esse nome',
+    )
+  })
+
   test('base inexistente volta 404 no PUT', async () => {
     const resposta = await escrever(
       livia,
