@@ -9,6 +9,7 @@ import {
   criarRota,
   criarVeiculo,
   obterCadastro,
+  FalhaDeCadastro,
   type EntradaBase,
   type EntradaColaborador,
   type EntradaRota,
@@ -94,5 +95,24 @@ describe('a tela de cadastro fala com a API', () => {
     await expect(criarVeiculo(VEICULO, chamar)).rejects.toThrow('já existe um veículo com essa placa')
     await atualizarRota('a/b?c', ROTA, chamar).catch(() => null)
     expect(pedidos).toContain('/api/cadastro/rotas/a%2Fb%3Fc')
+  })
+
+  test('o status da recusa chega junto com a mensagem', async () => {
+    const recusa = (status: number, erro: string) =>
+      (async () => Response.json({ erro }, { status })) as typeof fetch
+
+    const conflito = await criarVeiculo(VEICULO, recusa(409, 'já existe um veículo com essa placa')).catch(
+      (motivo: unknown) => motivo,
+    )
+    expect(conflito).toBeInstanceOf(FalhaDeCadastro)
+    expect((conflito as FalhaDeCadastro).status).toBe(409)
+    expect((conflito as FalhaDeCadastro).message).toBe('já existe um veículo com essa placa')
+
+    const proibido = await atualizarBase('b1', BASE, recusa(403, 'só o admin mexe nas bases')).catch(
+      (motivo: unknown) => motivo,
+    )
+    expect(proibido).toBeInstanceOf(FalhaDeCadastro)
+    expect((proibido as FalhaDeCadastro).status).toBe(403)
+    expect((proibido as FalhaDeCadastro).message).toBe('só o admin mexe nas bases')
   })
 })

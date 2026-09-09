@@ -5,6 +5,9 @@
  * conhece o pacote de persistencia, e o que atravessa a rede e JSON, nao a linha
  * do drizzle. O preco e que nada compara as duas copias: o teste ao lado prende
  * caminho, metodo e corpo, e campo que mudar de nome so aparece na tela.
+ *
+ * Toda recusa chega como `FalhaDeCadastro`, que leva o status junto porque a tela trata
+ * 409 e 403 de maneiras diferentes.
  */
 export type FuncaoColaborador = 'motorista' | 'ajudante' | 'atendimento' | 'logistica'
 
@@ -82,13 +85,20 @@ export type EntradaBase = {
   ativo: boolean
 }
 
+/** O status viaja junto porque 409 e erro de campo e 403 e aviso de tela. */
+export class FalhaDeCadastro extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message)
+  }
+}
+
 type Chamar = typeof fetch
 
 async function pedirJson<T>(caminho: string, init: RequestInit, chamar: Chamar): Promise<T> {
   const resposta = await chamar(caminho, init)
   if (!resposta.ok) {
     const falha = (await resposta.json().catch(() => null)) as { erro?: string } | null
-    throw new Error(falha?.erro ?? `pedido recusado com ${resposta.status}`)
+    throw new FalhaDeCadastro(falha?.erro ?? `pedido recusado com ${resposta.status}`, resposta.status)
   }
   return (await resposta.json()) as T
 }
