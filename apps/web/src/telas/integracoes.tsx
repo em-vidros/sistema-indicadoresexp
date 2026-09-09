@@ -18,6 +18,7 @@
  * escape e do React, e imprimir vira uma chamada de `window.print()`. Ela sai por portal
  * no `<body>`, fora de `.g-app`, para a regra de impressao esconder a casca de uma vez.
  */
+import { semTravessao } from '../geist/texto.ts'
 import { useRef, useState } from 'react'
 import type { JSX } from 'react'
 import { createPortal } from 'react-dom'
@@ -205,7 +206,7 @@ function CartaoDeSemana({ semana, progresso, aoMarcar }: {
   return (
     <div>
       <div className="g-semana-topo">
-        <span className="g-etapa-titulo g-l13 g-forte">{semana.titulo}</span>
+        <span className="g-etapa-titulo g-l13 g-forte">{semTravessao(semana.titulo)}</span>
         <span className="g-etapa-conta g-l12m">{feitas}/{total}</span>
       </div>
       <div className="g-semana-barra">
@@ -251,7 +252,7 @@ function Progresso({ ficha, programa }: { readonly ficha: Ficha; readonly progra
                 cumpridas === 0 ? 'g-ponto-neutro' : cumpridas === quantas ? 'g-ponto-ok' : 'g-ponto-atencao',
               )}
             />
-            <span className="g-etapa-titulo g-l13">{semana.titulo}</span>
+            <span className="g-etapa-titulo g-l13">{semTravessao(semana.titulo)}</span>
             <span className="g-etapa-conta g-l12m">{cumpridas}/{quantas}</span>
           </div>
         )
@@ -307,7 +308,7 @@ function Folha({ ficha, programa }: { readonly ficha: Ficha; readonly programa: 
       <div className="g-folha-cabecalho">
         <div className="g-folha-empresa">EM Vidros Indústria e Comércio de Vidros Ltda</div>
         <div className="g-folha-doc">Programa de integração e período de experiência de 45 dias</div>
-        <div className="g-folha-num">{programa.titulo}</div>
+        <div className="g-folha-num">{semTravessao(programa.titulo)}</div>
       </div>
 
       <div className="g-folha-linha">
@@ -326,7 +327,7 @@ function Folha({ ficha, programa }: { readonly ficha: Ficha; readonly programa: 
 
       {programa.semanas.map((semana) => (
         <div className="g-folha-semana" key={semana.numero}>
-          <div className="g-folha-topico-num">{semana.titulo}</div>
+          <div className="g-folha-topico-num">{semTravessao(semana.titulo)}</div>
           {semana.atividades.map((atividade) => {
             const marca = ficha.progresso[atividade.codigo]
             const feito = marca?.feito === true
@@ -668,7 +669,7 @@ export default function Integracoes(): JSX.Element {
     <>
       <CabecalhoDePagina
         titulo="Ficha de integração de 45 dias"
-        subtitulo={`${programa.titulo} · ${ficha.nome === '' ? 'sem colaborador escolhido' : ficha.nome}`}
+        subtitulo={`${semTravessao(programa.titulo)} · ${ficha.nome === '' ? 'sem colaborador escolhido' : ficha.nome}`}
         acoes={
           <>
             <Botao rotulo="Imprimir" antes={FileText} aoClicar={() => window.print()} />

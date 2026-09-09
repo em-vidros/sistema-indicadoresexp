@@ -1179,6 +1179,12 @@ export default function Registrar(): JSX.Element {
     if (lembrada !== null) setBase(lembrada)
   }, [baseFixa, sessao])
 
+  // Sem lembranca nesta maquina, a base do ultimo lancamento de todos vale como palpite.
+  const ultimo = registros.dados?.[0]?.base ?? null
+  useEffect(() => {
+    if (base === null && baseFixa === null && lerBaseLembrada() === null && ultimo !== null) setBase(ultimo)
+  }, [base, baseFixa, ultimo])
+
   useEffect(() => {
     if (base !== null && baseFixa === null) lembrarBase(base)
   }, [base, baseFixa])
