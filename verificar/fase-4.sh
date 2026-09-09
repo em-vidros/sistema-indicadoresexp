@@ -85,7 +85,7 @@ for origem in apps/web/src/*.html; do
   cookie=(-b "$livia")
   [ "$tela" = entrar ] && cookie=()
   conferir "$tela" '200' \
-    "$(curl -s -o /dev/null -w '%{http_code}' "${cookie[@]}" --max-time 20 "$BASE/$tela.html" 2>/dev/null)"
+    "$(curl -s -o /dev/null -w '%{http_code}' ${cookie[@]+"${cookie[@]}"} --max-time 20 "$BASE/$tela.html" 2>/dev/null)"
 done
 asset=$(ls apps/web/dist/assets/ 2>/dev/null | grep '^registrar-.*\.js$' | head -1)
 conferir 'o JS com hash da tela de registro' '200' \

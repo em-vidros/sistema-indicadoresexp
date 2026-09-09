@@ -1,0 +1,12 @@
+# Substitui o .gitignore na hora do upload, entao repete o que ele exclui e soma o que
+# so atrapalha na funcao: skills locais em symlink, fotos de verificacao, builds paralelos.
+node_modules
+.git
+.env
+.env.*
+var
+.agents
+.playwright-mcp
+apps/web/dist
+apps/web/dist-*
+tsconfig.tsbuildinfo

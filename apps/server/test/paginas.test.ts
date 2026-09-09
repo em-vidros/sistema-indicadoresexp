@@ -97,10 +97,15 @@ describe('por quanto tempo o navegador pode guardar', () => {
     expect(resposta.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
   })
 
-  test('o asset de nome fixo da login nao e guardado para sempre', async () => {
+  test('o asset de nome fixo da login e guardado por pouco e volta em 304 na mesma versao', async () => {
     const resposta = await pedir('/assets/entrar.js')
     expect(resposta.status).toBe(200)
-    expect(resposta.headers.get('cache-control')).toBe('no-cache')
+    expect(resposta.headers.get('cache-control')).toBe('public, max-age=600, must-revalidate')
+    const etiqueta = resposta.headers.get('etag')
+    expect(etiqueta).not.toBeNull()
+    const denovo = await pedir('/assets/entrar.js', { headers: { 'if-none-match': etiqueta ?? '' } })
+    expect(denovo.status).toBe(304)
+    expect(await denovo.text()).toBe('')
   })
 
   test('a casca da SPA nao e guardada', async () => {
