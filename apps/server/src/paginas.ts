@@ -11,11 +11,16 @@
  * de link em pagina errada servida com 200.
  */
 import type { Handler } from 'hono'
+import { resolve } from 'node:path'
 import { caminhoPedido, dentroDe, extensaoDe, pastaDeConteudo, tipoDe } from './arquivos.ts'
 import { CAMINHOS_DA_SPA, REDIRECIONADOS } from './caminhos.ts'
 import { PUBLICOS_DE_ASSET, type Ambiente } from './portao.ts'
 
-const RAIZ = pastaDeConteudo('apps/web/dist', new URL('../../web/dist/', import.meta.url))
+// `PASTA_WEB_DIST` existe para varios servidores locais lerem builds diferentes ao
+// mesmo tempo, cada um de um `vp build --outDir` proprio; producao nunca a define.
+const RAIZ = process.env['PASTA_WEB_DIST']
+  ? resolve(process.env['PASTA_WEB_DIST'])
+  : pastaDeConteudo('apps/web/dist', new URL('../../web/dist/', import.meta.url))
 
 const DA_SPA = new Set(CAMINHOS_DA_SPA)
 
