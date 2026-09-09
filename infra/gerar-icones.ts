@@ -47,6 +47,7 @@ const USADOS = [
   'CloudUpload',
   'Database',
   'Download',
+  'Eye',
   'EyeOff',
   'FileText',
   'Filter',
