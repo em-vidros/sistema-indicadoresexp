@@ -1,5 +1,5 @@
 /**
- * As dez telas do app, numa tabela.
+ * As onze telas do app, numa tabela.
  *
  * A tabela e a unica fonte: a sidebar sai dela, o roteador sai dela, o titulo da aba sai
  * dela e o pedaco de JavaScript de cada tela sai do `carregar` dela. Uma linha nova aqui
@@ -8,9 +8,13 @@
  * `comFiltros` marca as quatro telas do Painel, as unicas que dividem base e periodo pela
  * query string. Nas outras a casca mostra a base da sessao, que nao filtra nada.
  *
+ * `exige` e o nome de uma capacidade da sessao, e ele existe para a linha da tabela ser
+ * tambem a regra de quem ve a tela. Com a regra escrita fora daqui, uma tela nova entraria
+ * na sidebar de todo mundo ate alguem lembrar de acrescentar um if noutro arquivo.
+ *
  * Cada `carregar` e um `import()` literal de proposito. O Rollup so sabe fatiar o bundle
  * quando o caminho esta escrito na chamada; montado com template ele empacota a pasta
- * inteira e as dez telas voltam a viajar juntas.
+ * inteira e as onze telas voltam a viajar juntas.
  */
 import type { ComponentType } from 'react'
 import {
@@ -23,11 +27,13 @@ import {
   Notes,
   PencilEdit,
   Route,
+  Users,
   Wrench,
 } from '../geist/icones.tsx'
 import type { Desenho } from '../geist/icones.tsx'
 import { CAMINHOS } from './caminhos.ts'
 import type { Caminho } from './caminhos.ts'
+import type { Capacidade, Capacidades } from './dados.ts'
 
 export type Grupo = 'Painel' | 'Registros' | 'Gestão'
 
@@ -41,6 +47,8 @@ export type Rota = {
   readonly icone: Desenho
   /** So as do Painel dividem base e periodo, e so elas levam a query no href. */
   readonly comFiltros: boolean
+  /** A capacidade sem a qual a tela nao aparece. Ausente quer dizer "todo mundo ve". */
+  readonly exige?: Capacidade
   readonly carregar: () => Promise<{ readonly default: ComponentType }>
 }
 
@@ -135,6 +143,16 @@ export const ROTAS: readonly Rota[] = [
     comFiltros: false,
     carregar: () => import('../telas/cadastro.tsx'),
   },
+  {
+    id: 'usuarios',
+    caminho: '/usuarios',
+    titulo: 'Usuários',
+    grupo: 'Gestão',
+    icone: Users,
+    comFiltros: false,
+    exige: 'gerenciaUsuarios',
+    carregar: () => import('../telas/usuarios.tsx'),
+  },
 ]
 
 // A lista que o servidor le e esta tabela tem que cobrir os mesmos caminhos. O tipo ja
@@ -146,4 +164,17 @@ if (semRota.length > 0) throw new Error(`caminho sem rota: ${semRota.join(', ')}
 
 export function rotaDe(caminho: string): Rota | null {
   return ROTAS.find((rota) => rota.caminho === caminho) ?? null
+}
+
+/**
+ * A sessao ainda nao chegou vale como "nao pode".
+ *
+ * O outro jeito, mostrar tudo enquanto carrega e tirar depois, pisca um item que some
+ * debaixo do cursor de quem ja estava indo clicar nele, e o clique cai numa tela que a
+ * pessoa nao pode ver. Escondendo primeiro, a sidebar so cresce, e ninguem clica no que
+ * ainda nao estava la.
+ */
+export function liberada(rota: Rota, capacidades: Capacidades | null): boolean {
+  if (rota.exige === undefined) return true
+  return capacidades !== null && capacidades[rota.exige]
 }

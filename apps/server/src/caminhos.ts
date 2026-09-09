@@ -17,6 +17,7 @@ export const CAMINHOS_DA_SPA: readonly string[] = [
   '/atas',
   '/integracoes',
   '/cadastro',
+  '/usuarios',
 ]
 
 /**

@@ -6,8 +6,10 @@
  * isso que faz a sidebar nao piscar entre Visao geral e Viagens: o mesmo elemento continua
  * ali, so o miolo do painel e substituido.
  *
- * Os dez itens saem de `app/rotas.ts` e nao de uma lista propria. Uma linha nova la ja
- * nasce navegavel, destacavel e no grupo certo, sem tocar em nada aqui.
+ * Os onze itens saem de `app/rotas.ts` e nao de uma lista propria. Uma linha nova la ja
+ * nasce navegavel, destacavel e no grupo certo, sem tocar em nada aqui. Quem tem `exige`
+ * so aparece para a sessao que tem a capacidade, e o grupo que fica sem nenhum item nao
+ * desenha o rotulo dele sozinho.
  *
  * Cada item e um `<a href>` de verdade dentro de `Ligacao`: clique simples navega sem
  * recarregar, e abrir em aba nova, copiar o link e o botao do meio continuam sendo o que o
@@ -27,7 +29,7 @@ import type { JSX, ReactNode } from 'react'
 import { prefetchar as prefetcharDados, useSessao } from '../app/dados.ts'
 import type { Sessao } from '../app/dados.ts'
 import { Ligacao, navegar, prefetchar as prefetcharRota, useLocalizacao } from '../app/navegacao.tsx'
-import { GRUPOS, ROTAS, rotaDe } from '../app/rotas.ts'
+import { GRUPOS, ROTAS, liberada, rotaDe } from '../app/rotas.ts'
 import type { Rota } from '../app/rotas.ts'
 import { BASES, OPCOES_DE_BASE, consultaDe, lerFiltros } from '../dashboard/filtros.ts'
 import { listarRegistros } from '../js/registros-api.ts'
@@ -122,6 +124,8 @@ export function Casca({ children }: { readonly children: ReactNode }): JSX.Eleme
   const rota = rotaDe(caminho)
   const consulta = consultaDe(lerFiltros(busca))
   const switcher = switcherDe(rota, busca, sessao.dados)
+  const capacidades = sessao.dados?.capacidades ?? null
+  const visiveis = ROTAS.filter((r) => liberada(r, capacidades))
 
   return (
     <div className="g-app">
@@ -143,14 +147,16 @@ export function Casca({ children }: { readonly children: ReactNode }): JSX.Eleme
         />
 
         <nav className="g-nav">
-          {GRUPOS.map((grupo) => (
-            <div className="g-grupo" key={grupo}>
-              <div className="g-grupo-rotulo">{grupo}</div>
-              {ROTAS.filter((r) => r.grupo === grupo).map((r) => (
-                <Item key={r.id} rota={r} ativa={r.id === rota?.id} consulta={consulta} />
-              ))}
-            </div>
-          ))}
+          {GRUPOS.map((grupo) => ({ grupo, itens: visiveis.filter((r) => r.grupo === grupo) }))
+            .filter(({ itens }) => itens.length > 0)
+            .map(({ grupo, itens }) => (
+              <div className="g-grupo" key={grupo}>
+                <div className="g-grupo-rotulo">{grupo}</div>
+                {itens.map((r) => (
+                  <Item key={r.id} rota={r} ativa={r.id === rota?.id} consulta={consulta} />
+                ))}
+              </div>
+            ))}
         </nav>
 
         <Menu
