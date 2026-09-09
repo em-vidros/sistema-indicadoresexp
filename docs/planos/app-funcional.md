@@ -872,6 +872,46 @@ branca antes da primeira pintura, pelo mesmo motivo da fase 6, e os 350 kB de Re
 que continuam no bundle da Visão geral, agora sozinhos, porque as outras três não o
 carregam mais.
 
+### fase 8, o app inteiro veste o desenho e vira uma página só
+
+Escrito em 2026-09-09, no fim da fase. Está no ar em
+`https://sistema-indicadoresexp.vercel.app`, e `verificar/fase-4.sh` passa contra essa URL.
+
+**O app deixou de ser um `.html` por tela.** `apps/web/src/app.html` é a única casca com
+sessão; `app/rotas.ts` é a tabela das dez telas (caminho, título, grupo da sidebar, ícone
+e o `import()` do chunk), e a sidebar, o roteador, o título da aba e o code splitting
+saem todos dela. Navegar entre telas não recarrega nada: a casca fica, o painel troca com
+uma transição de 150 ms, e `app/dados.ts` guarda cada leitura de API por chave, com
+revalidação em segundo plano e `invalidar(chave)` depois de gravar. Passar o mouse num
+item da sidebar já busca o chunk e o dado da tela. Os caminhos são `/visao-geral`,
+`/viagens`, `/rotas`, `/frota`, `/registrar`, `/manutencao`, `/documentos`, `/atas`,
+`/integracoes` e `/cadastro`; os `.html` antigos respondem 302 para o caminho novo.
+
+**As seis telas congeladas foram reescritas no sistema visual da fase 7**, uma por agente,
+a partir dos artboards da rodada 3 do canvas e do comportamento do porte React. O que
+mudou de forma está no cabeçalho de cada `telas/*.tsx`. A tela de login também vestiu o
+desenho, e por isso o portão libera dez nomes de asset em vez de quatro (o CSS e os
+ícones do sistema, as cinco fontes, os ajudantes do rolldown).
+
+**Cadastro é tela nova, e o cadastro passou a ser editável.** `POST` e `PUT` em
+`/api/cadastro/{veiculos,colaboradores,rotas,bases}`, bases só para admin, com o
+`alcanceDoCadastro` separado de `lerPermissao` para o admin não perder uma base que ele
+mesmo desativou.
+
+**A prova de paridade morreu com as telas que ela provava.** Saíram `verificar/paridade/`,
+`verificar/baseline/`, `fase-7.sh` e `olhar-dashboard.ts`. O que entrou foi
+`verificar/olhar.ts`, que faz login num servidor real e fotografa as onze telas em
+`var/olhar/` para alguém olhar, reprovando só erro de console.
+
+**Cache.** Asset com hash sai `immutable` por um ano; os dez sem hash saem com dez
+minutos e um ETag que é o id da publicação da Vercel, então a revalidação volta 304.
+
+**O que ficou de fora, e precisa de decisão.** A data de cada atividade da integração
+deixou de ser editável (marcar carimba hoje). Os títulos de semana e do plano PGQ no
+banco ainda carregam travessão; a tela troca por dois-pontos ao exibir
+(`geist/texto.ts`), e trocar o dado é migração. `GUIA-CONFIGURACAO.html` segue legado.
+O `usuarios.test.ts` falha nesta máquina por um usuário `henrique` a mais no banco local.
+
 ## o schema
 
 Vale mais detalhar isto do que qualquer outra parte, porque é o que trava se estiver
@@ -1108,11 +1148,12 @@ do passivo da fase 4 na origem, em vez de arrastá-lo até lá.
 | 0 base | **pronta** | 2026-08-31 | |
 | 1 login | **pronta** | 2026-09-01 | |
 | 2 banco | **pronta** | 2026-09-01 | |
-| 3 duplicação | metade, API no ar | 2026-09-09 | `GET /api/cadastro` serve bases, veículos, colaboradores e rotas filtrados pela sessão, e `/api/preventiva` traz modelo, marca e ano; as telas seguem lendo literais, front em outro lugar |
+| 3 duplicação | **pronta** | 2026-09-09 | as telas leem `GET /api/cadastro`; nenhuma lista fixa de placa, motorista ou rota sobrou no front |
 | 4 publicar | **pronta** | 2026-09-02 | |
 | 5 andaime | não iniciada | | sobra o guia, por decisão pendente |
 | 6 react | **pronta** | 2026-09-03 | commits 0 a 9; o guia segue legado |
 | 7 painel | **pronta** | 2026-09-03 | Frota saiu por analogia, sem artboard |
+| 8 app inteiro | **pronta** | 2026-09-09 | SPA com dez rotas, seis telas redesenhadas, Cadastro editável, no ar |
 
 Atualize esta tabela ao fim de cada fase. Plano que diverge da realidade engana a
 próxima sessão.
