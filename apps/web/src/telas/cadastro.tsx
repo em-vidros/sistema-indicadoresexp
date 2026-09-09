@@ -527,9 +527,9 @@ export default function Cadastro(): JSX.Element {
   const [edicao, setEdicao] = useState<Edicao | null>(null)
   const [salvando, setSalvando] = useState(false)
 
-  const admin = sessao.dados?.admin === true
-  const abas = admin ? ORDEM : ORDEM.slice(0, 3)
-  const aba = !admin && vista.aba === 'bases' ? 'veiculos' : vista.aba
+  const editaCadastro = sessao.dados?.capacidades.editaCadastro === true
+  const abas = editaCadastro ? ORDEM : ORDEM.slice(0, 3)
+  const aba = !editaCadastro && vista.aba === 'bases' ? 'veiculos' : vista.aba
   const especie = ABAS[aba]
 
   const dados = catalogo.dados

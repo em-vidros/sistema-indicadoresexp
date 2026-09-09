@@ -1214,7 +1214,7 @@ export default function Registrar(): JSX.Element {
 
   const catalogo: CatalogoCadastro | null = cadastro.dados
   const bases = (catalogo?.bases ?? [])
-    .filter((b) => b.ativo && (sessao.admin || sessao.bases.includes(b.nome)))
+    .filter((b) => b.ativo && (sessao.capacidades.todasAsBases || sessao.bases.includes(b.nome)))
     .map((b) => b.nome)
     .sort((a, b) => a.localeCompare(b))
 
@@ -1450,7 +1450,7 @@ export default function Registrar(): JSX.Element {
   const itensDoMenu = [
     { rotulo: 'Exportar JSON', aoEscolher: exportar },
     { rotulo: 'Limpar registros de hoje', aoEscolher: () => setLimpezaAberta(true) },
-    ...(sessao.admin ? [{ rotulo: 'Gerenciar usuários', aoEscolher: () => void abrirUsuarios() }] : []),
+    ...(sessao.capacidades.gerenciaUsuarios ? [{ rotulo: 'Gerenciar usuários', aoEscolher: () => void abrirUsuarios() }] : []),
   ]
 
   const basesDoCatalogo = (catalogo?.bases ?? []).filter((b) => b.ativo).map((b) => b.nome)
@@ -1475,7 +1475,7 @@ export default function Registrar(): JSX.Element {
         }
       />
 
-      {sessao.admin
+      {sessao.capacidades.todasAsBases
         ? (
           <div className="g-secao">
             <Chips

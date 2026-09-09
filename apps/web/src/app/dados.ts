@@ -155,12 +155,31 @@ export function useRecurso<T>(chave: string, buscar: () => Promise<T>): Recurso<
   return { ...instantaneo, recarregar }
 }
 
+export type Papel = 'admin' | 'gestor' | 'operador'
+
+/**
+ * O que cada papel pode. Quem resolve a tabela e o servidor, em
+ * `packages/core/src/dominio/acesso.ts`; aqui ela chega pronta.
+ *
+ * O navegador nao recalcula capacidade a partir do papel de proposito. Recalculando, a
+ * regra passaria a existir em dois lugares, e o dia em que o gestor ganhar uma capacidade
+ * nova a tela e o servidor discordariam sobre quem pode o que.
+ */
+export type Capacidades = {
+  readonly todasAsBases: boolean
+  readonly gerenciaUsuarios: boolean
+  readonly editaCadastro: boolean
+}
+
+export type Capacidade = keyof Capacidades
+
 /** O que `GET /api/sessao` devolve. A forma esta em `packages/db/src/consultas/sessao.ts`. */
 export type Sessao = {
   readonly usuarioId: string
   readonly usuario: string
   readonly nome: string
-  readonly admin: boolean
+  readonly papel: Papel
+  readonly capacidades: Capacidades
   readonly baseFixa: string | null
   readonly bases: readonly string[]
   readonly tipos: readonly string[]
