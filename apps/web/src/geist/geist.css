@@ -5,9 +5,8 @@
  * multiplo de 4 e sem trocar cor. Quando o canvas disser outra coisa, ele ganha.
  *
  * Toda classe comeca com `g-`, e nao ha seletor de elemento fora de `*`, de `body` e de
- * dentro de `.g-tabela`. As seis telas congeladas dividem `telas/base.css` e
- * `telas/casca.css`, que a paridade compara byte a byte; um seletor de elemento aqui
- * atravessaria a fronteira e reprovaria tela que este trabalho nem toca.
+ * dentro de `.g-tabela`. E a unica folha do app: o `GUIA-CONFIGURACAO.html` legado ainda
+ * traz o CSS dele inline, e um seletor de elemento aqui chegaria la.
  *
  * A escala tipografica mora em custom properties e nao no `font` abreviado de proposito:
  * `font:` zera `font-variant-numeric`, e o numero grande do KPI e tabular. Com longhand,

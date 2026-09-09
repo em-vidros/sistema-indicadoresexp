@@ -16,8 +16,7 @@
     "tipos": "tsc -b",
     "teste": "bun test",
     "fronteiras": "bun verificar/fronteiras.ts",
-    "paridade": "bun verificar/paridade.ts",
-    "telas": "bun run build && bun verificar/publicos.ts && bun verificar/paridade.ts",
+    "telas": "bun run build && bun verificar/publicos.ts",
     "verificar": "bun run fronteiras && bun run telas && bun run tipos && bun run teste",
     "start": "bun server.ts"
   },

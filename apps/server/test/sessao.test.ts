@@ -110,11 +110,11 @@ describe('POST /api/sair', () => {
 describe('a tela de login com sessao', () => {
   test('devolve ao destino guardado', async () => {
     const cookie = await cookieDaLivia()
-    const resposta = await pedir('/entrar.html?destino=%2Fmanutencao-frota.html', {
+    const resposta = await pedir('/entrar.html?destino=%2Fmanutencao', {
       headers: { cookie, ...NAVEGACAO },
     })
     expect(resposta.status).toBe(302)
-    expect(resposta.headers.get('location')).toBe('/manutencao-frota.html')
+    expect(resposta.headers.get('location')).toBe('/manutencao')
   })
 
   test('sem destino, cai na pagina padrao', async () => {

@@ -25,7 +25,7 @@ if (Object.keys(entradas).length === 0) throw new Error('nenhum .html em apps/we
 const SEM_HASH = new Set([
   'entrar',
   'vendor-react',
-  'modulepreload-polyfill',
+  'rolldown-runtime',
   // Desde que a login veste o sistema visual, `geist.css` e o modulo de icones sao
   // pedidos sem sessao. Os dois ja nasciam num pedaco compartilhado com o app, porque as
   // duas entradas os importam; aqui esse pedaco so ganha nome fixo, junto das cinco

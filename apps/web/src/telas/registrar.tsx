@@ -1132,6 +1132,24 @@ type MudancaDeUsuario = {
 
 // ---------- tela ----------
 
+const CHAVE_DA_BASE = 'registrar.base'
+
+function lerBaseLembrada(): string | null {
+  try {
+    return window.localStorage.getItem(CHAVE_DA_BASE)
+  } catch {
+    return null
+  }
+}
+
+function lembrarBase(base: string): void {
+  try {
+    window.localStorage.setItem(CHAVE_DA_BASE, base)
+  } catch {
+    // Sem armazenamento a tela so volta a pedir a base na proxima visita.
+  }
+}
+
 export default function Registrar(): JSX.Element {
   const { dados: sessao } = useSessao()
   const { busca } = useLocalizacao()
@@ -1148,10 +1166,28 @@ export default function Registrar(): JSX.Element {
   const [usuarios, setUsuarios] = useState<readonly LinhaDeUsuario[] | null>(null)
   const [salvandoUsuarios, setSalvandoUsuarios] = useState(false)
 
+  // O admin comeca na base do ultimo lancamento desta maquina, e nao numa tela vazia
+  // pedindo um clique; quem lanca todo dia lanca quase sempre na mesma base.
   const baseFixa = sessao?.baseFixa ?? null
   useEffect(() => {
-    if (baseFixa !== null) setBase(baseFixa)
-  }, [baseFixa])
+    if (baseFixa !== null) {
+      setBase(baseFixa)
+      return
+    }
+    if (sessao === null) return
+    const lembrada = lerBaseLembrada()
+    if (lembrada !== null) setBase(lembrada)
+  }, [baseFixa, sessao])
+
+  useEffect(() => {
+    if (base !== null && baseFixa === null) lembrarBase(base)
+  }, [base, baseFixa])
+
+  // A base lembrada pode ter sido desativada no cadastro desde a ultima visita.
+  const nomesAtivos = cadastro.dados?.bases.filter((b) => b.ativo).map((b) => b.nome)
+  useEffect(() => {
+    if (base !== null && nomesAtivos !== undefined && !nomesAtivos.includes(base)) setBase(null)
+  }, [base, nomesAtivos])
 
   useEffect(() => {
     const parametros = new URLSearchParams(busca)

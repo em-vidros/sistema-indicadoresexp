@@ -20,16 +20,20 @@ export const CAMINHOS_DA_SPA: readonly string[] = [
 ]
 
 /**
- * Os `.html` das quatro telas do painel, que agora sao caminhos da SPA.
+ * Os `.html` das dez telas de antes da SPA, um por caminho novo.
  *
- * As seis telas legadas linkam para `dashboard-semanal.html` no `onClick` delas, e a
- * paridade compara essas telas byte a byte contra uma baseline: mexer nelas para trocar o
- * link reprovaria tela que este trabalho nao toca. O redirecionamento resolve isso do lado
- * de ca, e ainda salva o link que alguem tenha guardado nos favoritos.
+ * Nenhum arquivo daqui existe mais no `dist/`. O que sobrevive e o link guardado nos
+ * favoritos de alguem, e o `destino` que uma sessao antiga ainda carrega na query da
+ * login; os dois chegam aqui e saem com 302 para a tela certa.
  */
 export const REDIRECIONADOS: Readonly<Record<string, string>> = {
   '/dashboard-semanal.html': '/visao-geral',
   '/viagens.html': '/viagens',
   '/rotas.html': '/rotas',
   '/frota.html': '/frota',
+  '/formulario-registro.html': '/registrar',
+  '/manutencao-frota.html': '/manutencao',
+  '/documentos-frota.html': '/documentos',
+  '/ata-reuniao.html': '/atas',
+  '/integracao-frota.html': '/integracoes',
 }

@@ -13,9 +13,8 @@
  * A janela do grafico e a unica coisa que fica em `useState`. Ela nao e filtro: nao muda
  * numero nenhum fora do proprio grafico e nao tem por que sobreviver a navegacao.
  *
- * Esta tela saiu da prova de paridade no mesmo commit em que a view velha morreu. O motivo
- * esta em `verificar/paridade/roteiros/todos.ts`, e o que entrou no lugar e
- * `verificar/olhar-dashboard.ts`, que fotografa a tela para alguem olhar.
+ * Nao ha prova de pixel para esta tela: `verificar/olhar-dashboard.ts` fotografa o painel
+ * para alguem olhar, e e isso.
  */
 import { useState } from 'react'
 import type { JSX } from 'react'

@@ -18,22 +18,20 @@ export const PAGINA_PADRAO = '/registrar'
  * unico arquivo de `docs/` publico, e por isso ele e nomeado, nao um padrao.
  *
  * Os de `/assets/` sao o que a tela de login carrega para existir: o proprio modulo, o
- * CSS dela, o React, o shim de modulepreload e as cinco fontes que `geist.css` pede.
- * Eles saem do build sem hash de proposito, para caberem numa lista de nomes; liberar
- * `/assets/` inteiro seria o padrao que este portao nao usa, e entregaria de graca o
- * codigo das telas de dentro. `verificar/publicos.ts` cobra os dois sentidos, entao
- * arquivo que a login passe a pedir e nome que sobre aqui reprovam a build.
+ * CSS e os icones do sistema visual, o React, os ajudantes de interop do rolldown e as
+ * cinco fontes que `geist.css` pede. Eles saem do build sem hash de proposito, para
+ * caberem numa lista de nomes; liberar `/assets/` inteiro seria o padrao que este portao
+ * nao usa, e entregaria de graca o codigo das telas de dentro. `verificar/publicos.ts`
+ * cobra os dois sentidos, entao arquivo que a login passe a pedir e nome que sobre aqui
+ * reprovam a build.
+ *
+ * O `rolldown-runtime` e o pedaco que o bundler escolhe emitir ou dobrar conforme o que
+ * ha de CJS nas entradas; ele ja saiu e voltou desta lista uma vez. Quando o nome mudar de
+ * novo, quem avisa e a prova, e o ajuste e trocar o nome aqui e em SEM_HASH.
  *
  * As fontes entraram quando a login passou a vestir o sistema visual. Sem elas o portao
  * devolveria 302 com o HTML do login no corpo do woff2, e o texto pintaria no fallback
  * do sistema, defeito que so quem ainda nao entrou consegue ver.
- *
- * Eram cinco ate o porte da setima tela. O quinto era `/assets/rolldown-runtime.js`, os
- * ajudantes de interop que o Recharts trouxe em CJS e que o rolldown emitia num pedaco
- * proprio. Com a ultima tela legada fora, toda entrada passou a ser uma tela React e o
- * rolldown dobrou esses ajudantes dentro do `modulepreload-polyfill.js`, que ja estava
- * nesta lista. Quem achou a linha morta foi `verificar/publicos.ts`, pelo sentido que
- * cobra nome que sobra.
  */
 const PUBLICOS = new Set([
   ROTA_LOGIN,
@@ -44,7 +42,7 @@ const PUBLICOS = new Set([
   '/assets/vendor-react.js',
   '/assets/geist.js',
   '/assets/geist.css',
-  '/assets/modulepreload-polyfill.js',
+  '/assets/rolldown-runtime.js',
   '/assets/geist-sans-400.woff2',
   '/assets/geist-sans-500.woff2',
   '/assets/geist-sans-600.woff2',

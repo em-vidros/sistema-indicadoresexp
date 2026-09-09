@@ -1,3 +1,0 @@
-confirm Sair do sistema?
-POST /api/sair <sem corpo>
--> /entrar.html

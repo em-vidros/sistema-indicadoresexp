@@ -22,22 +22,13 @@ const RAIZ = resolve(new URL('../../web/dist/', import.meta.url).pathname)
  */
 const LOGIN = 'entrar.html'
 
-const TELAS = [
-  'app.html',
-  'ata-reuniao.html',
-  'documentos-frota.html',
-  'entrar.html',
-  'formulario-registro.html',
-  'GUIA-CONFIGURACAO.html',
-  'integracao-frota.html',
-  'manutencao-frota.html',
-]
+const TELAS = ['app.html', 'entrar.html', 'GUIA-CONFIGURACAO.html']
 
-describe('as oito cascas do build', () => {
-  // Contar oito nao prova nada; prova que sao estas oito. Casca nova entra na lista de
+describe('as tres cascas do build', () => {
+  // Contar tres nao prova nada; prova que sao estas tres. Casca nova entra na lista de
   // proposito, e nao passa a existir sem ninguem ter escrito o nome dela. Eram onze ate
-  // as quatro telas do painel virarem rotas de uma casca so, `app.html`.
-  test('sao exatamente as oito que o `dist` tem', async () => {
+  // as dez telas virarem rotas de uma casca so, `app.html`.
+  test('sao exatamente as tres que o `dist` tem', async () => {
     const construidas = (await readdir(RAIZ)).filter((n) => n.endsWith('.html')).sort()
     expect(construidas).toEqual([...TELAS].sort())
   })
@@ -129,7 +120,7 @@ describe('o que a rota resolve sozinha', () => {
 
   test('caminho sem extensao acha o .html de mesmo nome', async () => {
     const cookie = await cookieDaLivia()
-    const resposta = await pedir('/formulario-registro', { headers: { cookie, ...NAVEGACAO } })
+    const resposta = await pedir('/GUIA-CONFIGURACAO', { headers: { cookie, ...NAVEGACAO } })
     expect(resposta.status).toBe(200)
     expect(resposta.headers.get('content-type')).toBe('text/html; charset=utf-8')
     expect(await resposta.text()).toContain('<!DOCTYPE html>')
@@ -175,7 +166,7 @@ describe('sair da pasta do build', () => {
   // e volta para dentro, entrega a tela: quem decide e a contencao.
   test('a mesma barra codificada, subindo e voltando para dentro, entrega a tela', async () => {
     const cookie = await cookieDaLivia()
-    const resposta = await pedir('/qualquer%2f..%2fformulario-registro.html', {
+    const resposta = await pedir('/qualquer%2f..%2fGUIA-CONFIGURACAO.html', {
       headers: { cookie, ...NAVEGACAO },
     })
     expect(resposta.status).toBe(200)

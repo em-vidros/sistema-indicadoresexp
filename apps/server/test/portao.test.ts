@@ -48,12 +48,12 @@ describe('quem nao tem sessao', () => {
  */
 describe('a mesma URL responde diferente conforme quem pede', () => {
   test('navegacao de topo recebe 302', async () => {
-    const resposta = await pedir('/manutencao-frota.html', { headers: NAVEGACAO })
+    const resposta = await pedir('/manutencao', { headers: NAVEGACAO })
     expect(resposta.status).toBe(302)
   })
 
   test('o mesmo caminho, pedido por codigo, recebe 401 JSON', async () => {
-    const resposta = await pedir('/manutencao-frota.html', { headers: CODIGO })
+    const resposta = await pedir('/manutencao', { headers: CODIGO })
     expect(resposta.status).toBe(401)
     expect(await resposta.json()).toEqual({ erro: 'sem sessao' })
   })
@@ -66,9 +66,9 @@ describe('a mesma URL responde diferente conforme quem pede', () => {
   })
 
   test('sem Sec-Fetch-Dest, o Accept decide', async () => {
-    const html = await pedir('/ata-reuniao.html', { headers: { accept: 'text/html' } })
+    const html = await pedir('/atas', { headers: { accept: 'text/html' } })
     expect(html.status).toBe(302)
-    const json = await pedir('/ata-reuniao.html', { headers: { accept: 'application/json' } })
+    const json = await pedir('/atas', { headers: { accept: 'application/json' } })
     expect(json.status).toBe(401)
   })
 })
