@@ -147,7 +147,9 @@ const IMPORTADA: Omit<EntradaAta, 'numero' | 'titulo' | 'data'> = {
   participantes: [],
 }
 
-const COLUNAS_DO_HISTORICO = ['Data', 'Nº', 'Título', 'Local', 'Participantes', 'Tópicos', 'PDF', '']
+/* O local desceu para baixo do titulo: com uma coluna so para ele, a tabela passava da
+   largura do bloco e empurrava a coluna de acoes para fora da rolagem. */
+const COLUNAS_DO_HISTORICO = ['Data', 'Nº', 'Título', 'Presentes', 'Tópicos', 'PDF', '']
 
 let ultimoId = 0
 
@@ -283,6 +285,13 @@ function Identificacao({ form, faltando, mudar }: {
         />
         <Campo rotulo="Reunião convocada por" valor={form.convocada} span={6} aoMudar={(convocada) => mudar({ convocada })} />
         <Campo rotulo="Facilitadores" valor={form.facilitadores} span={6} aoMudar={(facilitadores) => mudar({ facilitadores })} />
+        <AreaDeTexto
+          rotulo="Participantes (descrição geral)"
+          valor={form.participantesGeral}
+          span={12}
+          dica="Equipe de expedição da base Raposa, turno da manhã."
+          aoMudar={(participantesGeral) => mudar({ participantesGeral })}
+        />
       </GradeDeCampos>
     </>
   )
@@ -319,24 +328,26 @@ function Participantes({ form, catalogo, carregando, mudar }: {
         ? <div className="g-l13 g-fraco">Nenhum colaborador no catálogo.</div>
         : null}
 
-      {GRUPOS_DE_FUNCAO.map((grupo) => {
-        const pessoas = catalogo.filter((p) => p.funcao === grupo.funcao)
-        if (pessoas.length === 0) return null
-        return (
-          <div key={grupo.funcao}>
-            <div className="g-campo-rotulo">{grupo.rotulo}</div>
-            {pessoas.map((pessoa) => (
-              <LinhaDeCheck
-                key={pessoa.id}
-                texto={pessoa.nome}
-                feito={form.marcados.has(pessoa.id)}
-                data={pessoa.cargo ?? '·'}
-                aoMudar={(marcado) => marcar(pessoa.id, marcado)}
-              />
-            ))}
-          </div>
-        )
-      })}
+      <div className="g-lista-checks">
+        {GRUPOS_DE_FUNCAO.map((grupo) => {
+          const pessoas = catalogo.filter((p) => p.funcao === grupo.funcao)
+          if (pessoas.length === 0) return null
+          return (
+            <div className="g-grupo-checks" key={grupo.funcao}>
+              <div className="g-campo-rotulo">{grupo.rotulo}</div>
+              {pessoas.map((pessoa) => (
+                <LinhaDeCheck
+                  key={pessoa.id}
+                  texto={pessoa.nome}
+                  feito={form.marcados.has(pessoa.id)}
+                  data={pessoa.cargo ?? '·'}
+                  aoMudar={(marcado) => marcar(pessoa.id, marcado)}
+                />
+              ))}
+            </div>
+          )
+        })}
+      </div>
 
       <div className="g-secao-acoes">
         <Botao rotulo="Marcar todos" antes={Check} aoClicar={() => todos(true)} />
@@ -357,13 +368,6 @@ function Participantes({ form, catalogo, carregando, mudar }: {
             aoRemover={() => mudar({ externos: form.externos.filter((e) => e.id !== externo.id) })}
           />
         ))}
-        <AreaDeTexto
-          rotulo="Participantes (descrição geral)"
-          valor={form.participantesGeral}
-          span={12}
-          dica="Equipe de expedição da base Raposa, turno da manhã."
-          aoMudar={(participantesGeral) => mudar({ participantesGeral })}
-        />
       </GradeDeCampos>
     </>
   )
@@ -498,7 +502,7 @@ function Historico({ atas, carregando, aoAnexar, aoExcluir }: {
     <>
       <CabecalhoDeBloco titulo="Atas salvas" subtitulo="Da mais recente para a mais antiga" />
       <Tabela cabecalho={COLUNAS_DO_HISTORICO.map((coluna, i) => (
-        <Th key={coluna === '' ? 'acoes' : coluna} direita={i >= 4 && i <= 5}>{coluna}</Th>
+        <Th key={coluna === '' ? 'acoes' : coluna} direita={i >= 3 && i <= 4}>{coluna}</Th>
       ))}
       >
         {carregando
@@ -507,8 +511,10 @@ function Historico({ atas, carregando, aoAnexar, aoExcluir }: {
             <tr key={ata.id}>
               <Td><span className="g-l13m g-fraco">{formatarData(ata.data) || '·'}</span></Td>
               <Td><span className="g-l13m">{ata.numero ?? '·'}</span></Td>
-              <Td><span className="g-forte">{ata.titulo || 'Sem título'}</span></Td>
-              <Td>{ata.local ?? '·'}</Td>
+              <Td>
+                <div className="g-linha-rotulo g-forte">{ata.titulo || 'Sem título'}</div>
+                <div className="g-linha-apoio g-l12">{ata.local ?? '·'}</div>
+              </Td>
               <Td direita>{ata.participantes.length}</Td>
               <Td direita>{ata.topicos.length}</Td>
               <Td>

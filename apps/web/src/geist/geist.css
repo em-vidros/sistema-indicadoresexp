@@ -1227,7 +1227,7 @@ body {
 
 /* A lista de colaboradores rola dentro do bloco. Sem teto, trinta nomes esticam a linha
    da grade e deixam a celula vizinha com meio metro de vazio ao lado. */
-.g-lista-checks { max-height: 380px; overflow-y: auto; }
+.g-lista-checks { max-height: 300px; overflow-y: auto; }
 .g-grupo-checks + .g-grupo-checks { margin-top: 16px; }
 
 /* ---------- folha de impressao ---------- */
@@ -1260,6 +1260,7 @@ body {
 
   .g-folha-participantes { page-break-before: always; }
   .g-folha-titulo { font-weight: 700; font-size: 11pt; text-transform: uppercase; border-bottom: 1.5pt solid #000000; padding-bottom: 4pt; margin-bottom: 12pt; }
+  .g-folha-termo-titulo { margin-top: 18pt; }
   .g-folha-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 14pt; }
   .g-folha-item { border-bottom: .8pt solid #000000; padding-bottom: 2pt; }
   .g-folha-nome { font-size: 10pt; font-weight: 600; }
@@ -1269,7 +1270,7 @@ body {
   .g-folha-gestor { font-size: 10pt; font-weight: 700; margin-top: 28pt; border-top: .8pt solid #000000; padding-top: 4pt; }
 }
 
-/* ---------- linha de etapa, nota e colunas da ficha de integracao ---------- */
+/* ---------- ficha de integracao: etapa da semana, destaque e colunas ---------- */
 
 .g-etapa { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--g-gray-400); }
 .g-etapa-titulo { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--g-gray-1000); }
@@ -1283,38 +1284,47 @@ body {
 .g-semana-topo { display: flex; align-items: center; gap: 12px; }
 .g-semana-barra { margin: 10px 0 6px; }
 
-.g-nota { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px; border-radius: var(--g-raio-controle); background: var(--g-teal-200); color: var(--g-teal-700); }
-.g-nota .g-icone { color: var(--g-teal-700); }
+/* O aviso teal do artboard da Integracao. Nao e `g-nota`, que e a nota cinza rente ao
+   rodape de um bloco: esta e uma conta da tela, dentro da celula. */
+.g-destaque {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: var(--g-raio-controle);
+  background: var(--g-teal-200);
+  color: var(--g-teal-700);
+}
+.g-destaque .g-icone { color: var(--g-teal-700); flex: 0 0 auto; }
+
+/* A celula da tabela nao quebra linha; o texto longo que pede quebra veste esta classe. */
+.g-quebra-linha { white-space: normal; }
 
 .g-trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
-.g-assinaturas { display: flex; gap: 48px; }
 
-/* ---------- folha de impressao ---------- */
-
-/*
- * A folha vive dentro da tela, escondida, e nao numa janela nova. `window.print()` imprime
- * o documento que ja esta montado, entao a folha precisa estar no DOM na mesma volta do
- * clique; uma janela nova ainda cobraria um popup liberado pelo navegador e uma segunda
- * copia do CSS. Aqui a impressao e so trocar quem aparece.
- */
-.g-folha { display: none; }
-.g-folha-topo { text-align: center; padding-bottom: 12px; margin-bottom: 20px; border-bottom: 2px solid var(--g-gray-1000); }
-.g-folha-secao { margin-top: 20px; break-inside: avoid; }
-.g-folha-secao-titulo { margin-bottom: 8px; }
-.g-folha-dados { display: flex; flex-wrap: wrap; gap: 12px 32px; }
-.g-folha-campo { min-width: 160px; }
-.g-folha-tabela { width: 100%; border-collapse: collapse; }
-.g-folha-tabela th, .g-folha-tabela td { border: 1px solid var(--g-gray-600); padding: 6px 8px; text-align: left; vertical-align: top; }
-.g-folha-item { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--g-gray-400); }
-.g-folha-marca { width: 14px; flex: 0 0 auto; text-align: center; }
-.g-folha-item-texto { flex: 1 1 auto; min-width: 0; }
-.g-folha-item-data { flex: 0 0 auto; }
-
+/* O que a folha da ficha tem e a folha da ata nao: as atividades de cada semana e a
+   matriz de criterios. O resto do vocabulario de impressao e o mesmo, e mora acima. */
 @media print {
-  body { background: #FFFFFF; }
-  .g-app { display: block; min-height: 0; background: #FFFFFF; }
-  .g-trilho, .g-avisos, .g-nao-imprime { display: none; }
-  .g-painel { margin: 0; border-radius: 0; box-shadow: none; }
-  .g-painel-corpo { padding: 0; }
-  .g-folha { display: block; }
+  .g-folha-semana { page-break-inside: avoid; margin-top: 14pt; }
+
+  .g-folha-atividade { display: flex; align-items: baseline; gap: 6pt; padding: 2.5pt 0; border-bottom: .5pt solid #DDDDDD; }
+  .g-folha-marca { width: 12pt; flex: 0 0 auto; font-weight: 700; }
+  .g-folha-atividade-texto { flex: 1 1 auto; min-width: 0; font-size: 9.5pt; }
+  .g-folha-atividade-data { flex: 0 0 auto; font-size: 9pt; color: #555555; }
+
+  .g-folha-matriz { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-top: 6pt; }
+  .g-folha-matriz th, .g-folha-matriz td { border: .5pt solid #999999; padding: 4pt 6pt; text-align: left; vertical-align: top; }
+  .g-folha-matriz th { background: #F0F0F0; font-size: 8.5pt; text-transform: uppercase; letter-spacing: .5px; }
+
+  .g-folha-termo { font-size: 10pt; line-height: 1.5; margin: 8pt 0 16pt; }
+}
+
+/* Titulo de secao que comeca depois de outra coisa dentro do mesmo bloco, como a lista de
+   itens do plano preventivo e o formulario que adiciona mais um. Sem a linha, o titulo
+   encosta na ultima linha da lista e as duas partes viram uma so. */
+.g-secao-apartada {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--g-gray-400);
 }
