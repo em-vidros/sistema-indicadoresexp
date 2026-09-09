@@ -35,6 +35,9 @@ export type VeiculoPreventivo = {
   id: string
   placa: string
   base: string
+  modelo: string | null
+  marca: string | null
+  ano: string | null
   itens: ItemPreventivo[]
 }
 

@@ -12,6 +12,24 @@ describe('a tela de manutencao fala com a API', () => {
     expect(pedidos).toEqual(['/api/preventiva'])
   })
 
+  // O GET manda os tres, e o tipo do front tem que dizer o mesmo. A tabela da manutencao
+  // escreve o modelo na coluna "Modelo"; sem esta prova, um deles some do tipo e a coluna
+  // fica vazia sem nada reclamar.
+  test('o veiculo do plano traz modelo, marca e ano', async () => {
+    const veiculo = {
+      id: 'd84e0e82-b094-55ad-bb3e-f6cdf910a208',
+      placa: 'PTV0006',
+      base: 'Raposa',
+      modelo: 'ATEGO 3030 CE',
+      marca: 'Mercedes-Benz',
+      ano: '2019/2020',
+      itens: [],
+    }
+    const chamar = async () => Response.json({ tipos: [], veiculos: [veiculo] })
+    const plano = await obterPreventiva(chamar)
+    expect(plano.veiculos[0]).toEqual(veiculo)
+  })
+
   test('grava o plano inteiro do veiculo num PUT so', async () => {
     const pedidos: Array<{ caminho: string; metodo: string; corpo: BodyInit | null | undefined }> = []
     const chamar = async (recurso: string | URL | Request, init?: RequestInit) => {
