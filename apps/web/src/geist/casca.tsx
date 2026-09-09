@@ -44,12 +44,19 @@ function sair(): void {
   })
 }
 
-/** Primeira e ultima palavra do nome. Nome de uma palavra so vira as duas primeiras letras. */
+/**
+ * Primeira e ultima palavra do nome. Nome de uma palavra so vira as duas primeiras letras.
+ *
+ * So palavra que comeca por letra conta. O nome da Livia no seed e "Livia (Admin)", e sem
+ * este filtro o avatar dela sairia "L(".
+ */
 function iniciaisDe(nome: string): string {
-  const palavras = nome.trim().split(/\s+/).filter((p) => p !== '')
-  if (palavras.length === 0) return '—'
-  if (palavras.length === 1) return (palavras[0] ?? '').slice(0, 2).toUpperCase()
-  return `${palavras[0]?.[0] ?? ''}${palavras[palavras.length - 1]?.[0] ?? ''}`.toUpperCase()
+  const palavras = nome.trim().split(/\s+/).filter((p) => /^\p{L}/u.test(p))
+  const primeira = palavras[0]
+  const ultima = palavras[palavras.length - 1]
+  if (primeira === undefined || ultima === undefined) return '—'
+  if (palavras.length === 1) return primeira.slice(0, 2).toUpperCase()
+  return `${primeira[0] ?? ''}${ultima[0] ?? ''}`.toUpperCase()
 }
 
 /** A base em que a pessoa trabalha. O admin nao tem uma, e ve todas. */
