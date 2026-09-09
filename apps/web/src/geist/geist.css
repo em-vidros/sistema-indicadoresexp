@@ -1148,3 +1148,168 @@ body {
 .g-dialogo-corpo { padding: 24px; overflow: auto; }
 .g-dialogo-acoes { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 16px 24px; border-top: 1px solid var(--g-gray-400); }
 @media (prefers-reduced-motion: reduce) { .g-dialogo[open] { animation: none; } }
+
+/* ---------- entrar ----------
+   A unica tela fora da casca: ela pinta antes de existir sessao e nao tem sidebar nem
+   painel para se apoiar, entao o cartao de 400 px e as medidas dele moram aqui. */
+.g-entrar {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.g-entrar-cartao {
+  width: 400px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+  border-radius: var(--g-raio-painel);
+  background: var(--g-bg-100);
+  box-shadow: var(--g-sombra-painel);
+}
+
+.g-entrar-logo { height: 44px; width: auto; display: block; margin: 0 auto 4px; }
+.g-entrar-sub { text-align: center; margin-bottom: 28px; }
+.g-entrar-rotulo { margin-bottom: 6px; }
+.g-entrar-rotulo-2 { margin-top: 16px; }
+.g-entrar-lembrar { margin: 16px 0 20px; }
+
+/* O botao ocupa a largura do cartao, que e o unico ponto onde ele nao divide a linha. */
+.g-entrar-botao { width: 100%; justify-content: center; }
+
+.g-entrar-erro {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: var(--g-raio-controle);
+  background: var(--g-red-200);
+  color: var(--g-red-700);
+}
+.g-entrar-erro .g-icone { color: var(--g-red-700); flex: 0 0 auto; }
+
+/* ---------- documentos: celula com data e envio, grade de arquivos, nota de rodape ---------- */
+
+.g-doc-celula { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+
+/* As duas colunas de `fileRow` do artboard de Documentos. */
+.g-arqs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.g-nota {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  color: var(--g-gray-900);
+}
+
+.g-nota .g-icone { color: var(--g-gray-900); flex: 0 0 auto; }
+
+/* ---------- ata: topico, assinaturas lado a lado, acao rente ao campo ---------- */
+
+/* A regua entre dois topicos e a mesma de `g-check`: 1 px de gray-400. Ela e do par e
+   nao do topico, senao o primeiro nasceria com uma regua colada no titulo da secao. */
+.g-topico + .g-topico { border-top: 1px solid var(--g-gray-400); padding-top: 20px; margin-top: 20px; }
+
+/* Os 48 px sao os do artboard, que poe duas assinaturas lado a lado num flex. */
+.g-assinaturas { display: flex; gap: 48px; margin-top: 24px; }
+
+/* O botao que acompanha um campo na grade: desce ate a base da caixa de 40 px, para nao
+   flutuar na altura do rotulo. */
+.g-campo-acao { align-self: stretch; display: flex; align-items: flex-end; min-width: 0; }
+
+.g-acoes-linha { display: inline-flex; align-items: center; gap: 6px; }
+.g-secao-acoes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+
+/* ---------- folha de impressao ---------- */
+
+/* Ela vive por portal no `<body>`, fora de `.g-app`, para que imprimir seja esconder a
+   casca inteira numa regra so. Dentro do painel, essa regra levaria a folha junto. */
+.g-folha { display: none; }
+
+@media print {
+  @page { size: A4; margin: 18mm; }
+
+  .g-app, .g-avisos, .g-dialogo { display: none !important; }
+  body { background: #FFFFFF; color: #000000; }
+
+  .g-folha { display: block; font-family: Arial, sans-serif; font-size: 11pt; }
+
+  .g-folha-cabecalho { text-align: center; border-bottom: 2.5pt solid #000000; padding-bottom: 10pt; margin-bottom: 14pt; }
+  .g-folha-empresa { font-size: 15pt; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .g-folha-doc { font-size: 11pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 4pt; }
+  .g-folha-num { font-size: 10pt; color: #555555; margin-top: 2pt; }
+
+  .g-folha-linha { display: flex; gap: 16pt; margin-bottom: 5pt; }
+  .g-folha-campo { flex: 1 1 0; min-width: 0; }
+  .g-folha-rotulo { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #555555; }
+  .g-folha-valor { font-size: 10.5pt; border-bottom: 1pt solid #000000; padding-bottom: 2pt; min-height: 14pt; margin-top: 1pt; }
+
+  .g-folha-topico { page-break-inside: avoid; margin-top: 14pt; }
+  .g-folha-topico-num { font-weight: 700; font-size: 10.5pt; text-transform: uppercase; border-left: 3pt solid #000000; padding-left: 6pt; margin-bottom: 6pt; }
+  .g-folha-caixa { font-size: 10pt; border: .5pt solid #CCCCCC; background: #F8F8F8; padding: 5pt 7pt; border-radius: 3pt; min-height: 24pt; margin-top: 1pt; white-space: pre-wrap; }
+
+  .g-folha-participantes { page-break-before: always; }
+  .g-folha-titulo { font-weight: 700; font-size: 11pt; text-transform: uppercase; border-bottom: 1.5pt solid #000000; padding-bottom: 4pt; margin-bottom: 12pt; }
+  .g-folha-grade { display: grid; grid-template-columns: 1fr 1fr; gap: 14pt; }
+  .g-folha-item { border-bottom: .8pt solid #000000; padding-bottom: 2pt; }
+  .g-folha-nome { font-size: 10pt; font-weight: 600; }
+  .g-folha-assina { font-size: 8pt; color: #777777; margin-top: 14pt; }
+
+  .g-folha-gestores { margin-top: 20pt; border-top: 1.5pt solid #000000; padding-top: 12pt; }
+  .g-folha-gestor { font-size: 10pt; font-weight: 700; margin-top: 28pt; border-top: .8pt solid #000000; padding-top: 4pt; }
+}
+
+/* ---------- linha de etapa, nota e colunas da ficha de integracao ---------- */
+
+.g-etapa { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--g-gray-400); }
+.g-etapa-titulo { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--g-gray-1000); }
+.g-etapa-conta { color: var(--g-gray-900); }
+
+/* A semana zerada tambem tem ponto; sem cor propria ele sairia transparente. */
+.g-ponto-neutro { background: var(--g-gray-600); }
+
+.g-progresso-barra { margin: 14px 0 8px; }
+
+.g-semana-topo { display: flex; align-items: center; gap: 12px; }
+.g-semana-barra { margin: 10px 0 6px; }
+
+.g-nota { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px; border-radius: var(--g-raio-controle); background: var(--g-teal-200); color: var(--g-teal-700); }
+.g-nota .g-icone { color: var(--g-teal-700); }
+
+.g-trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
+.g-assinaturas { display: flex; gap: 48px; }
+
+/* ---------- folha de impressao ---------- */
+
+/*
+ * A folha vive dentro da tela, escondida, e nao numa janela nova. `window.print()` imprime
+ * o documento que ja esta montado, entao a folha precisa estar no DOM na mesma volta do
+ * clique; uma janela nova ainda cobraria um popup liberado pelo navegador e uma segunda
+ * copia do CSS. Aqui a impressao e so trocar quem aparece.
+ */
+.g-folha { display: none; }
+.g-folha-topo { text-align: center; padding-bottom: 12px; margin-bottom: 20px; border-bottom: 2px solid var(--g-gray-1000); }
+.g-folha-secao { margin-top: 20px; break-inside: avoid; }
+.g-folha-secao-titulo { margin-bottom: 8px; }
+.g-folha-dados { display: flex; flex-wrap: wrap; gap: 12px 32px; }
+.g-folha-campo { min-width: 160px; }
+.g-folha-tabela { width: 100%; border-collapse: collapse; }
+.g-folha-tabela th, .g-folha-tabela td { border: 1px solid var(--g-gray-600); padding: 6px 8px; text-align: left; vertical-align: top; }
+.g-folha-item { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--g-gray-400); }
+.g-folha-marca { width: 14px; flex: 0 0 auto; text-align: center; }
+.g-folha-item-texto { flex: 1 1 auto; min-width: 0; }
+.g-folha-item-data { flex: 0 0 auto; }
+
+@media print {
+  body { background: #FFFFFF; }
+  .g-app { display: block; min-height: 0; background: #FFFFFF; }
+  .g-trilho, .g-avisos, .g-nao-imprime { display: none; }
+  .g-painel { margin: 0; border-radius: 0; box-shadow: none; }
+  .g-painel-corpo { padding: 0; }
+  .g-folha { display: block; }
+}
