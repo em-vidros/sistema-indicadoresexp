@@ -360,32 +360,31 @@ export default function Usuarios(): JSX.Element {
     invalidar('sessao')
   }
 
+  /** So o formulario tem onde pendurar erro de campo; o resto do que esta aberto ignora. */
+  const marcarErro = (erro: Erro): void => {
+    setAberto((atual) =>
+      atual !== null && (atual.tipo === 'novo' || atual.tipo === 'editar') ? { ...atual, erro } : atual,
+    )
+  }
+
+  /**
+   * Login repetido cabe embaixo do campo, porque e ali que se conserta. Recusa de regra,
+   * como ficar sem admin nenhum, nao cabe: ela e sobre a lista toda e vira aviso.
+   */
   const falhar = (motivo: unknown, campo: Erro['campo'] | null): void => {
     setTrabalhando(false)
     const texto = motivo instanceof Error ? motivo.message : 'não foi possível salvar'
     if (campo !== null && motivo instanceof FalhaDeUsuarios && motivo.status === 409) {
-      setAberto((atual) =>
-        atual === null || (atual.tipo !== 'novo' && atual.tipo !== 'editar')
-          ? atual
-          : { ...atual, erro: { campo, texto } }
-      )
+      marcarErro({ campo, texto })
       return
     }
     avisar(texto, 'erro')
   }
 
-  const semBaseFixa = (): void => {
-    setAberto((atual) =>
-      atual === null || (atual.tipo !== 'novo' && atual.tipo !== 'editar')
-        ? atual
-        : { ...atual, erro: { campo: 'baseFixa', texto: 'Gestor e operador precisam de uma base fixa.' } }
-    )
-  }
-
   const criar = (rascunho: Rascunho): void => {
     const posto = postoDe(rascunho)
     if (posto === null) {
-      semBaseFixa()
+      marcarErro({ campo: 'baseFixa', texto: 'Gestor e operador precisam de uma base fixa.' })
       return
     }
     setTrabalhando(true)
@@ -408,7 +407,7 @@ export default function Usuarios(): JSX.Element {
   const editar = (login: string, rascunho: Rascunho): void => {
     const posto = postoDe(rascunho)
     if (posto === null) {
-      semBaseFixa()
+      marcarErro({ campo: 'baseFixa', texto: 'Gestor e operador precisam de uma base fixa.' })
       return
     }
     const mudanca: MudancaDeUsuario = {
