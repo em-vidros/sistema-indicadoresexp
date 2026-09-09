@@ -133,7 +133,7 @@ export const ROTAS: readonly Rota[] = [
     grupo: 'Gestão',
     icone: Database,
     comFiltros: false,
-    carregar: () => import('../telas/em-construcao.tsx'),
+    carregar: () => import('../telas/cadastro.tsx'),
   },
 ]
 
