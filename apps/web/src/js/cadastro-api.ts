@@ -3,7 +3,8 @@
  *
  * Os tipos sao redigitados aqui, e nao importados de `@ind/db`: o front nao
  * conhece o pacote de persistencia, e o que atravessa a rede e JSON, nao a linha
- * do drizzle. Quando os dois divergirem, quem acusa e o teste de contrato.
+ * do drizzle. O preco e que nada compara as duas copias: o teste ao lado prende
+ * caminho, metodo e corpo, e campo que mudar de nome so aparece na tela.
  */
 export type FuncaoColaborador = 'motorista' | 'ajudante' | 'atendimento' | 'logistica'
 
