@@ -68,6 +68,15 @@ const USADOS = [
   'Users',
   'Warning',
   'Wrench',
+  'SettingsGear',
+  'Dollar',
+  'Box',
+  'Buildings',
+  'RefreshClockwise',
+  'Copy',
+  'User',
+  'Logout',
+  'Cross',
 ] as const
 
 type Icone = { readonly viewBox: string; readonly body: string }

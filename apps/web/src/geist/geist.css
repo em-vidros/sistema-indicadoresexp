@@ -1124,3 +1124,27 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .g-aviso { animation: none; }
 }
+
+/* ---------- dialogo ---------- */
+.g-dialogo {
+  padding: 0;
+  border: 0;
+  border-radius: var(--g-raio-painel);
+  background: var(--g-bg-100);
+  box-shadow: var(--g-sombra-menu);
+  color: var(--g-gray-1000);
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+}
+.g-dialogo::backdrop { background: rgba(65, 65, 65, .32); }
+.g-dialogo[open] { animation: g-dialogo-entra 150ms ease both; }
+@keyframes g-dialogo-entra {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.g-dialogo-caixa { display: flex; flex-direction: column; max-height: calc(100vh - 32px); }
+.g-dialogo-cabecalho { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 20px 24px; border-bottom: 1px solid var(--g-gray-400); }
+.g-dialogo-sub { margin-top: 2px; }
+.g-dialogo-corpo { padding: 24px; overflow: auto; }
+.g-dialogo-acoes { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 16px 24px; border-top: 1px solid var(--g-gray-400); }
+@media (prefers-reduced-motion: reduce) { .g-dialogo[open] { animation: none; } }

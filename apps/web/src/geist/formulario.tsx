@@ -15,7 +15,7 @@
  * teria duas verdades sobre o mesmo dado, e a que aparece na tela seria a errada sempre
  * que o formulario recalculasse alguma coisa.
  */
-import { createContext, useContext, useId, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useId, useRef, useState } from 'react'
 import type { JSX, ReactNode, RefObject } from 'react'
 import {
   ArrowRight,
@@ -24,6 +24,7 @@ import {
   ChevronDown,
   Clock,
   CloudUpload,
+  Cross,
   FileText,
   Icone,
   LockClosed,
@@ -473,5 +474,59 @@ export function Avisos({ children }: { readonly children: ReactNode }): JSX.Elem
         ))}
       </div>
     </Contexto.Provider>
+  )
+}
+
+// ---------- dialogo ----------
+
+/**
+ * O `<dialog>` nativo com `showModal()`: foco preso, Escape fecha, fundo escurecido
+ * pelo navegador. O componente so liga `aberto` ao elemento e veste a caixa. Quem tem
+ * o estado e quem chama, como nos campos.
+ */
+export function Dialogo({ aberto, titulo, subtitulo, aoFechar, largura = 560, children, acoes }: {
+  readonly aberto: boolean
+  readonly titulo: string
+  readonly subtitulo?: string
+  readonly aoFechar: () => void
+  readonly largura?: number
+  readonly children: ReactNode
+  /** O rodape com os botoes. Sem ele o dialogo termina no conteudo. */
+  readonly acoes?: ReactNode
+}): JSX.Element {
+  const ref = useRef<HTMLDialogElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (el === null) return
+    if (aberto && !el.open) el.showModal()
+    if (!aberto && el.open) el.close()
+  }, [aberto])
+
+  return (
+    <dialog
+      ref={ref}
+      className="g-dialogo"
+      style={{ width: `min(${largura}px, calc(100vw - 32px))` }}
+      onClose={aoFechar}
+      onClick={(e) => {
+        // Clique no proprio <dialog> e clique no fundo; dentro da caixa o alvo e um filho.
+        if (e.target === ref.current) aoFechar()
+      }}
+    >
+      <div className="g-dialogo-caixa">
+        <div className="g-dialogo-cabecalho">
+          <div>
+            <div className="g-h16">{titulo}</div>
+            {subtitulo === undefined ? null : <div className="g-l13 g-fraco g-dialogo-sub">{subtitulo}</div>}
+          </div>
+          <button type="button" className="g-botao g-botao-terciario g-botao-quadrado" aria-label="Fechar" onClick={aoFechar}>
+            <Icone de={Cross} />
+          </button>
+        </div>
+        <div className="g-dialogo-corpo">{children}</div>
+        {acoes === undefined ? null : <div className="g-dialogo-acoes">{acoes}</div>}
+      </div>
+    </dialog>
   )
 }
