@@ -292,12 +292,12 @@ export function semanasDoGrafico(
 }
 
 export function brl(valor: number): string {
-  if (valor <= 0) return '—'
+  if (valor <= 0) return '·'
   return `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 }
 
 export function fmtPct(valor: number | null): string {
-  return valor === null ? '—' : `${valor.toFixed(2)}%`
+  return valor === null ? '·' : `${valor.toFixed(2)}%`
 }
 
 /**
@@ -306,7 +306,7 @@ export function fmtPct(valor: number | null): string {
  * assim por anos e quem recebe compara com o da semana passada; a tela nao tem essa divida.
  */
 export function porcento(valor: number | null, casas = 2): string {
-  return valor === null ? '—' : `${valor.toFixed(casas).replace('.', ',')}%`
+  return valor === null ? '·' : `${valor.toFixed(casas).replace('.', ',')}%`
 }
 
 /** A fatia inteira que `parte` ocupa de `total`, como a tela sempre mostrou pontualidade. */
@@ -321,7 +321,7 @@ export function parcela(parte: number, total: number): number {
  */
 export function diaMes(quando: string): string {
   const [, mes, dia] = quando.slice(0, 10).split('-')
-  return dia === undefined || mes === undefined ? '—' : `${dia}/${mes}`
+  return dia === undefined || mes === undefined ? '·' : `${dia}/${mes}`
 }
 
 /** Como cada faixa se chama na coluna de status das rotas. */

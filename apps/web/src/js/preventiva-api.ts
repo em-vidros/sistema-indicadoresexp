@@ -4,7 +4,7 @@
  *
  * Sao duas rotas so: o GET traz o catalogo de tipos mais o plano de todo veiculo
  * que a sessao enxerga, e o PUT grava o plano inteiro de um veiculo, que e como a
- * tela edita — ela abre a lista da placa, mexe nela e manda de volta. Lista vazia
+ * tela edita: ela abre a lista da placa, mexe nela e manda de volta. Lista vazia
  * e legitima e quer dizer "removi tudo".
  */
 export type ItemPreventivo = {

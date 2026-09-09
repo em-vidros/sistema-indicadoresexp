@@ -208,7 +208,7 @@ function celulasDe({ kpis, anteriores, semanas, rotas, filtros, consulta, grafic
       conteudo: (
         <Kpi
           rotulo="Pontualidade"
-          valor={kpis.pont.total === 0 ? '—' : `${Math.round((noPrazo / kpis.pont.total) * 100)}%`}
+          valor={kpis.pont.total === 0 ? '·' : `${Math.round((noPrazo / kpis.pont.total) * 100)}%`}
           apoio={kpis.pont.total === 0
             ? 'nenhuma viagem com previsão de chegada'
             : `${noPrazo} de ${kpis.pont.total} ${kpis.pont.total === 1 ? 'viagem' : 'viagens'} no prazo · ${kpis.pont.atrasado} ${kpis.pont.atrasado === 1 ? 'atrasada' : 'atrasadas'}`}

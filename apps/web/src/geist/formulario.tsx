@@ -367,7 +367,7 @@ export function LinhaDeCheck({ texto, feito, data, aoMudar }: {
         )
         : <Caixa marcado={feito} aoMudar={aoMudar} />}
       <span className={classes('g-check-texto', !feito && 'g-fraco')}>{texto}</span>
-      <span className="g-check-data g-l12m">{data ?? '—'}</span>
+      <span className="g-check-data g-l12m">{data ?? '·'}</span>
     </div>
   )
 }

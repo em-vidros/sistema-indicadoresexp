@@ -55,7 +55,7 @@ function litrosDe(litros: number): string {
 
 /** Tres casas, porque o preco do litro anda no terceiro decimal e `brl` arredondaria. */
 function porLitro(valor: number): string {
-  return valor <= 0 ? '—' : `R$ ${valor.toFixed(3).replace('.', ',')}`
+  return valor <= 0 ? '·' : `R$ ${valor.toFixed(3).replace('.', ',')}`
 }
 
 /** Quantas placas diferentes aparecem, ignorando o registro que veio sem placa. */
@@ -82,11 +82,11 @@ function Manutencoes({ manuts }: { readonly manuts: readonly Manutencao[] }): JS
           : maisRecente(manuts).map((manut, i) => (
             <tr key={i}>
               <Td><span className="g-l13m g-fraco">{diaMes(manut.data || manut.quando)}</span></Td>
-              <Td><span className="g-l13m">{manut.placa || '—'}</span></Td>
-              <Td>{manut.base || '—'}</Td>
-              <Td><span className="g-forte">{manut.servico || '—'}</span></Td>
+              <Td><span className="g-l13m">{manut.placa || '·'}</span></Td>
+              <Td>{manut.base || '·'}</Td>
+              <Td><span className="g-forte">{manut.servico || '·'}</span></Td>
               <Td direita>{brl(manut.valor)}</Td>
-              <Td>{manut.fornecedor || '—'}</Td>
+              <Td>{manut.fornecedor || '·'}</Td>
             </tr>
           ))}
       </Tabela>
@@ -108,12 +108,12 @@ function Abastecimentos({ abasts }: { readonly abasts: readonly Abastecimento[] 
           : maisRecente(abasts).map((abast, i) => (
             <tr key={i}>
               <Td><span className="g-l13m g-fraco">{diaMes(abast.data || abast.quando)}</span></Td>
-              <Td><span className="g-l13m">{abast.placa || '—'}</span></Td>
-              <Td>{abast.base || '—'}</Td>
+              <Td><span className="g-l13m">{abast.placa || '·'}</span></Td>
+              <Td>{abast.base || '·'}</Td>
               <Td direita>{litrosDe(abast.litros)}</Td>
               <Td direita>{porLitro(abast.vlLitro)}</Td>
               <Td direita>{brl(abast.valorTotal)}</Td>
-              <Td direita>{abast.km === 0 ? '—' : abast.km.toLocaleString('pt-BR')}</Td>
+              <Td direita>{abast.km === 0 ? '·' : abast.km.toLocaleString('pt-BR')}</Td>
             </tr>
           ))}
       </Tabela>

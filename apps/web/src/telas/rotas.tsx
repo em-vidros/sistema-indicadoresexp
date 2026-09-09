@@ -73,7 +73,7 @@ function celulasDa(rota: Rota): readonly string[] {
     brl(rota.custo),
     porcento(rota.pct),
     ROTULO_DA_FAIXA[tomDa(rota)],
-    rota.ultima === '' ? '—' : diaMes(rota.ultima),
+    rota.ultima === '' ? '·' : diaMes(rota.ultima),
   ]
 }
 

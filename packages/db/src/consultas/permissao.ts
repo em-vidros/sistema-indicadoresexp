@@ -1,5 +1,5 @@
 /**
- * "Quais bases este usuario alcanca" — a leitura, uma vez so.
+ * "Quais bases este usuario alcanca", a leitura, uma vez so.
  *
  * A fase 2 escreveu esta mesma consulta em tres lugares (`registros.ts`,
  * `atas.ts`, `integracoes.ts`), porque cada dominio precisava dela e a original
@@ -12,7 +12,7 @@
  * `colaborador.base_id` pelo join, `coalesce` de tres no documento), o que uma
  * base nula significa (ata da empresa, ficha de nome livre, documento sem dono)
  * e se a recusa e 403 ou 404 nao sao a mesma pergunta e nao cabem numa funcao
- * so sem virar um punhado de flags — e a flag errada e exatamente por onde o
+ * so sem virar um punhado de flags, e a flag errada e exatamente por onde o
  * vazamento entra.
  */
 import { eq } from 'drizzle-orm'
@@ -39,7 +39,7 @@ export type PermissaoBases = {
 
 /**
  * Admin enxerga toda base ativa; o resto enxerga o que `usuario_base` lista,
- * ativa ou nao — quem perdeu a base perde a lista inteira, e nao meia lista.
+ * ativa ou nao; quem perdeu a base perde a lista inteira, e nao meia lista.
  *
  * Usuario que nao existe volta `null`, e nao erro: cada dominio tem o proprio
  * vocabulario de recusa (`RegistroInvalido` com booleano, `AtaInvalida` e

@@ -54,7 +54,7 @@ function iniciaisDe(nome: string): string {
   const palavras = nome.trim().split(/\s+/).filter((p) => /^\p{L}/u.test(p))
   const primeira = palavras[0]
   const ultima = palavras[palavras.length - 1]
-  if (primeira === undefined || ultima === undefined) return '—'
+  if (primeira === undefined || ultima === undefined) return '·'
   if (palavras.length === 1) return primeira.slice(0, 2).toUpperCase()
   return `${primeira[0] ?? ''}${ultima[0] ?? ''}`.toUpperCase()
 }
@@ -84,7 +84,7 @@ function switcherDe(rota: Rota | null, busca: string, sessao: Sessao | null): Sw
     }
   }
   return {
-    rotulo: sessao === null ? '—' : areaDe(sessao),
+    rotulo: sessao === null ? '·' : areaDe(sessao),
     itens: (sessao?.bases ?? []).map((base) => ({
       rotulo: base,
       aoEscolher: () => navegar(`/visao-geral?base=${encodeURIComponent(base)}&periodo=semana`),
@@ -157,7 +157,7 @@ export function Casca({ children }: { readonly children: ReactNode }): JSX.Eleme
           nome="Conta"
           gatilho={
             <>
-              <span className="g-avatar">{sessao.dados === null ? '—' : iniciaisDe(sessao.dados.nome)}</span>
+              <span className="g-avatar">{sessao.dados === null ? '·' : iniciaisDe(sessao.dados.nome)}</span>
               <span className="g-identidade">
                 <span className="g-identidade-nome">{sessao.dados?.nome ?? 'Carregando'}</span>
                 <span className="g-identidade-apoio">{sessao.dados === null ? '' : areaDe(sessao.dados)}</span>

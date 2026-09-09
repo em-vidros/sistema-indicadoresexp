@@ -17,7 +17,7 @@ import type { Indicadores, Rota } from './dominio.ts'
 
 export function textoDoRelatorio(kpis: Indicadores, filtros: Filtros, agora: Date): string {
   return [
-    `📊 RELATÓRIO LOGÍSTICO — EM VIDROS`,
+    `RELATÓRIO LOGÍSTICO EM VIDROS`,
     `${PERIODOS[filtros.periodo].noRelatorio} · ${BASES[filtros.base].noRelatorio} · ${agora.toLocaleDateString('pt-BR')}`,
     ``,
     `🚛 VIAGENS: ${kpis.viagens.length} | Carga: R$ ${kpis.totalCarga.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} | Custo: R$ ${kpis.totalCustoV.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
@@ -57,13 +57,13 @@ export function textoDoWhatsApp(
     : '   ✅ Todas as rotas dentro da meta'
 
   return [
-    `📊 *LOGÍSTICA EM VIDROS — ${BASES[filtros.base].noRelatorio.toUpperCase()}*`,
+    `*LOGÍSTICA EM VIDROS · ${BASES[filtros.base].noRelatorio.toUpperCase()}*`,
     `_${PERIODOS[filtros.periodo].noRelatorio} · ${agora.toLocaleDateString('pt-BR')}_`,
     ``,
     `🚛 *VIAGENS*: ${kpis.viagens.length} viagem(ns)`,
     `   Carga: ${brl(kpis.totalCarga)}`,
     `   Custo: ${brl(kpis.totalCustoV)}`,
-    kpis.pctCustoRota !== null ? `   ${semaforo(kpis.pctCustoRota, 7)} % Custo/Carga: *${fmtPct(kpis.pctCustoRota)}* (meta < 7%)` : `   ⚪ % Custo/Carga: —`,
+    kpis.pctCustoRota !== null ? `   ${semaforo(kpis.pctCustoRota, 7)} % Custo/Carga: *${fmtPct(kpis.pctCustoRota)}* (meta < 7%)` : `   ⚪ % Custo/Carga: sem dado`,
     ``,
     `📍 *ROTAS ACIMA DA META:*`,
     linhasRotas,
@@ -73,7 +73,7 @@ export function textoDoWhatsApp(
     `   Meta: ≤ 5% atraso`,
     ``,
     `🔧 *MANUTENÇÃO*: ${brl(kpis.totalManut)}`,
-    kpis.pctManutProd !== null ? `   ${semaforo(kpis.pctManutProd, 2)} % Manut/Produção: *${fmtPct(kpis.pctManutProd)}* (meta < 2%)` : `   ⚪ % Manut/Produção: —`,
+    kpis.pctManutProd !== null ? `   ${semaforo(kpis.pctManutProd, 2)} % Manut/Produção: *${fmtPct(kpis.pctManutProd)}* (meta < 2%)` : `   ⚪ % Manut/Produção: sem dado`,
     ``,
     `⛽ *ABASTECIMENTO*: ${brl(kpis.totalAbast)}`,
     ``,

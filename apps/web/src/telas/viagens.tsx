@@ -116,14 +116,14 @@ const COLUNAS = ['Data', 'Motorista', 'Veículo', 'Rota', 'Km', 'Carga', 'Custo'
 function celulasDa(viagem: Viagem): readonly string[] {
   return [
     diaMes(dataDa(viagem)),
-    viagem.motorista || '—',
-    viagem.veiculo || '—',
-    viagem.rota || '—',
-    viagem.km === null ? '—' : viagem.km.toLocaleString('pt-BR'),
+    viagem.motorista || '·',
+    viagem.veiculo || '·',
+    viagem.rota || '·',
+    viagem.km === null ? '·' : viagem.km.toLocaleString('pt-BR'),
     brl(viagem.valorCarga),
     brl(viagem.custoViagem),
     porcento(viagem.pctCusto),
-    viagem.pontualidade === null ? '—' : PONTUALIDADES[viagem.pontualidade].rotulo,
+    viagem.pontualidade === null ? '·' : PONTUALIDADES[viagem.pontualidade].rotulo,
   ]
 }
 
@@ -144,7 +144,7 @@ function Linha({ viagem }: { readonly viagem: Viagem }): JSX.Element {
       <Td direita><span className={critico ? 'g-forte g-tom-critico' : 'g-forte'}>{pct}</span></Td>
       <Td>
         {viagem.pontualidade === null
-          ? '—'
+          ? '·'
           : <Badge rotulo={pontualidade} cor={BADGE_DA_PONTUALIDADE[viagem.pontualidade]} />}
       </Td>
     </tr>
