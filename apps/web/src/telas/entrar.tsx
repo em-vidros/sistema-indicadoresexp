@@ -1,10 +1,21 @@
 /**
- * A tela de login. Ela e a unica fora da casca da SPA: pinta antes de existir sessao,
- * e por isso tudo que ela carrega passa pelo portao sem cookie nenhum.
+ * A tela de login, e tambem a de primeiro acesso. Ela e a unica fora da casca da SPA:
+ * pinta antes de existir sessao, e por isso tudo que ela carrega passa pelo portao sem
+ * cookie nenhum.
+ *
+ * O link que o cadastro de usuarios entrega e `/entrar.html?convite=<token>`, e quem muda
+ * de modo e esta tela, olhando a query. Uma pagina propria custaria uma entrada nova no
+ * build, um `.html` novo no `dist/` e nomes novos na lista de assets publicos do portao,
+ * tres coisas que teriam de ser lembradas juntas. Aqui nao muda nenhuma delas.
+ *
+ * O token esta na URL desde o primeiro render, entao o modo e escolhido antes de pintar e
+ * ninguem ve o formulario de entrar aparecer e sumir. O que chega depois e so o nome de
+ * quem foi convidado, e ate ele chegar a tela diz que esta conferindo em vez de mostrar
+ * campos que talvez nao valham.
  *
  * Dai a regra que manda no que este arquivo importa: nada de `primitivos.tsx` nem de
  * `formulario.tsx`. Os dois puxam `app/navegacao.tsx`, que puxa a tabela de rotas, e a
- * tabela traria as dez telas de dentro para o bundle publico. Os controles daqui sao as
+ * tabela traria as onze telas de dentro para o bundle publico. Os controles daqui sao as
  * mesmas classes do sistema visual escritas a mao; `icones.tsx` entra porque nao depende
  * de nada e o rolldown descarta os icones que a tela nao usa.
  *
@@ -165,6 +176,195 @@ function Entrar(): JSX.Element {
   )
 }
 
+/** O menor que o servidor aceita. Repetido aqui para a recusa chegar antes do pedido. */
+const SENHA_MINIMA = 8
+
+/**
+ * O que se sabe do convite. `checando` existe porque o token so vale depois que o servidor
+ * responde, e pintar os campos antes seria pedir uma senha que talvez nao va a lugar nenhum.
+ */
+type Convite =
+  | { readonly estado: 'checando' }
+  | { readonly estado: 'valido'; readonly nome: string }
+  | { readonly estado: 'invalido' }
+
+/** O motivo do 404 nao vem do servidor de proposito: dizer qual e conta que logins existem. */
+const LINK_MORTO = 'Este link não vale mais. Peça um novo para quem cuida dos usuários.'
+
+function Cartao({ sub, children }: { readonly sub: string; readonly children: JSX.Element | null }): JSX.Element {
+  return (
+    <div className="g-entrar">
+      <div className="g-entrar-cartao">
+        <img className="g-entrar-logo" src="docs/logo-emvidros.svg" alt="EM Vidros" />
+        <div className="g-entrar-sub g-l13 g-fraco">{sub}</div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function PrimeiroAcesso({ token }: { readonly token: string }): JSX.Element {
+  const [convite, setConvite] = useState<Convite>({ estado: 'checando' })
+  const [senha, setSenha] = useState('')
+  const [repetida, setRepetida] = useState('')
+  const [mostrarSenha, setMostrarSenha] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const [enviando, setEnviando] = useState(false)
+
+  useEffect(() => {
+    let vivo = true
+    void fetch(`/api/convite?token=${encodeURIComponent(token)}`)
+      .then(async (resposta) => {
+        if (!resposta.ok) return null
+        return (await resposta.json()) as { nome?: string }
+      })
+      .catch(() => null)
+      .then((lido) => {
+        if (!vivo) return
+        setConvite(lido === null ? { estado: 'invalido' } : { estado: 'valido', nome: lido.nome ?? '' })
+      })
+    return () => {
+      vivo = false
+    }
+  }, [token])
+
+  async function definir(evento: FormEvent): Promise<void> {
+    evento.preventDefault()
+    if (senha.length < SENHA_MINIMA) {
+      setErro(`A senha precisa de pelo menos ${SENHA_MINIMA} caracteres.`)
+      return
+    }
+    if (senha !== repetida) {
+      setErro('As duas senhas não são iguais.')
+      return
+    }
+
+    setErro(null)
+    setEnviando(true)
+    try {
+      const resposta = await fetch('/api/convite', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token, senha }),
+      })
+      if (resposta.ok) {
+        // O servidor ja criou a sessao e mandou o cookie; nao ha o que digitar de novo.
+        location.replace(PAGINA_PADRAO)
+        return
+      }
+      // O link pode ter morrido entre a conferencia e o envio, e ai o formulario sai da tela.
+      if (resposta.status === 404) {
+        setConvite({ estado: 'invalido' })
+        return
+      }
+      const falha = (await resposta.json().catch(() => null)) as { erro?: string } | null
+      setErro(falha?.erro ?? 'Não foi possível definir a senha.')
+    } catch {
+      setErro('Não foi possível definir a senha. Tente de novo.')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  if (convite.estado === 'checando') {
+    return (
+      <Cartao sub="Primeiro acesso">
+        <div className="g-l13 g-fraco">Conferindo o link.</div>
+      </Cartao>
+    )
+  }
+
+  if (convite.estado === 'invalido') {
+    return (
+      <Cartao sub="Primeiro acesso">
+        <>
+          <div className="g-entrar-erro g-l13" role="alert">
+            <Icone de={Warning} />
+            <span>{LINK_MORTO}</span>
+          </div>
+          <div className="g-entrar-dica">
+            <a className="g-botao g-botao-secundario g-botao-medio g-entrar-botao" href="/entrar.html">
+              <span>Ir para o login</span>
+            </a>
+          </div>
+        </>
+      </Cartao>
+    )
+  }
+
+  return (
+    <div className="g-entrar">
+      <form className="g-entrar-cartao" onSubmit={(e) => void definir(e)}>
+        <img className="g-entrar-logo" src="docs/logo-emvidros.svg" alt="EM Vidros" />
+        <div className="g-entrar-sub g-l13 g-fraco">
+          {convite.nome === '' ? 'Primeiro acesso' : `Primeiro acesso · ${convite.nome}`}
+        </div>
+
+        <label className="g-entrar-rotulo g-l13 g-fraco" htmlFor="senha">Escolha sua senha</label>
+        <div className="g-caixa">
+          <input
+            id="senha"
+            className="g-campo-entrada"
+            type={mostrarSenha ? 'text' : 'password'}
+            autoComplete="new-password"
+            autoFocus
+            value={senha}
+            onChange={(e) => setSenha(e.currentTarget.value)}
+          />
+          <button
+            type="button"
+            className="g-caixa-gatilho"
+            aria-label={mostrarSenha ? 'Esconder a senha' : 'Mostrar a senha'}
+            tabIndex={-1}
+            onClick={() => setMostrarSenha(!mostrarSenha)}
+          >
+            <Icone de={mostrarSenha ? Eye : EyeOff} />
+          </button>
+        </div>
+
+        <label className="g-entrar-rotulo g-entrar-rotulo-2 g-l13 g-fraco" htmlFor="repetida">Repita a senha</label>
+        <div className="g-caixa">
+          <input
+            id="repetida"
+            className="g-campo-entrada"
+            type={mostrarSenha ? 'text' : 'password'}
+            autoComplete="new-password"
+            value={repetida}
+            onChange={(e) => setRepetida(e.currentTarget.value)}
+          />
+        </div>
+
+        <div className="g-entrar-dica g-l13 g-fraco">
+          Pelo menos {SENHA_MINIMA} caracteres. Ninguém mais vê esta senha.
+        </div>
+
+        <button
+          type="submit"
+          className="g-botao g-botao-primario g-botao-medio g-entrar-botao"
+          disabled={enviando}
+          aria-busy={enviando ? true : undefined}
+        >
+          {enviando ? <span className="g-giro" /> : null}
+          <span>Definir senha e entrar</span>
+        </button>
+
+        {erro === null ? null : (
+          <div className="g-entrar-erro g-l13" role="alert">
+            <Icone de={Warning} />
+            <span>{erro}</span>
+          </div>
+        )}
+      </form>
+    </div>
+  )
+}
+
+/** O modo sai da query, que ja esta lida no primeiro render: nada troca debaixo dos olhos. */
+function Tela(): JSX.Element {
+  const convite = new URLSearchParams(location.search).get('convite')
+  return convite === null || convite === '' ? <Entrar /> : <PrimeiroAcesso token={convite} />
+}
+
 const raiz = document.getElementById('app')
 if (raiz === null) throw new Error('a casca da tela nao tem #app')
-createRoot(raiz).render(<Entrar />)
+createRoot(raiz).render(<Tela />)

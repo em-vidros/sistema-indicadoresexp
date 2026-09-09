@@ -1176,7 +1176,10 @@ body {
 .g-entrar-sub { text-align: center; margin-bottom: 28px; }
 .g-entrar-rotulo { margin-bottom: 6px; }
 .g-entrar-rotulo-2 { margin-top: 16px; }
-.g-entrar-lembrar { margin: 16px 0 20px; }
+/* A faixa entre o ultimo campo e o botao. No login e a caixinha de lembrar; no primeiro
+   acesso e a regra da senha, ou o link de volta para o login quando o convite morreu. */
+.g-entrar-lembrar,
+.g-entrar-dica { margin: 16px 0 20px; }
 
 /* O botao ocupa a largura do cartao, que e o unico ponto onde ele nao divide a linha. */
 .g-entrar-botao { width: 100%; justify-content: center; }
