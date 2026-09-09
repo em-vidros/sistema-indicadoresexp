@@ -161,6 +161,13 @@ export type EntradaColaborador = {
   ativo: boolean
 }
 
+export type EntradaRota = {
+  nome: string
+  baseId: string
+  local: boolean
+  ativo: boolean
+}
+
 const CAMPOS_VEICULO = {
   id: veiculo.id,
   placa: veiculo.placa,
@@ -179,6 +186,14 @@ const CAMPOS_COLABORADOR = {
   admissao: colaborador.admissao,
   baseId: colaborador.baseId,
   ativo: colaborador.ativo,
+}
+
+const CAMPOS_ROTA = {
+  id: rota.id,
+  nome: rota.nome,
+  baseId: rota.baseId,
+  local: rota.local,
+  ativo: rota.ativo,
 }
 
 /**
@@ -221,14 +236,7 @@ export async function catalogoCadastro(
       .where(visivel(inArray(colaborador.baseId, permitidas), eq(colaborador.ativo, true)))
       .orderBy(colaborador.nome),
     db
-      .select({
-        id: rota.id,
-        nome: rota.nome,
-        baseId: rota.baseId,
-        base: base.nome,
-        local: rota.local,
-        ativo: rota.ativo,
-      })
+      .select({ ...CAMPOS_ROTA, base: base.nome })
       .from(rota)
       .innerJoin(base, eq(base.id, rota.baseId))
       .where(visivel(inArray(rota.baseId, permitidas), eq(rota.ativo, true)))
@@ -291,4 +299,30 @@ export async function atualizarColaborador(
     db.update(colaborador).set(entrada).where(eq(colaborador.id, id)).returning(CAMPOS_COLABORADOR),
   )
   return { ...salvo!, base: nome }
+}
+
+export async function criarRota(
+  db: Db,
+  usuarioId: string,
+  entrada: EntradaRota,
+): Promise<RotaCadastro> {
+  const permissao = await permissaoDoUsuario(db, usuarioId)
+  const nome = nomeDaBase(permissao, entrada.baseId)
+  const [criada] = await gravar(() => db.insert(rota).values(entrada).returning(CAMPOS_ROTA))
+  return { ...criada!, base: nome }
+}
+
+export async function atualizarRota(
+  db: Db,
+  usuarioId: string,
+  id: string,
+  entrada: EntradaRota,
+): Promise<RotaCadastro> {
+  const permissao = await permissaoDoUsuario(db, usuarioId)
+  await exigirAlvo(db, rota, id, permissao, 'rota inexistente')
+  const nome = nomeDaBase(permissao, entrada.baseId)
+  const [salva] = await gravar(() =>
+    db.update(rota).set(entrada).where(eq(rota.id, id)).returning(CAMPOS_ROTA),
+  )
+  return { ...salva!, base: nome }
 }

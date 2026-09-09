@@ -48,6 +48,7 @@ const baseDe = (nome: string): string => bases.find((item) => item.nome === nome
 
 const PLACAS = ['ZZC0001', 'ZZC0002']
 const NOMES = ['ZZ Colaborador de Teste', 'ZZ Colaborador da Raposa']
+const ROTAS = ['ZZ ROTA DE TESTE']
 
 beforeAll(async () => {
   ;[livia, andreina] = await Promise.all([
@@ -60,6 +61,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await sql`delete from veiculo where placa = any(${sql.array(PLACAS)})`
   await sql`delete from colaborador where nome = any(${sql.array(NOMES)})`
+  await sql`delete from rota where nome = any(${sql.array(ROTAS)})`
 })
 
 describe('cadastro atras da sessao', () => {
@@ -256,5 +258,44 @@ describe('escrita de colaborador', () => {
       baseId: baseDe('Raposa'),
     })
     expect(resposta.status).toBe(400)
+  })
+})
+
+describe('escrita de rota', () => {
+  test('a Lívia cria em Imperatriz e depois marca como local', async () => {
+    const resposta = await escrever(livia, 'rotas', {
+      nome: ROTAS[0]!,
+      baseId: baseDe('Imperatriz'),
+    })
+    expect(resposta.status).toBe(201)
+    const salva = (await resposta.json()) as Rota
+    expect(salva.local).toBe(false)
+    expect(salva.base).toBe('Imperatriz')
+
+    const edicao = await escrever(
+      livia,
+      `rotas/${salva.id}`,
+      { nome: ROTAS[0]!, baseId: baseDe('Imperatriz'), local: true, ativo: true },
+      'PUT',
+    )
+    expect(edicao.status).toBe(200)
+    expect(((await edicao.json()) as Rota).local).toBe(true)
+  })
+
+  test('o mesmo nome repete em outra base, mas não na mesma', async () => {
+    const repetida = await escrever(livia, 'rotas', {
+      nome: ROTAS[0]!,
+      baseId: baseDe('Imperatriz'),
+    })
+    expect(repetida.status).toBe(409)
+    expect(((await repetida.json()) as { erro: string }).erro).toBe(
+      'já existe uma rota com esse nome nessa base',
+    )
+
+    const noutraBase = await escrever(livia, 'rotas', {
+      nome: ROTAS[0]!,
+      baseId: baseDe('Raposa'),
+    })
+    expect(noutraBase.status).toBe(201)
   })
 })
