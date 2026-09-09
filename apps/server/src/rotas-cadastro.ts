@@ -14,10 +14,12 @@ import {
   CadastroInvalido,
   type Db,
   atualizarColaborador,
+  atualizarBase,
   atualizarRota,
   atualizarVeiculo,
   catalogoCadastro,
   criarColaborador,
+  criarBase,
   criarRota,
   criarVeiculo,
   funcaoColaborador,
@@ -51,6 +53,13 @@ const Rota = z.object({
 })
 
 const RotaSalva = Rota.extend({ local: z.boolean(), ativo: z.boolean() })
+
+const Base = z.object({
+  nome: z.string().trim().min(1).max(160),
+  ativo: z.boolean().optional().default(true),
+})
+
+const BaseSalva = Base.extend({ ativo: z.boolean() })
 
 const Id = z.string().uuid()
 
@@ -143,6 +152,24 @@ export function rotasCadastro(db: Db): Hono<Ambiente> {
       return c.json({ erro: mensagemDaEntrada(entrada.error, 'entrada invalida') }, 400)
     }
     return responder(c, () => atualizarRota(db, c.get('usuarioId'), id.data, entrada.data))
+  })
+
+  rotas.post('/cadastro/bases', async (c) => {
+    const entrada = Base.safeParse(await c.req.json().catch(() => null))
+    if (!entrada.success) {
+      return c.json({ erro: mensagemDaEntrada(entrada.error, 'entrada invalida') }, 400)
+    }
+    return responder(c, () => criarBase(db, c.get('usuarioId'), entrada.data), 201)
+  })
+
+  rotas.put('/cadastro/bases/:id', async (c) => {
+    const id = Id.safeParse(c.req.param('id'))
+    const entrada = BaseSalva.safeParse(await c.req.json().catch(() => null))
+    if (!id.success) return c.json({ erro: 'entrada invalida' }, 400)
+    if (!entrada.success) {
+      return c.json({ erro: mensagemDaEntrada(entrada.error, 'entrada invalida') }, 400)
+    }
+    return responder(c, () => atualizarBase(db, c.get('usuarioId'), id.data, entrada.data))
   })
 
   return rotas

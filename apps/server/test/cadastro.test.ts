@@ -49,6 +49,7 @@ const baseDe = (nome: string): string => bases.find((item) => item.nome === nome
 const PLACAS = ['ZZC0001', 'ZZC0002']
 const NOMES = ['ZZ Colaborador de Teste', 'ZZ Colaborador da Raposa']
 const ROTAS = ['ZZ ROTA DE TESTE']
+const BASES = ['ZZ Base de Teste']
 
 beforeAll(async () => {
   ;[livia, andreina] = await Promise.all([
@@ -62,6 +63,7 @@ afterAll(async () => {
   await sql`delete from veiculo where placa = any(${sql.array(PLACAS)})`
   await sql`delete from colaborador where nome = any(${sql.array(NOMES)})`
   await sql`delete from rota where nome = any(${sql.array(ROTAS)})`
+  await sql`delete from base where nome = any(${sql.array(BASES)})`
 })
 
 describe('cadastro atras da sessao', () => {
@@ -297,5 +299,44 @@ describe('escrita de rota', () => {
       baseId: baseDe('Raposa'),
     })
     expect(noutraBase.status).toBe(201)
+  })
+})
+
+describe('escrita de base', () => {
+  test('a Lívia cria a base, desativa, e ela continua no ?todos=1', async () => {
+    const resposta = await escrever(livia, 'bases', { nome: BASES[0]! })
+    expect(resposta.status).toBe(201)
+    const criada = (await resposta.json()) as Base
+    expect(criada.ativo).toBe(true)
+
+    const edicao = await escrever(livia, `bases/${criada.id}`, { nome: BASES[0]!, ativo: false }, 'PUT')
+    expect(edicao.status).toBe(200)
+    expect(((await edicao.json()) as Base).ativo).toBe(false)
+
+    const { corpo } = await catalogo(livia)
+    expect(corpo!.bases.map((item) => item.nome)).not.toContain(BASES[0]!)
+
+    const { corpo: tudo } = await catalogo(livia, true)
+    expect(tudo!.bases.find((item) => item.nome === BASES[0]!)?.ativo).toBe(false)
+  })
+
+  test('base inexistente volta 404 no PUT', async () => {
+    const resposta = await escrever(
+      livia,
+      'bases/2f9a6a1c-9f5f-4d9a-9d5a-1f2b3c4d5e6f',
+      { nome: 'ZZ Base Fantasma', ativo: true },
+      'PUT',
+    )
+    expect(resposta.status).toBe(404)
+    expect(((await resposta.json()) as { erro: string }).erro).toBe('base inexistente')
+  })
+
+  test('a Andreina não cria nem edita base', async () => {
+    const criacao = await escrever(andreina, 'bases', { nome: 'ZZ Base da Andreina' })
+    expect(criacao.status).toBe(403)
+    expect(((await criacao.json()) as { erro: string }).erro).toBe('só administrador altera base')
+
+    const edicao = await escrever(andreina, `bases/${baseDe('Raposa')}`, { nome: 'Raposa', ativo: true }, 'PUT')
+    expect(edicao.status).toBe(403)
   })
 })

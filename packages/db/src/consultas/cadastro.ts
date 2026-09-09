@@ -16,7 +16,7 @@
 import { and, eq, inArray, type SQL } from 'drizzle-orm'
 import type { Db } from '../index.ts'
 import { base, colaborador, rota, veiculo } from '../schema/cadastro.ts'
-import { type PermissaoBases, lerPermissao } from './permissao.ts'
+import { type BasePermitida, lerPermissao } from './permissao.ts'
 
 /**
  * O `status` viaja junto com a mensagem porque a rota nao tem como adivinha-lo.
@@ -35,20 +35,37 @@ export class CadastroInvalido extends Error {
 
 type Leitor = Pick<Db, 'select'>
 
-async function permissaoDoUsuario(db: Leitor, usuarioId: string): Promise<PermissaoBases> {
+type Alcance = { admin: boolean; bases: BasePermitida[]; ids: string[] }
+
+/**
+ * As bases que este usuario alcanca **no cadastro**, que nao sao as mesmas de
+ * `lerPermissao`: la o admin recebe so base ativa, e o cadastro e justamente a
+ * tela onde ele desativa uma. Com a lista de la, a base recem-desativada sairia
+ * do `?todos=1` e ele nao teria como reativa-la, levando junto o veiculo, o
+ * colaborador e a rota dela. Para quem nao e admin nada muda: `usuario_base` ja
+ * lista base inativa.
+ */
+async function alcanceDoCadastro(db: Leitor, usuarioId: string): Promise<Alcance> {
   const permissao = await lerPermissao(db, usuarioId)
   if (!permissao) throw new CadastroInvalido('usuário inexistente')
-  return permissao
+  const bases = permissao.admin
+    ? await db.select({ id: base.id, nome: base.nome }).from(base)
+    : permissao.bases
+  return { admin: permissao.admin, bases, ids: bases.map((item) => item.id) }
+}
+
+function exigirAdmin(alcance: Alcance): void {
+  if (!alcance.admin) throw new CadastroInvalido('só administrador altera base')
 }
 
 /**
  * Autoriza a base e devolve o nome dela na mesma passada. As duas perguntas tem
- * uma resposta so: `permissao.bases` ja traz id e nome do que o usuario alcanca,
+ * uma resposta so: o alcance ja traz id e nome do que o usuario enxerga,
  * entao base que nao esta ali e recusa, e base que esta dispensa reler o nome do
  * banco para devolver a linha no formato do catalogo.
  */
-function nomeDaBase(permissao: PermissaoBases, baseId: string): string {
-  const achada = permissao.bases.find((item) => item.id === baseId)
+function nomeDaBase(alcance: Alcance, baseId: string): string {
+  const achada = alcance.bases.find((item) => item.id === baseId)
   if (!achada) throw new CadastroInvalido('base fora das suas bases')
   return achada.nome
 }
@@ -63,11 +80,11 @@ async function exigirAlvo(
   db: Leitor,
   tabela: ComBase,
   id: string,
-  permissao: PermissaoBases,
+  alcance: Alcance,
   palavra: string,
 ): Promise<void> {
   const [alvo] = await db.select({ baseId: tabela.baseId }).from(tabela).where(eq(tabela.id, id))
-  if (!alvo || !permissao.ids.includes(alvo.baseId)) throw new CadastroInvalido(palavra, 404)
+  if (!alvo || !alcance.ids.includes(alvo.baseId)) throw new CadastroInvalido(palavra, 404)
 }
 
 const CONFLITOS: Record<string, string> = {
@@ -143,6 +160,11 @@ export type CatalogoCadastro = {
   rotas: RotaCadastro[]
 }
 
+export type EntradaBase = {
+  nome: string
+  ativo: boolean
+}
+
 export type EntradaVeiculo = {
   placa: string
   marca: string | null
@@ -166,6 +188,12 @@ export type EntradaRota = {
   baseId: string
   local: boolean
   ativo: boolean
+}
+
+const CAMPOS_BASE = {
+  id: base.id,
+  nome: base.nome,
+  ativo: base.ativo,
 }
 
 const CAMPOS_VEICULO = {
@@ -212,14 +240,14 @@ export async function catalogoCadastro(
   usuarioId: string,
   todos = false,
 ): Promise<CatalogoCadastro> {
-  const permitidas = (await permissaoDoUsuario(db, usuarioId)).ids
+  const permitidas = (await alcanceDoCadastro(db, usuarioId)).ids
   // Cada tabela passa as suas duas condicoes ja montadas: a coluna de base e a de
   // `ativo` mudam de nome em cada uma, e receber coluna solta aqui pediria um tipo
   // frouxo que aceitaria a coluna errada sem reclamar.
   const visivel = (daBase: SQL, ativa: SQL): SQL => (todos ? daBase : and(daBase, ativa)!)
   const [bases, veiculos, colaboradores, rotas] = await Promise.all([
     db
-      .select({ id: base.id, nome: base.nome, ativo: base.ativo })
+      .select(CAMPOS_BASE)
       .from(base)
       .where(visivel(inArray(base.id, permitidas), eq(base.ativo, true)))
       .orderBy(base.nome),
@@ -250,8 +278,8 @@ export async function criarVeiculo(
   usuarioId: string,
   entrada: EntradaVeiculo,
 ): Promise<VeiculoCadastro> {
-  const permissao = await permissaoDoUsuario(db, usuarioId)
-  const nome = nomeDaBase(permissao, entrada.baseId)
+  const alcance = await alcanceDoCadastro(db, usuarioId)
+  const nome = nomeDaBase(alcance, entrada.baseId)
   const [criado] = await gravar(() =>
     db.insert(veiculo).values(entrada).returning(CAMPOS_VEICULO),
   )
@@ -264,9 +292,9 @@ export async function atualizarVeiculo(
   id: string,
   entrada: EntradaVeiculo,
 ): Promise<VeiculoCadastro> {
-  const permissao = await permissaoDoUsuario(db, usuarioId)
-  await exigirAlvo(db, veiculo, id, permissao, 'veículo inexistente')
-  const nome = nomeDaBase(permissao, entrada.baseId)
+  const alcance = await alcanceDoCadastro(db, usuarioId)
+  await exigirAlvo(db, veiculo, id, alcance, 'veículo inexistente')
+  const nome = nomeDaBase(alcance, entrada.baseId)
   const [salvo] = await gravar(() =>
     db.update(veiculo).set(entrada).where(eq(veiculo.id, id)).returning(CAMPOS_VEICULO),
   )
@@ -278,8 +306,8 @@ export async function criarColaborador(
   usuarioId: string,
   entrada: EntradaColaborador,
 ): Promise<ColaboradorCadastro> {
-  const permissao = await permissaoDoUsuario(db, usuarioId)
-  const nome = nomeDaBase(permissao, entrada.baseId)
+  const alcance = await alcanceDoCadastro(db, usuarioId)
+  const nome = nomeDaBase(alcance, entrada.baseId)
   const [criado] = await gravar(() =>
     db.insert(colaborador).values(entrada).returning(CAMPOS_COLABORADOR),
   )
@@ -292,9 +320,9 @@ export async function atualizarColaborador(
   id: string,
   entrada: EntradaColaborador,
 ): Promise<ColaboradorCadastro> {
-  const permissao = await permissaoDoUsuario(db, usuarioId)
-  await exigirAlvo(db, colaborador, id, permissao, 'colaborador inexistente')
-  const nome = nomeDaBase(permissao, entrada.baseId)
+  const alcance = await alcanceDoCadastro(db, usuarioId)
+  await exigirAlvo(db, colaborador, id, alcance, 'colaborador inexistente')
+  const nome = nomeDaBase(alcance, entrada.baseId)
   const [salvo] = await gravar(() =>
     db.update(colaborador).set(entrada).where(eq(colaborador.id, id)).returning(CAMPOS_COLABORADOR),
   )
@@ -306,8 +334,8 @@ export async function criarRota(
   usuarioId: string,
   entrada: EntradaRota,
 ): Promise<RotaCadastro> {
-  const permissao = await permissaoDoUsuario(db, usuarioId)
-  const nome = nomeDaBase(permissao, entrada.baseId)
+  const alcance = await alcanceDoCadastro(db, usuarioId)
+  const nome = nomeDaBase(alcance, entrada.baseId)
   const [criada] = await gravar(() => db.insert(rota).values(entrada).returning(CAMPOS_ROTA))
   return { ...criada!, base: nome }
 }
@@ -318,11 +346,37 @@ export async function atualizarRota(
   id: string,
   entrada: EntradaRota,
 ): Promise<RotaCadastro> {
-  const permissao = await permissaoDoUsuario(db, usuarioId)
-  await exigirAlvo(db, rota, id, permissao, 'rota inexistente')
-  const nome = nomeDaBase(permissao, entrada.baseId)
+  const alcance = await alcanceDoCadastro(db, usuarioId)
+  await exigirAlvo(db, rota, id, alcance, 'rota inexistente')
+  const nome = nomeDaBase(alcance, entrada.baseId)
   const [salva] = await gravar(() =>
     db.update(rota).set(entrada).where(eq(rota.id, id)).returning(CAMPOS_ROTA),
   )
   return { ...salva!, base: nome }
+}
+
+export async function criarBase(
+  db: Db,
+  usuarioId: string,
+  entrada: EntradaBase,
+): Promise<BaseCadastro> {
+  exigirAdmin(await alcanceDoCadastro(db, usuarioId))
+  const [criada] = await gravar(() => db.insert(base).values(entrada).returning(CAMPOS_BASE))
+  return criada!
+}
+
+export async function atualizarBase(
+  db: Db,
+  usuarioId: string,
+  id: string,
+  entrada: EntradaBase,
+): Promise<BaseCadastro> {
+  exigirAdmin(await alcanceDoCadastro(db, usuarioId))
+  const [salva] = await gravar(() =>
+    db.update(base).set(entrada).where(eq(base.id, id)).returning(CAMPOS_BASE),
+  )
+  // O update sem linha e a resposta da existencia: quem chega aqui ja e admin,
+  // entao nao ha id que ele enxergue e nao possa mudar.
+  if (!salva) throw new CadastroInvalido('base inexistente', 404)
+  return salva
 }
