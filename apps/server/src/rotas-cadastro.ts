@@ -13,13 +13,13 @@
 import {
   CadastroInvalido,
   type Db,
-  atualizarColaborador,
   atualizarBase,
+  atualizarColaborador,
   atualizarRota,
   atualizarVeiculo,
   catalogoCadastro,
-  criarColaborador,
   criarBase,
+  criarColaborador,
   criarRota,
   criarVeiculo,
   funcaoColaborador,
@@ -33,6 +33,18 @@ const Placa = z
   .string()
   .transform((valor) => valor.trim().toUpperCase().replace(/[\s-]/g, ''))
   .pipe(z.string().min(1).max(10))
+
+const Veiculo = z.object({
+  placa: Placa,
+  marca: TextoOuNulo.optional().default(null),
+  modelo: TextoOuNulo.optional().default(null),
+  ano: TextoOuNulo.optional().default(null),
+  baseId: z.string().uuid(),
+  ativo: z.boolean().optional().default(true),
+})
+
+/** No PUT a tela manda a linha inteira, entao `ativo` deixa de ter padrao. */
+const VeiculoSalvo = Veiculo.extend({ ativo: z.boolean() })
 
 const Colaborador = z.object({
   nome: z.string().trim().min(1).max(160),
@@ -80,18 +92,6 @@ async function responder<T>(
     throw falha
   }
 }
-
-const Veiculo = z.object({
-  placa: Placa,
-  marca: TextoOuNulo.optional().default(null),
-  modelo: TextoOuNulo.optional().default(null),
-  ano: TextoOuNulo.optional().default(null),
-  baseId: z.string().uuid(),
-  ativo: z.boolean().optional().default(true),
-})
-
-/** No PUT a tela manda a linha inteira, entao `ativo` deixa de ter padrao. */
-const VeiculoSalvo = Veiculo.extend({ ativo: z.boolean() })
 
 export function rotasCadastro(db: Db): Hono<Ambiente> {
   const rotas = new Hono<Ambiente>()
