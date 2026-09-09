@@ -87,8 +87,8 @@ for origem in apps/web/src/*.html; do
   conferir "$tela" '200' \
     "$(curl -s -o /dev/null -w '%{http_code}' "${cookie[@]}" --max-time 20 "$BASE/$tela.html" 2>/dev/null)"
 done
-asset=$(ls apps/web/dist/assets/ 2>/dev/null | grep '^formulario-registro-.*\.js$' | head -1)
-conferir 'o JS com hash do formulario' '200' \
+asset=$(ls apps/web/dist/assets/ 2>/dev/null | grep '^registrar-.*\.js$' | head -1)
+conferir 'o JS com hash da tela de registro' '200' \
   "$(curl -s -o /dev/null -w '%{http_code}' -b "$livia" --max-time 20 "$BASE/assets/$asset" 2>/dev/null)"
 
 # Mesma pergunta, outra pasta: `docs/` tambem e lida do disco, e ela e a que a frota
