@@ -1088,48 +1088,6 @@ const CELULAS: Readonly<Record<Tipo, (f: Ferramentas) => readonly Celula[]>> = {
   quebra: celulasDeQuebra,
 }
 
-// ---------- usuarios ----------
-
-type LinhaDeUsuario = {
-  readonly usuario: string
-  readonly nome: string
-  readonly admin: boolean
-  readonly baseFixa: string | null
-  readonly bases: readonly string[]
-  readonly tipos: readonly string[]
-  readonly senha: string
-}
-
-/**
- * A linha chega do servidor como JSON solto e e lida campo a campo. Sem isto um `nome`
- * que mudou de forma no banco vira `undefined` no meio do desenho, e o dialogo para de
- * montar sem uma palavra na tela.
- */
-function comoUsuario(bruto: unknown): LinhaDeUsuario {
-  const u = (bruto ?? {}) as Record<string, unknown>
-  const listaDeTexto = (valor: unknown): string[] =>
-    Array.isArray(valor) ? valor.filter((item): item is string => typeof item === 'string') : []
-  return {
-    usuario: typeof u.usuario === 'string' ? u.usuario : '',
-    nome: typeof u.nome === 'string' ? u.nome : '',
-    admin: u.admin === true,
-    baseFixa: typeof u.baseFixa === 'string' ? u.baseFixa : null,
-    // Sem reserva generosa: lista vazia aqui e permissao de verdade, e um padrao amplo
-    // transformaria erro de consulta em acesso a base que nao e sua.
-    bases: listaDeTexto(u.bases),
-    tipos: listaDeTexto(u.tipos),
-    senha: '',
-  }
-}
-
-type MudancaDeUsuario = {
-  readonly usuario: string
-  readonly nome: string
-  readonly senha?: string
-  readonly bases?: readonly string[]
-  readonly tipos?: readonly string[]
-}
-
 // ---------- tela ----------
 
 const CHAVE_DA_BASE = 'registrar.base'
@@ -1163,8 +1121,6 @@ export default function Registrar(): JSX.Element {
   const [salvando, setSalvando] = useState(false)
   const [limpando, setLimpando] = useState(false)
   const [limpezaAberta, setLimpezaAberta] = useState(false)
-  const [usuarios, setUsuarios] = useState<readonly LinhaDeUsuario[] | null>(null)
-  const [salvandoUsuarios, setSalvandoUsuarios] = useState(false)
 
   // O admin comeca na base do ultimo lancamento desta maquina, e nao numa tela vazia
   // pedindo um clique; quem lanca todo dia lanca quase sempre na mesma base.
@@ -1353,51 +1309,6 @@ export default function Registrar(): JSX.Element {
     }
   }
 
-  async function abrirUsuarios(): Promise<void> {
-    try {
-      const resposta = await fetch('/api/usuarios')
-      if (!resposta.ok) throw new Error(String(resposta.status))
-      const lidos = (await resposta.json()) as unknown
-      setUsuarios((Array.isArray(lidos) ? lidos : []).map(comoUsuario))
-    } catch {
-      avisar('Não consegui carregar os usuários. Tente de novo.', 'erro')
-    }
-  }
-
-  async function salvarUsuarios(): Promise<void> {
-    if (usuarios === null) return
-    const corpo: MudancaDeUsuario[] = usuarios.map((u) => ({
-      usuario: u.usuario,
-      nome: u.nome,
-      // Senha vazia quer dizer "nao muda". Mandar vazio apagaria a senha de todo mundo.
-      ...(u.senha === '' ? {} : { senha: u.senha }),
-      ...(u.admin ? {} : { bases: u.bases, tipos: u.tipos }),
-    }))
-    setSalvandoUsuarios(true)
-    try {
-      const resposta = await fetch('/api/usuarios', {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(corpo),
-      })
-      if (!resposta.ok) throw new Error(String(resposta.status))
-      setUsuarios(null)
-      invalidar('sessao')
-      avisar('Usuários atualizados.', 'ok')
-    } catch {
-      avisar('Não consegui salvar. Nada foi alterado.', 'erro')
-    } finally {
-      setSalvandoUsuarios(false)
-    }
-  }
-
-  const mudarUsuario = (login: string, mudanca: Partial<LinhaDeUsuario>): void => {
-    setUsuarios((atuais) => atuais?.map((u) => (u.usuario === login ? { ...u, ...mudanca } : u)) ?? null)
-  }
-
-  const alternar = (lista: readonly string[], item: string, marcado: boolean): readonly string[] =>
-    marcado ? [...lista, item] : lista.filter((i) => i !== item)
-
   const ferramentas: Ferramentas = {
     rascunho,
     motoristas,
@@ -1450,10 +1361,7 @@ export default function Registrar(): JSX.Element {
   const itensDoMenu = [
     { rotulo: 'Exportar JSON', aoEscolher: exportar },
     { rotulo: 'Limpar registros de hoje', aoEscolher: () => setLimpezaAberta(true) },
-    ...(sessao.capacidades.gerenciaUsuarios ? [{ rotulo: 'Gerenciar usuários', aoEscolher: () => void abrirUsuarios() }] : []),
   ]
-
-  const basesDoCatalogo = (catalogo?.bases ?? []).filter((b) => b.ativo).map((b) => b.nome)
 
   return (
     <>
@@ -1526,84 +1434,6 @@ export default function Registrar(): JSX.Element {
         <div className="g-l14">
           Isto apaga todos os registros lançados hoje na base {base ?? 'sem base'}. Não tem como desfazer.
         </div>
-      </Dialogo>
-
-      <Dialogo
-        aberto={usuarios !== null}
-        titulo="Gerenciar usuários"
-        largura={720}
-        aoFechar={() => setUsuarios(null)}
-        acoes={
-          <>
-            <Botao tipo="terciario" rotulo="Cancelar" aoClicar={() => setUsuarios(null)} />
-            <Botao
-              tipo="primario"
-              rotulo="Salvar usuários"
-              carregando={salvandoUsuarios}
-              aoClicar={() => void salvarUsuarios()}
-            />
-          </>
-        }
-      >
-        {(usuarios ?? []).map((u) => (
-          <div key={u.usuario}>
-            <TituloDeSecao
-              titulo={u.usuario}
-              subtitulo={u.admin ? 'Administrador: vê todas as bases e todos os tipos' : `Base ${u.baseFixa ?? '·'}`}
-            />
-            <GradeDeCampos>
-              <Campo
-                rotulo="Nome exibido"
-                span={6}
-                valor={u.nome}
-                aoMudar={(nome) => mudarUsuario(u.usuario, { nome })}
-              />
-              <Campo
-                rotulo="Senha"
-                span={6}
-                dica="Deixe em branco para não mudar"
-                valor={u.senha}
-                aoMudar={(senha) => mudarUsuario(u.usuario, { senha })}
-              />
-            </GradeDeCampos>
-            {u.admin
-              ? null
-              : (
-                <>
-                  <TituloDeSecao
-                    titulo="Bases"
-                    direita={
-                      <div className="g-chips">
-                        {basesDoCatalogo.map((nome) => (
-                          <Caixa
-                            key={nome}
-                            rotulo={nome}
-                            marcado={u.bases.includes(nome)}
-                            aoMudar={(marcado) => mudarUsuario(u.usuario, { bases: alternar(u.bases, nome, marcado) })}
-                          />
-                        ))}
-                      </div>
-                    }
-                  />
-                  <TituloDeSecao
-                    titulo="Tipos de registro"
-                    direita={
-                      <div className="g-chips">
-                        {TIPOS.map((t) => (
-                          <Caixa
-                            key={t}
-                            rotulo={ROTULO_DO_TIPO[t]}
-                            marcado={u.tipos.includes(t)}
-                            aoMudar={(marcado) => mudarUsuario(u.usuario, { tipos: alternar(u.tipos, t, marcado) })}
-                          />
-                        ))}
-                      </div>
-                    }
-                  />
-                </>
-              )}
-          </div>
-        ))}
       </Dialogo>
     </>
   )
