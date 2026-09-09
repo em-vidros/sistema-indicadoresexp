@@ -17,12 +17,16 @@ export const PAGINA_PADRAO = '/registrar'
  * O logo esta aqui porque a tela de login o mostra antes de existir sessao. E o
  * unico arquivo de `docs/` publico, e por isso ele e nomeado, nao um padrao.
  *
- * Os quatro de `/assets/` sao o que a tela de login carrega para existir: o proprio
- * modulo, o CSS dela, o React e o shim de modulepreload. Eles saem do build sem hash de
- * proposito, para caberem numa lista de nomes; liberar `/assets/` inteiro seria o
- * padrao que este portao nao usa, e entregaria de graca o codigo das seis telas de
- * dentro. `verificar/publicos.ts` cobra os dois sentidos, entao arquivo que a login
- * passe a pedir e nome que sobre aqui reprovam a build.
+ * Os de `/assets/` sao o que a tela de login carrega para existir: o proprio modulo, o
+ * CSS dela, o React, o shim de modulepreload e as cinco fontes que `geist.css` pede.
+ * Eles saem do build sem hash de proposito, para caberem numa lista de nomes; liberar
+ * `/assets/` inteiro seria o padrao que este portao nao usa, e entregaria de graca o
+ * codigo das telas de dentro. `verificar/publicos.ts` cobra os dois sentidos, entao
+ * arquivo que a login passe a pedir e nome que sobre aqui reprovam a build.
+ *
+ * As fontes entraram quando a login passou a vestir o sistema visual. Sem elas o portao
+ * devolveria 302 com o HTML do login no corpo do woff2, e o texto pintaria no fallback
+ * do sistema, defeito que so quem ainda nao entrou consegue ver.
  *
  * Eram cinco ate o porte da setima tela. O quinto era `/assets/rolldown-runtime.js`, os
  * ajudantes de interop que o Recharts trouxe em CJS e que o rolldown emitia num pedaco
@@ -37,9 +41,15 @@ const PUBLICOS = new Set([
   '/saude',
   '/docs/logo-emvidros.svg',
   '/assets/entrar.js',
-  '/assets/entrar.css',
   '/assets/vendor-react.js',
+  '/assets/geist.js',
+  '/assets/geist.css',
   '/assets/modulepreload-polyfill.js',
+  '/assets/geist-sans-400.woff2',
+  '/assets/geist-sans-500.woff2',
+  '/assets/geist-sans-600.woff2',
+  '/assets/geist-mono-400.woff2',
+  '/assets/geist-mono-500.woff2',
 ])
 
 /** O que `verificar/publicos.ts` confere contra o `dist/`. */

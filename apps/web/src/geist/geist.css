@@ -1016,7 +1016,7 @@ body {
   color: var(--g-gray-1000);
 }
 
-.g-check-data { color: var(--g-gray-900); }
+.g-check-data { color: var(--g-gray-900); max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---------- barra, assinatura, linha de arquivo, rodape ---------- */
 
@@ -1192,14 +1192,14 @@ body {
 }
 .g-entrar-erro .g-icone { color: var(--g-red-700); flex: 0 0 auto; }
 
-/* ---------- documentos: celula com data e envio, grade de arquivos, nota de rodape ---------- */
+/* ---------- documentos: celula com data e envio, grade de arquivos, rodape do bloco ---------- */
 
 .g-doc-celula { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 
 /* As duas colunas de `fileRow` do artboard de Documentos. */
 .g-arqs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-.g-nota {
+.g-doc-rodape {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1207,7 +1207,7 @@ body {
   color: var(--g-gray-900);
 }
 
-.g-nota .g-icone { color: var(--g-gray-900); flex: 0 0 auto; }
+.g-doc-rodape .g-icone { color: var(--g-gray-900); flex: 0 0 auto; }
 
 /* ---------- ata: topico, assinaturas lado a lado, acao rente ao campo ---------- */
 
@@ -1224,6 +1224,11 @@ body {
 
 .g-acoes-linha { display: inline-flex; align-items: center; gap: 6px; }
 .g-secao-acoes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 20px; }
+
+/* A lista de colaboradores rola dentro do bloco. Sem teto, trinta nomes esticam a linha
+   da grade e deixam a celula vizinha com meio metro de vazio ao lado. */
+.g-lista-checks { max-height: 380px; overflow-y: auto; }
+.g-grupo-checks + .g-grupo-checks { margin-top: 16px; }
 
 /* ---------- folha de impressao ---------- */
 

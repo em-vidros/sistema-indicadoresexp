@@ -1,26 +1,22 @@
 /**
- * A tela de login, e a primeira do porte para React. As outras seis copiam a forma
- * daqui, entao o que esta escrito abaixo vale como regra e nao como caso.
+ * A tela de login. Ela e a unica fora da casca da SPA: pinta antes de existir sessao,
+ * e por isso tudo que ela carrega passa pelo portao sem cookie nenhum.
  *
- * Os campos ficam sem `value`. Um `<input value={x} onChange>` faz o React escrever o
- * atributo `value` no elemento, e a baseline congelou a tela sem esse atributo: o
- * campo de hoje guarda o que foi digitado no proprio DOM e o script le na hora de
- * enviar. Ref reproduz isso; estado controlado mudaria a arvore. Sempre que a tela
- * velha ler o campo com `getElementById(...).value`, o porte usa ref.
+ * Dai a regra que manda no que este arquivo importa: nada de `primitivos.tsx` nem de
+ * `formulario.tsx`. Os dois puxam `app/navegacao.tsx`, que puxa a tabela de rotas, e a
+ * tabela traria as dez telas de dentro para o bundle publico. Os controles daqui sao as
+ * mesmas classes do sistema visual escritas a mao; `icones.tsx` entra porque nao depende
+ * de nada e o rolldown descarta os icones que a tela nao usa.
  *
- * O aviso de erro tem tres estados e nao dois. Antes do primeiro erro o elemento nao
- * tem atributo `style` nenhum e quem o esconde e a regra `.login-erro{display:none}`;
- * depois do erro ele ganha `display:block` inline; e quando o aviso apaga sozinho ele
- * fica com `display:none` inline. Renderizar sempre o `style` mudaria o estado inicial
- * da tela, entao os tres estados estao aqui como estao la.
- *
- * O `#app` da casca leva `display:contents` porque `body` e um flex container: um
- * wrapper com caixa propria mudaria o layout de toda tela que use o flex do body.
+ * A folha e `geist.css` inteira, e nao um recorte: as cinco fontes que ela pede saem sem
+ * hash pelo `SEM_HASH` do `vite.config.ts` e estao liberadas por nome no portao. Quem
+ * cobra as duas pontas e `verificar/publicos.ts`.
  */
-import { useEffect, useRef, useState } from 'react'
-import type { JSX, KeyboardEvent } from 'react'
+import { useEffect, useState } from 'react'
+import type { FormEvent, JSX } from 'react'
 import { createRoot } from 'react-dom/client'
-import './entrar.css'
+import { Check, Eye, EyeOff, Icone, Warning } from '../geist/icones.tsx'
+import '../geist/geist.css'
 
 /**
  * O servidor valida `destino` do mesmo jeito, e essa e a checagem que vale. Esta aqui
@@ -39,116 +35,132 @@ function destinoSeguro(bruto: string | null): string | null {
   return bruto
 }
 
-type Aviso = 'nunca' | 'aceso' | 'apagado'
+/** Para onde ir quando nao ha `?destino`, ou quando ele nao passa. */
+const PAGINA_PADRAO = '/registrar'
+
+/** Quanto tempo o aviso de credencial errada fica na tela. */
+const DURACAO_DO_ERRO = 3000
+
+type Formulario = { readonly usuario: string; readonly senha: string; readonly lembrar: boolean }
+
+const VAZIO: Formulario = { usuario: '', senha: '', lembrar: true }
 
 function Entrar(): JSX.Element {
-  const usuario = useRef<HTMLInputElement>(null)
-  const senha = useRef<HTMLInputElement>(null)
-  const lembrar = useRef<HTMLInputElement>(null)
-  const [aviso, setAviso] = useState<Aviso>('nunca')
+  const [dados, setDados] = useState<Formulario>(VAZIO)
+  const [mostrarSenha, setMostrarSenha] = useState(false)
+  const [erro, setErro] = useState(false)
+  const [enviando, setEnviando] = useState(false)
 
-  // O overlay antigo focava o campo de usuario 100ms depois de carregar. Aqui a
-  // pagina e so isso, entao o foco pode ser imediato.
   useEffect(() => {
-    usuario.current?.focus()
-  }, [])
+    if (!erro) return
+    const relogio = setTimeout(() => setErro(false), DURACAO_DO_ERRO)
+    return () => clearTimeout(relogio)
+  }, [erro])
 
-  async function fazerLogin(): Promise<void> {
-    const nome = usuario.current?.value.trim().toLowerCase() ?? ''
-    const chave = senha.current?.value ?? ''
-    // Marcado, o cookie sobrevive ao fechar o navegador; desmarcado, morre com ele.
-    const guardar = lembrar.current?.checked ?? false
+  async function entrar(evento: FormEvent): Promise<void> {
+    evento.preventDefault()
+    setEnviando(true)
 
     let ok = false
     try {
-      const r = await fetch('/api/entrar', {
+      const resposta = await fetch('/api/entrar', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ usuario: nome, senha: chave, lembrar: guardar }),
+        body: JSON.stringify({
+          usuario: dados.usuario.trim().toLowerCase(),
+          senha: dados.senha,
+          // Marcado, o cookie sobrevive ao fechar o navegador; desmarcado, morre com ele.
+          lembrar: dados.lembrar,
+        }),
       })
-      ok = r.ok
+      ok = resposta.ok
     } catch {
+      // Rede fora e credencial errada dao o mesmo aviso: quem esta na tela nao tem o que
+      // fazer de diferente nos dois casos, e um deles nao merece uma tela propria.
       ok = false
     }
 
     if (!ok) {
-      setAviso('aceso')
-      setTimeout(() => setAviso('apagado'), 3000)
+      setEnviando(false)
+      setErro(true)
       return
     }
 
     const destino = new URLSearchParams(location.search).get('destino')
     // `replace` e nao `assign`: o botao voltar nao deve trazer o login de volta.
-    location.replace(destinoSeguro(destino) ?? '/formulario-registro.html')
-  }
-
-  const aoTeclar = (e: KeyboardEvent): void => {
-    if (e.key === 'Enter') void fazerLogin()
+    location.replace(destinoSeguro(destino) ?? PAGINA_PADRAO)
   }
 
   return (
-    <div className="login-overlay" id="loginOverlay">
-      <div className="login-box">
-        <div className="login-logo">
-          <img
-            src="docs/logo-emvidros.svg"
-            alt="EM Vidros"
-            style={{ height: '64px', width: 'auto', display: 'block', margin: '0 auto' }}
+    <div className="g-entrar">
+      <form className="g-entrar-cartao" onSubmit={(e) => void entrar(e)}>
+        <img className="g-entrar-logo" src="docs/logo-emvidros.svg" alt="EM Vidros" />
+        <div className="g-entrar-sub g-l13 g-fraco">Registro Diário · Logística</div>
+
+        <label className="g-entrar-rotulo g-l13 g-fraco" htmlFor="usuario">Usuário</label>
+        <div className="g-caixa">
+          <input
+            id="usuario"
+            className="g-campo-entrada"
+            type="text"
+            autoComplete="username"
+            autoFocus
+            value={dados.usuario}
+            onChange={(e) => setDados({ ...dados, usuario: e.currentTarget.value })}
           />
         </div>
-        <div className="login-sub">Registro Diário · Logística</div>
-        <div>
-          <label>Usuário</label>{' '}
+
+        <label className="g-entrar-rotulo g-entrar-rotulo-2 g-l13 g-fraco" htmlFor="senha">Senha</label>
+        <div className="g-caixa">
           <input
-            ref={usuario}
-            type="text"
-            id="loginUsuario"
-            placeholder="Seu usuário"
-            autoComplete="username"
-            onKeyDown={aoTeclar}
-          />{' '}
-          <label>Senha</label>{' '}
-          <input
-            ref={senha}
-            type="password"
-            id="loginSenha"
-            placeholder="Sua senha"
+            id="senha"
+            className="g-campo-entrada"
+            type={mostrarSenha ? 'text' : 'password'}
             autoComplete="current-password"
-            onKeyDown={aoTeclar}
-          />{' '}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              margin: '8px 0 4px',
-              fontSize: '.85rem',
-              color: 'var(--dim)',
-            }}
+            value={dados.senha}
+            onChange={(e) => setDados({ ...dados, senha: e.currentTarget.value })}
+          />
+          <button
+            type="button"
+            className="g-caixa-gatilho"
+            aria-label={mostrarSenha ? 'Esconder a senha' : 'Mostrar a senha'}
+            tabIndex={-1}
+            onClick={() => setMostrarSenha(!mostrarSenha)}
           >
-            <input
-              ref={lembrar}
-              type="checkbox"
-              id="lembrarMe"
-              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-              defaultChecked
-            />
-            <label htmlFor="lembrarMe" style={{ cursor: 'pointer', margin: '0' }}>
-              Lembrar de mim
-            </label>
-          </div>{' '}
-          <button className="btn-login" onClick={() => void fazerLogin()}>
-            Entrar
-          </button>{' '}
-          <div
-            className="login-erro"
-            id="loginErro"
-            style={aviso === 'nunca' ? undefined : { display: aviso === 'aceso' ? 'block' : 'none' }}
-          >
-            Usuário ou senha incorretos.
-          </div>
+            <Icone de={mostrarSenha ? Eye : EyeOff} />
+          </button>
         </div>
-      </div>
+
+        <label className="g-caixinha g-entrar-lembrar">
+          <input
+            className="g-escondido"
+            type="checkbox"
+            checked={dados.lembrar}
+            onChange={(e) => setDados({ ...dados, lembrar: e.currentTarget.checked })}
+          />
+          <span className={dados.lembrar ? 'g-caixinha-marca g-caixinha-marcada' : 'g-caixinha-marca'}>
+            {dados.lembrar ? <Icone de={Check} tamanho={12} /> : null}
+          </span>
+          <span className="g-caixinha-rotulo g-l13">Lembrar de mim</span>
+        </label>
+
+        <button
+          type="submit"
+          className="g-botao g-botao-primario g-botao-medio g-entrar-botao"
+          disabled={enviando}
+          aria-busy={enviando ? true : undefined}
+        >
+          {enviando ? <span className="g-giro" /> : null}
+          <span>Entrar</span>
+        </button>
+
+        {erro ? (
+          <div className="g-entrar-erro g-l13" role="alert">
+            <Icone de={Warning} />
+            <span>Usuário ou senha incorretos.</span>
+          </div>
+        ) : null}
+      </form>
     </div>
   )
 }

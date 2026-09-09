@@ -22,7 +22,21 @@ if (Object.keys(entradas).length === 0) throw new Error('nenhum .html em apps/we
  * unicos sem hash no `dist/`, e `verificar/publicos.ts` cobra os dois sentidos: o que
  * a login pede tem que estar liberado, e o que esta liberado tem que ser pedido.
  */
-const SEM_HASH = new Set(['entrar', 'entrar.css', 'vendor-react', 'modulepreload-polyfill'])
+const SEM_HASH = new Set([
+  'entrar',
+  'vendor-react',
+  'modulepreload-polyfill',
+  // Desde que a login veste o sistema visual, `geist.css` e o modulo de icones sao
+  // pedidos sem sessao. Os dois ja nasciam num pedaco compartilhado com o app, porque as
+  // duas entradas os importam; aqui esse pedaco so ganha nome fixo, junto das cinco
+  // fontes que a folha pede.
+  'geist',
+  'geist-sans-400.woff2',
+  'geist-sans-500.woff2',
+  'geist-sans-600.woff2',
+  'geist-mono-400.woff2',
+  'geist-mono-500.woff2',
+])
 
 function nome(base: string, extensao: string): string {
   const semExtensao = base.replace(/\.[^.]+$/, '')

@@ -14,17 +14,21 @@
  * A prova le o `dist/`, entao ela cobra o que a build produziu, e nao o que a config
  * pretendia produzir.
  *
- * O `entrar.css` entra na varredura porque folha de estilo tambem pede arquivo. Hoje ele
- * nao tem nenhum `url(...)` e a lista sai igual; quando a login carregar `geist.css`, as
- * cinco fontes viram pedidos com hash, e o portao vai ter que libera-las pelo nome. Sem
- * isto, a fonte voltaria 302 com o HTML do login dentro e o texto pintaria no fallback do
- * sistema, que e um defeito que so quem ainda nao entrou consegue ver.
+ * A varredura e em dois passos porque folha de estilo tambem pede arquivo. Desde que a
+ * login veste o sistema visual, a folha dela e `geist.css` e as cinco fontes saem de
+ * `url(...)` dentro dela. Sem esse segundo passo a fonte voltaria 302 com o HTML do login
+ * dentro e o texto pintaria no fallback do sistema, que e um defeito que so quem ainda
+ * nao entrou consegue ver.
+ *
+ * Qual e a folha sai do proprio `entrar.html`, e nao de um nome escrito aqui: o pedaco
+ * que a carrega ja mudou de nome uma vez, e um nome escrito aqui viraria um `dist/` que
+ * a prova le pela metade sem reclamar.
  */
 import { PUBLICOS_DE_ASSET } from '../apps/server/src/portao.ts'
 
 const RAIZ = new URL('../', import.meta.url).pathname
-const CASCA = `${RAIZ}apps/web/dist/entrar.html`
-const FOLHA = `${RAIZ}apps/web/dist/assets/entrar.css`
+const DIST = `${RAIZ}apps/web/dist/`
+const CASCA = `${DIST}entrar.html`
 
 /** `src` e `href` de script, link e img. O `dist/` nao tem outra forma de pedir. */
 const REFERENCIA = /(?:src|href)="([^"]+)"/g
@@ -41,14 +45,16 @@ for (const [, alvo] of html.matchAll(REFERENCIA)) {
   pedidos.add(alvo)
 }
 
-const css = await Bun.file(FOLHA).text()
-for (const [, , alvo] of css.matchAll(NO_CSS)) {
-  // `data:` esta dentro do proprio arquivo e nao vira pedido nenhum.
-  if (alvo === undefined || alvo.startsWith('data:')) continue
-  // O caminho no CSS e relativo a folha, e o portao compara caminho absoluto.
-  const absoluto = new URL(alvo, 'http://dist/assets/entrar.css').pathname
-  if (!absoluto.startsWith('/assets/')) continue
-  pedidos.add(absoluto)
+for (const folha of [...pedidos].filter((p) => p.endsWith('.css'))) {
+  const css = await Bun.file(`${DIST}${folha.slice(1)}`).text()
+  for (const [, , alvo] of css.matchAll(NO_CSS)) {
+    // `data:` esta dentro do proprio arquivo e nao vira pedido nenhum.
+    if (alvo === undefined || alvo.startsWith('data:')) continue
+    // O caminho no CSS e relativo a folha, e o portao compara caminho absoluto.
+    const absoluto = new URL(alvo, `http://dist${folha}`).pathname
+    if (!absoluto.startsWith('/assets/')) continue
+    pedidos.add(absoluto)
+  }
 }
 
 if (pedidos.size === 0) {
