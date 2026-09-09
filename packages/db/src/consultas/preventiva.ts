@@ -38,6 +38,9 @@ export type VeiculoPreventivo = {
   id: string
   placa: string
   base: string
+  modelo: string | null
+  marca: string | null
+  ano: string | null
   itens: ItemPreventivo[]
 }
 
@@ -89,7 +92,14 @@ export async function listarPreventiva(db: Db, usuarioId: string): Promise<Plano
   if (idsBase.length === 0) return { tipos, veiculos: [] }
 
   const veiculos = await db
-    .select({ id: veiculo.id, placa: veiculo.placa, base: base.nome })
+    .select({
+      id: veiculo.id,
+      placa: veiculo.placa,
+      base: base.nome,
+      modelo: veiculo.modelo,
+      marca: veiculo.marca,
+      ano: veiculo.ano,
+    })
     .from(veiculo)
     .innerJoin(base, eq(base.id, veiculo.baseId))
     .where(inArray(veiculo.baseId, idsBase))
@@ -149,7 +159,15 @@ export async function gravarPreventiva(
 ): Promise<VeiculoPreventivo> {
   return await db.transaction(async (tx) => {
     const [alvo] = await tx
-      .select({ id: veiculo.id, placa: veiculo.placa, baseId: veiculo.baseId, base: base.nome })
+      .select({
+        id: veiculo.id,
+        placa: veiculo.placa,
+        baseId: veiculo.baseId,
+        base: base.nome,
+        modelo: veiculo.modelo,
+        marca: veiculo.marca,
+        ano: veiculo.ano,
+      })
       .from(veiculo)
       .innerJoin(base, eq(base.id, veiculo.baseId))
       .where(eq(veiculo.id, veiculoId))
@@ -209,7 +227,15 @@ export async function gravarPreventiva(
       )
 
     const gravados = await itensDe(tx, [alvo.id])
-    return { id: alvo.id, placa: alvo.placa, base: alvo.base, itens: gravados.map(semVeiculo) }
+    return {
+      id: alvo.id,
+      placa: alvo.placa,
+      base: alvo.base,
+      modelo: alvo.modelo,
+      marca: alvo.marca,
+      ano: alvo.ano,
+      itens: gravados.map(semVeiculo),
+    }
   })
 }
 

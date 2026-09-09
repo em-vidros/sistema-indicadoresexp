@@ -1048,7 +1048,7 @@ do documento tem o que o deploy mudou em relação a ele.
 
 A fase 0 inteira, nesta ordem:
 
-1. ~~`bun upgrade`~~ feito. A máquina está em 1.4.0.
+1. ~~`bun upgrade`~~ feito. A máquina está em 1.4.1.
 2. ~~workspaces~~ feito. `apps/*` e `packages/*`, mais `tsconfig.base.json`.
 3. ~~Postgres~~ feito. `./infra/banco.sh` sobe o 17.11 em 127.0.0.1:5433.
 4. `packages/db` com o schema acima **corrigido pelo `arquitetura.md`**, na ordem
@@ -1108,7 +1108,7 @@ do passivo da fase 4 na origem, em vez de arrastá-lo até lá.
 | 0 base | **pronta** | 2026-08-31 | |
 | 1 login | **pronta** | 2026-09-01 | |
 | 2 banco | **pronta** | 2026-09-01 | |
-| 3 duplicação | não iniciada | | |
+| 3 duplicação | metade, API no ar | 2026-09-09 | `GET /api/cadastro` serve bases, veículos, colaboradores e rotas filtrados pela sessão, e `/api/preventiva` traz modelo, marca e ano; as telas seguem lendo literais, front em outro lugar |
 | 4 publicar | **pronta** | 2026-09-02 | |
 | 5 andaime | não iniciada | | sobra o guia, por decisão pendente |
 | 6 react | **pronta** | 2026-09-03 | commits 0 a 9; o guia segue legado |
@@ -1119,7 +1119,7 @@ próxima sessão.
 
 ### o que a fase 0 já tem
 
-Bun 1.4.0. Postgres 17.11 rootless na 5433, por `infra/banco.sh`. O monorepo com
+Bun 1.4.1. Postgres 17.11 rootless na 5433, por `infra/banco.sh`. O monorepo com
 `packages/core`, `packages/db` e a cerca de import. 32 tabelas aplicadas, com as
 oito colunas geradas saindo do `drizzle-kit` sem SQL escrito à mão. 142 testes
 passando, tipos limpos, cerca verde.
