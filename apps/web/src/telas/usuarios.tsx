@@ -241,7 +241,14 @@ function Campos({ rascunho, erro, edicao, bases, mudar }: {
               valor={rascunho.baseFixa}
               opcoes={bases}
               {...noCampo('baseFixa')}
-              aoMudar={(baseFixa) => mudar({ ...rascunho, baseFixa })}
+              aoMudar={(baseFixa) => mudar({
+                ...rascunho,
+                baseFixa,
+                // A base fixa e onde a pessoa trabalha, entao ela e sempre uma das bases
+                // que a pessoa ve. Sem marcar aqui, o seletor da barra lateral abriria
+                // vazio para quem acabou de ser cadastrado.
+                bases: rascunho.bases.includes(baseFixa) ? rascunho.bases : [...rascunho.bases, baseFixa],
+              })}
             />
           )}
       </GradeDeCampos>
@@ -292,7 +299,21 @@ export default function Usuarios(): JSX.Element {
   const [aberto, setAberto] = useState<Aberto | null>(null)
   const [trabalhando, setTrabalhando] = useState(false)
 
-  if (sessao.dados === null) return <Esqueleto />
+  if (sessao.dados === null) {
+    // Sem sessao nao da para dizer nem sim nem nao, e adivinhar erraria dos dois lados:
+    // esqueleto eterno se ela nunca chegar, tela de gestao aberta se o palpite for sim.
+    if (sessao.estado === 'erro') {
+      return (
+        <Vazio
+          icone={Users}
+          titulo="A sessão não carregou"
+          texto="Sem saber quem é você, esta tela não tem como se abrir."
+          acao={<Botao rotulo="Tentar de novo" aoClicar={sessao.recarregar} />}
+        />
+      )
+    }
+    return <Esqueleto />
+  }
   if (!sessao.dados.capacidades.gerenciaUsuarios) return <RotaDesconhecida />
 
   const pessoas = lista.dados
