@@ -152,6 +152,15 @@ export type EntradaVeiculo = {
   ativo: boolean
 }
 
+export type EntradaColaborador = {
+  nome: string
+  cargo: string | null
+  funcao: FuncaoColaborador
+  admissao: string | null
+  baseId: string
+  ativo: boolean
+}
+
 const CAMPOS_VEICULO = {
   id: veiculo.id,
   placa: veiculo.placa,
@@ -160,6 +169,16 @@ const CAMPOS_VEICULO = {
   ano: veiculo.ano,
   baseId: veiculo.baseId,
   ativo: veiculo.ativo,
+}
+
+const CAMPOS_COLABORADOR = {
+  id: colaborador.id,
+  nome: colaborador.nome,
+  cargo: colaborador.cargo,
+  funcao: colaborador.funcao,
+  admissao: colaborador.admissao,
+  baseId: colaborador.baseId,
+  ativo: colaborador.ativo,
 }
 
 /**
@@ -196,16 +215,7 @@ export async function catalogoCadastro(
       .where(visivel(inArray(veiculo.baseId, permitidas), eq(veiculo.ativo, true)))
       .orderBy(veiculo.placa),
     db
-      .select({
-        id: colaborador.id,
-        nome: colaborador.nome,
-        cargo: colaborador.cargo,
-        funcao: colaborador.funcao,
-        admissao: colaborador.admissao,
-        baseId: colaborador.baseId,
-        base: base.nome,
-        ativo: colaborador.ativo,
-      })
+      .select({ ...CAMPOS_COLABORADOR, base: base.nome })
       .from(colaborador)
       .innerJoin(base, eq(base.id, colaborador.baseId))
       .where(visivel(inArray(colaborador.baseId, permitidas), eq(colaborador.ativo, true)))
@@ -251,6 +261,34 @@ export async function atualizarVeiculo(
   const nome = nomeDaBase(permissao, entrada.baseId)
   const [salvo] = await gravar(() =>
     db.update(veiculo).set(entrada).where(eq(veiculo.id, id)).returning(CAMPOS_VEICULO),
+  )
+  return { ...salvo!, base: nome }
+}
+
+export async function criarColaborador(
+  db: Db,
+  usuarioId: string,
+  entrada: EntradaColaborador,
+): Promise<ColaboradorCadastro> {
+  const permissao = await permissaoDoUsuario(db, usuarioId)
+  const nome = nomeDaBase(permissao, entrada.baseId)
+  const [criado] = await gravar(() =>
+    db.insert(colaborador).values(entrada).returning(CAMPOS_COLABORADOR),
+  )
+  return { ...criado!, base: nome }
+}
+
+export async function atualizarColaborador(
+  db: Db,
+  usuarioId: string,
+  id: string,
+  entrada: EntradaColaborador,
+): Promise<ColaboradorCadastro> {
+  const permissao = await permissaoDoUsuario(db, usuarioId)
+  await exigirAlvo(db, colaborador, id, permissao, 'colaborador inexistente')
+  const nome = nomeDaBase(permissao, entrada.baseId)
+  const [salvo] = await gravar(() =>
+    db.update(colaborador).set(entrada).where(eq(colaborador.id, id)).returning(CAMPOS_COLABORADOR),
   )
   return { ...salvo!, base: nome }
 }

@@ -47,6 +47,7 @@ let bases: Base[] = []
 const baseDe = (nome: string): string => bases.find((item) => item.nome === nome)!.id
 
 const PLACAS = ['ZZC0001', 'ZZC0002']
+const NOMES = ['ZZ Colaborador de Teste', 'ZZ Colaborador da Raposa']
 
 beforeAll(async () => {
   ;[livia, andreina] = await Promise.all([
@@ -58,6 +59,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await sql`delete from veiculo where placa = any(${sql.array(PLACAS)})`
+  await sql`delete from colaborador where nome = any(${sql.array(NOMES)})`
 })
 
 describe('cadastro atras da sessao', () => {
@@ -198,5 +200,61 @@ describe('escrita de veiculo', () => {
       body: JSON.stringify({ placa: 'ZZC0005', baseId: baseDe('Raposa') }),
     })
     expect(semSessao.status).toBe(401)
+  })
+})
+
+describe('escrita de colaborador', () => {
+  let criado = ''
+
+  test('a Lívia cria em Imperatriz e depois edita a ficha', async () => {
+    const resposta = await escrever(livia, 'colaboradores', {
+      nome: NOMES[0]!,
+      cargo: 'Motorista',
+      funcao: 'motorista',
+      admissao: '2024-03-01',
+      baseId: baseDe('Imperatriz'),
+    })
+    expect(resposta.status).toBe(201)
+    const salvo = (await resposta.json()) as Colaborador
+    expect(salvo.base).toBe('Imperatriz')
+    expect(salvo.admissao).toBe('2024-03-01')
+    criado = salvo.id
+
+    const edicao = await escrever(
+      livia,
+      `colaboradores/${criado}`,
+      {
+        nome: NOMES[0]!,
+        cargo: 'Ajudante',
+        funcao: 'ajudante',
+        admissao: null,
+        baseId: baseDe('Imperatriz'),
+        ativo: false,
+      },
+      'PUT',
+    )
+    expect(edicao.status).toBe(200)
+    const depois = (await edicao.json()) as Colaborador
+    expect(depois.funcao).toBe('ajudante')
+    expect(depois.admissao).toBeNull()
+    expect(depois.ativo).toBe(false)
+  })
+
+  test('a Andreina leva 403 em base alheia', async () => {
+    const resposta = await escrever(andreina, 'colaboradores', {
+      nome: NOMES[1]!,
+      funcao: 'ajudante',
+      baseId: baseDe('Imperatriz'),
+    })
+    expect(resposta.status).toBe(403)
+  })
+
+  test('função fora do enum volta 400', async () => {
+    const resposta = await escrever(livia, 'colaboradores', {
+      nome: NOMES[1]!,
+      funcao: 'piloto',
+      baseId: baseDe('Raposa'),
+    })
+    expect(resposta.status).toBe(400)
   })
 })
