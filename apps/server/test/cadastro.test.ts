@@ -46,10 +46,10 @@ async function escrever(cookie: string, caminho: string, corpo: unknown, metodo 
 let bases: Base[] = []
 const baseDe = (nome: string): string => bases.find((item) => item.nome === nome)!.id
 
-const PLACAS = ['ZZC0001', 'ZZC0002']
+const PLACAS = ['ZZC0001', 'ZZC0002', 'ZZC0006']
 const NOMES = ['ZZ Colaborador de Teste', 'ZZ Colaborador da Raposa']
 const ROTAS = ['ZZ ROTA DE TESTE']
-const BASES = ['ZZ Base de Teste']
+const BASES = ['ZZ Base de Teste', 'ZZ Base Desativada']
 
 beforeAll(async () => {
   ;[livia, andreina] = await Promise.all([
@@ -181,6 +181,19 @@ describe('escrita de veiculo', () => {
     )
     expect(resposta.status).toBe(404)
     expect(((await resposta.json()) as { erro: string }).erro).toBe('veículo inexistente')
+  })
+
+  test('a Andreina alcança a linha, mas não pode mandá-la para base alheia', async () => {
+    const { corpo } = await catalogo(andreina)
+    const dela = corpo!.veiculos.find((item) => item.placa === PLACAS[1]!)!
+    const resposta = await escrever(
+      andreina,
+      `veiculos/${dela.id}`,
+      { placa: PLACAS[1]!, baseId: baseDe('Imperatriz'), ativo: true },
+      'PUT',
+    )
+    expect(resposta.status).toBe(403)
+    expect(((await resposta.json()) as { erro: string }).erro).toBe('base fora das suas bases')
   })
 
   test('placa repetida volta 409 com a mensagem em português', async () => {
@@ -318,6 +331,24 @@ describe('escrita de base', () => {
 
     const { corpo: tudo } = await catalogo(livia, true)
     expect(tudo!.bases.find((item) => item.nome === BASES[0]!)?.ativo).toBe(false)
+  })
+
+  test('base desativada leva junto o veículo dela no GET sem parâmetro', async () => {
+    const criada = (await (await escrever(livia, 'bases', { nome: BASES[1]! })).json()) as Base
+    const veiculo = (await (
+      await escrever(livia, 'veiculos', { placa: PLACAS[2]!, baseId: criada.id })
+    ).json()) as Veiculo
+    expect(veiculo.ativo).toBe(true)
+
+    const desativada = await escrever(livia, `bases/${criada.id}`, { nome: BASES[1]!, ativo: false }, 'PUT')
+    expect(desativada.status).toBe(200)
+
+    const { corpo } = await catalogo(livia)
+    expect(corpo!.bases.map((item) => item.nome)).not.toContain(BASES[1]!)
+    expect(corpo!.veiculos.map((item) => item.placa)).not.toContain(PLACAS[2]!)
+
+    const { corpo: tudo } = await catalogo(livia, true)
+    expect(tudo!.veiculos.map((item) => item.placa)).toContain(PLACAS[2]!)
   })
 
   test('nome de base repetido volta 409', async () => {

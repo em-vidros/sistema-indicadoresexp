@@ -74,7 +74,9 @@ type ComBase = typeof veiculo | typeof colaborador | typeof rota
 
 /**
  * 404 e nao 403 de proposito: quem nao alcanca a base nao enxerga a linha na
- * lista, e 403 confirmaria que aquele id existe.
+ * lista, e 403 confirmaria que aquele id existe. A mesma palavra volta se o
+ * `returning` do update vier vazio, que e a linha apagada entre uma consulta e
+ * a outra: 200 com um corpo pela metade seria pior que 404.
  */
 async function exigirAlvo(
   db: Leitor,
@@ -87,11 +89,13 @@ async function exigirAlvo(
   if (!alvo || !alcance.ids.includes(alvo.baseId)) throw new CadastroInvalido(palavra, 404)
 }
 
-const CONFLITOS: Record<string, string> = {
-  veiculo_placa_unique: 'já existe um veículo com essa placa',
-  rota_nome_base_uk: 'já existe uma rota com esse nome nessa base',
-  base_nome_unique: 'já existe uma base com esse nome',
-}
+// Um Map, e nao um literal de objeto: `constraint_name` vem do banco, e uma
+// constraint chamada `constructor` acharia o membro herdado do prototipo.
+const CONFLITOS = new Map([
+  ['veiculo_placa_unique', 'já existe um veículo com essa placa'],
+  ['rota_nome_base_uk', 'já existe uma rota com esse nome nessa base'],
+  ['base_nome_unique', 'já existe uma base com esse nome'],
+])
 
 /**
  * A falha chega embrulhada pelo drizzle; o `PostgresError` fica no `cause`.
@@ -105,7 +109,8 @@ async function gravar<T>(escrita: () => Promise<T>): Promise<T> {
     let atual: unknown = falha
     while (atual instanceof Error) {
       const erro = atual as Error & { code?: string; constraint_name?: string }
-      const mensagem = erro.code === '23505' ? CONFLITOS[erro.constraint_name ?? ''] : undefined
+      const mensagem =
+        erro.code === '23505' ? CONFLITOS.get(erro.constraint_name ?? '') : undefined
       if (mensagem) throw new CadastroInvalido(mensagem, 409)
       atual = erro.cause
     }
@@ -241,10 +246,12 @@ export async function catalogoCadastro(
   todos = false,
 ): Promise<CatalogoCadastro> {
   const permitidas = (await alcanceDoCadastro(db, usuarioId)).ids
-  // Cada tabela passa as suas duas condicoes ja montadas: a coluna de base e a de
-  // `ativo` mudam de nome em cada uma, e receber coluna solta aqui pediria um tipo
-  // frouxo que aceitaria a coluna errada sem reclamar.
-  const visivel = (daBase: SQL, ativa: SQL): SQL => (todos ? daBase : and(daBase, ativa)!)
+  // O filtro de base vale sempre; as condicoes de `ativo` so quando nao pediram
+  // `todos`. Sao mais de uma porque a linha some tambem quando a base dela some:
+  // desde que o admin passou a enxergar base inativa, para poder reativa-la, o
+  // `ativo` da propria tabela deixava passar o veiculo de uma base desligada, e o
+  // formulario o oferecia com uma base que nem aparece na lista.
+  const visivel = (daBase: SQL, ...ativas: SQL[]): SQL => (todos ? daBase : and(daBase, ...ativas)!)
   const [bases, veiculos, colaboradores, rotas] = await Promise.all([
     db
       .select(CAMPOS_BASE)
@@ -255,19 +262,19 @@ export async function catalogoCadastro(
       .select({ ...CAMPOS_VEICULO, base: base.nome })
       .from(veiculo)
       .innerJoin(base, eq(base.id, veiculo.baseId))
-      .where(visivel(inArray(veiculo.baseId, permitidas), eq(veiculo.ativo, true)))
+      .where(visivel(inArray(veiculo.baseId, permitidas), eq(veiculo.ativo, true), eq(base.ativo, true)))
       .orderBy(veiculo.placa),
     db
       .select({ ...CAMPOS_COLABORADOR, base: base.nome })
       .from(colaborador)
       .innerJoin(base, eq(base.id, colaborador.baseId))
-      .where(visivel(inArray(colaborador.baseId, permitidas), eq(colaborador.ativo, true)))
+      .where(visivel(inArray(colaborador.baseId, permitidas), eq(colaborador.ativo, true), eq(base.ativo, true)))
       .orderBy(colaborador.nome),
     db
       .select({ ...CAMPOS_ROTA, base: base.nome })
       .from(rota)
       .innerJoin(base, eq(base.id, rota.baseId))
-      .where(visivel(inArray(rota.baseId, permitidas), eq(rota.ativo, true)))
+      .where(visivel(inArray(rota.baseId, permitidas), eq(rota.ativo, true), eq(base.ativo, true)))
       .orderBy(rota.nome),
   ])
   return { bases, veiculos, colaboradores, rotas }
@@ -298,7 +305,8 @@ export async function atualizarVeiculo(
   const [salvo] = await gravar(() =>
     db.update(veiculo).set(entrada).where(eq(veiculo.id, id)).returning(CAMPOS_VEICULO),
   )
-  return { ...salvo!, base: nome }
+  if (!salvo) throw new CadastroInvalido('veículo inexistente', 404)
+  return { ...salvo, base: nome }
 }
 
 export async function criarColaborador(
@@ -326,7 +334,8 @@ export async function atualizarColaborador(
   const [salvo] = await gravar(() =>
     db.update(colaborador).set(entrada).where(eq(colaborador.id, id)).returning(CAMPOS_COLABORADOR),
   )
-  return { ...salvo!, base: nome }
+  if (!salvo) throw new CadastroInvalido('colaborador inexistente', 404)
+  return { ...salvo, base: nome }
 }
 
 export async function criarRota(
@@ -352,7 +361,8 @@ export async function atualizarRota(
   const [salva] = await gravar(() =>
     db.update(rota).set(entrada).where(eq(rota.id, id)).returning(CAMPOS_ROTA),
   )
-  return { ...salva!, base: nome }
+  if (!salva) throw new CadastroInvalido('rota inexistente', 404)
+  return { ...salva, base: nome }
 }
 
 export async function criarBase(
