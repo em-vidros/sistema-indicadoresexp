@@ -13,22 +13,42 @@
  *
  * A prova le o `dist/`, entao ela cobra o que a build produziu, e nao o que a config
  * pretendia produzir.
+ *
+ * O `entrar.css` entra na varredura porque folha de estilo tambem pede arquivo. Hoje ele
+ * nao tem nenhum `url(...)` e a lista sai igual; quando a login carregar `geist.css`, as
+ * cinco fontes viram pedidos com hash, e o portao vai ter que libera-las pelo nome. Sem
+ * isto, a fonte voltaria 302 com o HTML do login dentro e o texto pintaria no fallback do
+ * sistema, que e um defeito que so quem ainda nao entrou consegue ver.
  */
 import { PUBLICOS_DE_ASSET } from '../apps/server/src/portao.ts'
 
 const RAIZ = new URL('../', import.meta.url).pathname
 const CASCA = `${RAIZ}apps/web/dist/entrar.html`
+const FOLHA = `${RAIZ}apps/web/dist/assets/entrar.css`
 
 /** `src` e `href` de script, link e img. O `dist/` nao tem outra forma de pedir. */
 const REFERENCIA = /(?:src|href)="([^"]+)"/g
 
-const html = await Bun.file(CASCA).text()
+/** `url(...)` do CSS, com aspas ou sem. E assim que fonte e imagem de fundo sao pedidas. */
+const NO_CSS = /url\(\s*(['"]?)([^'")]+)\1\s*\)/g
 
 const pedidos = new Set<string>()
+
+const html = await Bun.file(CASCA).text()
 for (const [, alvo] of html.matchAll(REFERENCIA)) {
   if (alvo === undefined) continue
   if (!alvo.startsWith('/assets/')) continue
   pedidos.add(alvo)
+}
+
+const css = await Bun.file(FOLHA).text()
+for (const [, , alvo] of css.matchAll(NO_CSS)) {
+  // `data:` esta dentro do proprio arquivo e nao vira pedido nenhum.
+  if (alvo === undefined || alvo.startsWith('data:')) continue
+  // O caminho no CSS e relativo a folha, e o portao compara caminho absoluto.
+  const absoluto = new URL(alvo, 'http://dist/assets/entrar.css').pathname
+  if (!absoluto.startsWith('/assets/')) continue
+  pedidos.add(absoluto)
 }
 
 if (pedidos.size === 0) {
