@@ -8,6 +8,9 @@
  * Cada `React.lazy` e criado uma vez e guardado por id. Criado dentro do render, ele seria
  * um componente novo a cada render, e o React desmontaria e remontaria a tela inteira sem
  * ninguem ter navegado.
+ *
+ * `Avisos` fica por fora de tudo porque o toast sobrevive a troca de tela: salvar um
+ * registro e ir para a Visao geral nao pode apagar a confirmacao do salvamento.
  */
 import { Suspense, lazy, useEffect } from 'react'
 import type { ComponentType, JSX } from 'react'
@@ -16,6 +19,7 @@ import { Ligacao, useLocalizacao } from './navegacao.tsx'
 import { rotaDe } from './rotas.ts'
 import type { Rota } from './rotas.ts'
 import { Casca } from '../geist/casca.tsx'
+import { Avisos } from '../geist/formulario.tsx'
 import { MagnifyingGlass } from '../geist/icones.tsx'
 import { CabecalhoDePagina, Esqueleto, Vazio } from '../geist/primitivos.tsx'
 
@@ -54,15 +58,17 @@ function App(): JSX.Element {
   const Tela = rota === null ? null : telaDe(rota)
 
   return (
-    <Casca>
-      {Tela === null || rota === null
-        ? <NaoEncontrada />
-        : (
-          <Suspense key={rota.id} fallback={<Esqueleto />}>
-            <Tela />
-          </Suspense>
-        )}
-    </Casca>
+    <Avisos>
+      <Casca>
+        {Tela === null || rota === null
+          ? <NaoEncontrada />
+          : (
+            <Suspense key={rota.id} fallback={<Esqueleto />}>
+              <Tela />
+            </Suspense>
+          )}
+      </Casca>
+    </Avisos>
   )
 }
 

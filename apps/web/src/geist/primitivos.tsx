@@ -55,7 +55,7 @@ const ICONE_DO_BADGE: Readonly<Record<CorDeBadge, Desenho | null>> = {
 }
 
 /** Junta o que sobrou depois dos falsos. Devolve `undefined` para nao escrever `class=""`. */
-function classes(...partes: ReadonlyArray<string | false | null | undefined>): string | undefined {
+export function classes(...partes: ReadonlyArray<string | false | null | undefined>): string | undefined {
   const juntas = partes.filter((p): p is string => typeof p === 'string' && p !== '').join(' ')
   return juntas === '' ? undefined : juntas
 }
@@ -70,28 +70,37 @@ type Aparencia = {
   readonly tamanho?: 'pequeno' | 'medio'
   /** Obrigatorio no botao so de icone, que nao tem texto para o leitor de tela ler. */
   readonly nome?: string
+  /** Troca o icone da frente por um giro de 14 px e desabilita. Um clique, um envio. */
+  readonly carregando?: boolean
+  readonly desabilitado?: boolean
 }
 
 /**
- * `href` ou `aoClicar`, nunca os dois. Um botao que navega e um `<a>` de verdade dentro de
- * `Ligacao`: menu de contexto e botao do meio continuam funcionando, e o clique simples
- * troca a tela sem recarregar. Um que age e um `<button>`.
+ * Tres formas, nunca duas ao mesmo tempo. Um botao que navega e um `<a>` de verdade dentro
+ * de `Ligacao`, com menu de contexto e botao do meio funcionando; um que age e um
+ * `<button type="button">`; um que envia o formulario em volta e um `type="submit"`, e ele
+ * nao precisa de `onClick` nenhum, porque quem trata o envio e o `<form>`.
  */
-export type BotaoProps = Aparencia & ({ readonly href: string } | { readonly aoClicar: () => void })
+export type BotaoProps = Aparencia & (
+  | { readonly href: string }
+  | { readonly aoClicar: () => void }
+  | { readonly submete: true }
+)
 
-function classeDoBotao({ tipo = 'secundario', tamanho = 'pequeno', rotulo }: Aparencia): string | undefined {
+function classeDoBotao({ tipo = 'secundario', tamanho = 'pequeno', rotulo, carregando }: Aparencia): string | undefined {
   return classes(
     'g-botao',
     `g-botao-${tipo}`,
     tamanho === 'medio' && 'g-botao-medio',
     rotulo === undefined && 'g-botao-quadrado',
+    carregando === true && 'g-botao-carregando',
   )
 }
 
-function miolo({ rotulo, antes, depois }: Aparencia): ReactNode {
+function miolo({ rotulo, antes, depois, carregando = false }: Aparencia): ReactNode {
   return (
     <>
-      {antes === undefined ? null : <Icone de={antes} />}
+      {carregando ? <span className="g-giro" /> : antes === undefined ? null : <Icone de={antes} />}
       {rotulo === undefined ? null : <span>{rotulo}</span>}
       {depois === undefined ? null : <Icone de={depois} />}
     </>
@@ -104,8 +113,16 @@ export function Botao(props: BotaoProps): JSX.Element {
   if ('href' in props) {
     return <Ligacao className={classe} para={props.href} aria-label={props.nome}>{conteudo}</Ligacao>
   }
+  const travado = props.desabilitado === true || props.carregando === true
   return (
-    <button type="button" className={classe} onClick={props.aoClicar} aria-label={props.nome}>
+    <button
+      type={'submete' in props ? 'submit' : 'button'}
+      className={classe}
+      onClick={'aoClicar' in props ? props.aoClicar : undefined}
+      disabled={travado}
+      aria-busy={props.carregando === true ? true : undefined}
+      aria-label={props.nome}
+    >
       {conteudo}
     </button>
   )
