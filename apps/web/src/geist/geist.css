@@ -1016,7 +1016,9 @@ body {
   color: var(--g-gray-1000);
 }
 
-.g-check-data { color: var(--g-gray-900); max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A data nao encolhe: sem isto ela e o item flexivel que cede primeiro, e um `09/09` de
+   cinco caracteres sai da tela como `09/…` ao lado de um titulo comprido. */
+.g-check-data { color: var(--g-gray-900); flex-shrink: 0; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---------- barra, assinatura, linha de arquivo, rodape ---------- */
 
@@ -1279,6 +1281,10 @@ body {
 /* A semana zerada tambem tem ponto; sem cor propria ele sairia transparente. */
 .g-ponto-neutro { background: var(--g-gray-600); }
 
+/* O numero grande e a contagem andam juntos, e a contagem senta na base dele: o
+   artboard os poe lado a lado com 12 px, e nao um em cada ponta da celula. */
+.g-progresso-linha { display: flex; align-items: flex-end; gap: 12px; margin-top: 12px; }
+.g-progresso-conta { padding-bottom: 8px; }
 .g-progresso-barra { margin: 14px 0 8px; }
 
 .g-semana-topo { display: flex; align-items: center; gap: 12px; }
