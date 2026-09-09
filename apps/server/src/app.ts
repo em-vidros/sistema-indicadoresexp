@@ -15,6 +15,7 @@ import { documentos } from './documentos.ts'
 import { paginas } from './paginas.ts'
 import { type Ambiente, PAGINA_PADRAO, portao } from './portao.ts'
 import { type Dependencias as DependenciasSessao, rotasSessao } from './rotas-sessao.ts'
+import { rotasCadastro } from './rotas-cadastro.ts'
 import { rotasIntegracoes } from './rotas-integracoes.ts'
 import { rotasAtas } from './rotas-atas.ts'
 import { rotasDocumentos } from './rotas-documentos.ts'
@@ -36,6 +37,7 @@ export function montarRotas(app: Hono<Ambiente>, deps: Dependencias): Hono<Ambie
   app.on(['GET', 'POST'], '/api/auth/*', (c) => deps.auth.handler(c.req.raw))
 
   app.route('/api', rotasSessao(deps))
+  app.route('/api', rotasCadastro(deps.db))
   app.route('/api', rotasUsuarios(deps))
   app.route('/api', rotasIntegracoes(deps.db))
   app.route('/api', rotasAtas(deps.db, deps.arquivos))
