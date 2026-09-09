@@ -14,6 +14,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import type { JSX, ReactNode } from 'react'
+import { Ligacao } from '../app/navegacao.tsx'
 import { ArrowRight, CheckCircle, ChevronDown, Icone, Information, MagnifyingGlass, Warning } from './icones.tsx'
 import type { Desenho } from './icones.tsx'
 
@@ -72,8 +73,9 @@ type Aparencia = {
 }
 
 /**
- * `href` ou `aoClicar`, nunca os dois. Um botao que navega e um `<a>` de verdade, com
- * menu de contexto e botao do meio funcionando; um que age e um `<button>`.
+ * `href` ou `aoClicar`, nunca os dois. Um botao que navega e um `<a>` de verdade dentro de
+ * `Ligacao`: menu de contexto e botao do meio continuam funcionando, e o clique simples
+ * troca a tela sem recarregar. Um que age e um `<button>`.
  */
 export type BotaoProps = Aparencia & ({ readonly href: string } | { readonly aoClicar: () => void })
 
@@ -100,7 +102,7 @@ export function Botao(props: BotaoProps): JSX.Element {
   const conteudo = miolo(props)
   const classe = classeDoBotao(props)
   if ('href' in props) {
-    return <a className={classe} href={props.href} aria-label={props.nome}>{conteudo}</a>
+    return <Ligacao className={classe} para={props.href} aria-label={props.nome}>{conteudo}</Ligacao>
   }
   return (
     <button type="button" className={classe} onClick={props.aoClicar} aria-label={props.nome}>
@@ -125,10 +127,10 @@ export function Badge({ rotulo, cor = 'cinza', comIcone = true }: {
 
 export function Link({ href, children }: { readonly href: string; readonly children: ReactNode }): JSX.Element {
   return (
-    <a className="g-link" href={href}>
+    <Ligacao className="g-link" para={href}>
       {children}
       <Icone de={ArrowRight} tamanho={14} />
-    </a>
+    </Ligacao>
   )
 }
 
@@ -458,6 +460,81 @@ export function CabecalhoDeBloco({ titulo, subtitulo, direita, rente = false }: 
         {subtitulo === undefined ? null : <div className="g-bloco-sub g-l13">{subtitulo}</div>}
       </div>
       {direita}
+    </div>
+  )
+}
+
+// ---------- esqueleto e estado vazio ----------
+
+function Falso({ largura, altura }: { readonly largura: number | string; readonly altura: number }): JSX.Element {
+  return <span className="g-falso" style={{ width: typeof largura === 'number' ? `${largura}px` : largura, height: `${altura}px` }} />
+}
+
+/**
+ * O lugar da tela enquanto o pedaco de JavaScript dela chega. A forma e a das telas do
+ * painel, cabecalho mais tres estatisticas mais tabela, para o painel nao mudar de altura
+ * quando o conteudo entra.
+ */
+export function Esqueleto(): JSX.Element {
+  return (
+    <div aria-busy="true" aria-label="carregando">
+      <div className="g-cabecalho-pagina">
+        <div>
+          <Falso largura={220} altura={32} />
+          <div style={{ marginTop: '6px' }}><Falso largura={300} altura={18} /></div>
+        </div>
+        <Falso largura={180} altura={32} />
+      </div>
+      <Grade
+        celulas={[
+          { col: [1, 5], linha: 1, conteudo: <EstatisticaFalsa /> },
+          { col: [5, 9], linha: 1, conteudo: <EstatisticaFalsa /> },
+          { col: [9, 13], linha: 1, conteudo: <EstatisticaFalsa /> },
+          { col: [1, 13], linha: 2, rente: true, conteudo: <TabelaFalsa /> },
+        ]}
+      />
+    </div>
+  )
+}
+
+function EstatisticaFalsa(): JSX.Element {
+  return (
+    <>
+      <Falso largura={120} altura={16} />
+      <div style={{ marginTop: '12px' }}><Falso largura={160} altura={40} /></div>
+      <div style={{ marginTop: '8px' }}><Falso largura={200} altura={16} /></div>
+    </>
+  )
+}
+
+function TabelaFalsa(): JSX.Element {
+  return (
+    <>
+      <div className="g-falso-cabecalho"><Falso largura="40%" altura={16} /></div>
+      {[0, 1, 2, 3, 4].map((linha) => (
+        <div className="g-falso-linha" key={linha}>
+          <Falso largura="22%" altura={16} />
+          <Falso largura="14%" altura={16} />
+          <Falso largura="30%" altura={16} />
+          <Falso largura="12%" altura={16} />
+        </div>
+      ))}
+    </>
+  )
+}
+
+export function Vazio({ icone, titulo, texto, acao }: {
+  readonly icone: Desenho
+  readonly titulo: string
+  readonly texto: string
+  readonly acao?: ReactNode
+}): JSX.Element {
+  return (
+    <div className="g-vazio-caixa">
+      <span className="g-vazio-icone"><Icone de={icone} tamanho={20} /></span>
+      <div className="g-vazio-titulo g-h16">{titulo}</div>
+      <div className="g-vazio-texto g-c13">{texto}</div>
+      {acao === undefined ? null : <div className="g-vazio-acao">{acao}</div>}
     </div>
   )
 }

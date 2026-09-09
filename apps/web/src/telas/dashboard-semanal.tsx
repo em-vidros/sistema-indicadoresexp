@@ -3,14 +3,12 @@
  * de `var/design-dashboard/build.mjs`, e ele manda no desenho.
  *
  * O nome do arquivo fica. As seis telas congeladas linkam para `dashboard-semanal.html`, e
- * renomear a casca obrigaria a mexer nas seis, que a paridade compara byte a byte contra
- * uma baseline gravada antes deste trabalho existir.
+ * o servidor redireciona esse caminho velho para `/visao-geral`.
  *
- * Nao ha estado de filtro. Base e periodo saem de `lerFiltros(location.search)`, e trocar
- * qualquer um dos dois escreve `location.search`, o que recarrega a pagina. E o mesmo
- * mecanismo que leva o filtro para Viagens, Rotas e Frota pelo href da sidebar, sem uma
- * linha de sincronia entre as quatro telas, e ele e idempotente porque o que a tela mostra
- * depende so da URL.
+ * Nao ha estado de filtro. Base e periodo saem da query da localizacao, e trocar qualquer
+ * um dos dois navega para a mesma tela com a query nova. E o mesmo mecanismo que leva o
+ * filtro para Viagens, Rotas e Frota pelo href da sidebar, sem uma linha de sincronia
+ * entre as quatro telas, e ele e idempotente porque o que a tela mostra depende so da URL.
  *
  * A janela do grafico e a unica coisa que fica em `useState`. Ela nao e filtro: nao muda
  * numero nenhum fora do proprio grafico e nao tem por que sobreviver a navegacao.
@@ -21,7 +19,7 @@
  */
 import { useState } from 'react'
 import type { JSX } from 'react'
-import { createRoot } from 'react-dom/client'
+import { navegar, useLocalizacao } from '../app/navegacao.tsx'
 import { useRegistros } from '../dashboard/carregar.ts'
 import type { Sincronia } from '../dashboard/carregar.ts'
 import {
@@ -37,7 +35,6 @@ import {
 import type { Indicadores, Rota } from '../dashboard/dominio.ts'
 import {
   BASES,
-  OPCOES_DE_BASE,
   OPCOES_DE_PERIODO,
   PERIODOS,
   consultaDe,
@@ -48,7 +45,6 @@ import type { Filtros } from '../dashboard/filtros.ts'
 import { GraficoCustoCarga, Sparkline } from '../dashboard/graficos.tsx'
 import type { Semana } from '../dashboard/graficos.tsx'
 import { baixarTexto, copiar, textoDoRelatorio, textoDoWhatsApp } from '../dashboard/relatorio.ts'
-import { Casca, ativaDe } from '../geist/casca.tsx'
 import { ArrowDownRight, ArrowUpRight, Icone, MoreHorizontal, Plus } from '../geist/icones.tsx'
 import {
   Abas,
@@ -145,7 +141,7 @@ function TabelaDeRotas({ rotas, consulta }: {
         subtitulo={rotas.length > 5
           ? '5 rotas com mais custo · ordenadas pelo % de custo'
           : 'Ordenadas pelo % de custo'}
-        direita={<Link href={`rotas.html${consulta}`}>Ver todas as rotas</Link>}
+        direita={<Link href={`/rotas${consulta}`}>Ver todas as rotas</Link>}
       />
       <Tabela cabecalho={cabecalho}>
         {rotas.length === 0
@@ -257,8 +253,9 @@ function celulasDe({ kpis, anteriores, semanas, rotas, filtros, consulta, grafic
   ]
 }
 
-function VisaoGeral(): JSX.Element {
-  const filtros = lerFiltros(window.location.search)
+export default function VisaoGeral(): JSX.Element {
+  const { caminho, busca } = useLocalizacao()
+  const filtros = lerFiltros(busca)
   const consulta = consultaDe(filtros)
   const { itens, sincronia } = useRegistros()
   const [janela, setJanela] = useState(0)
@@ -276,7 +273,7 @@ function VisaoGeral(): JSX.Element {
   const semanas = semanasDoGrafico(filtrarDados(itens, filtros.base, 'tudo'), janelaEmSemanas)
 
   const irPara = (novos: Filtros): void => {
-    window.location.search = consultaDe(novos)
+    navegar(caminho + consultaDe(novos))
   }
 
   const copiarWhatsApp = (): void => {
@@ -311,17 +308,7 @@ function VisaoGeral(): JSX.Element {
   )
 
   return (
-    <Casca
-      ativa={ativaDe(window.location.pathname)}
-      consulta={consulta}
-      base={{
-        valor: filtros.base,
-        rotulo: BASES[filtros.base].naCasca,
-        opcoes: OPCOES_DE_BASE,
-        aoEscolher: (base) => irPara({ ...filtros, base }),
-      }}
-      selos={{ viagens: String(kpis.viagens.length) }}
-    >
+    <>
       <CabecalhoDePagina
         titulo="Visão geral"
         subtitulo={`${PERIODOS[filtros.periodo].rotulo} · ${BASES[filtros.base].naCasca} · ${comoSincronizou(sincronia)}`}
@@ -334,7 +321,7 @@ function VisaoGeral(): JSX.Element {
               opcoes={OPCOES_DE_PERIODO}
               aoEscolher={(periodo) => irPara({ ...filtros, periodo })}
             />
-            <Botao rotulo="Registrar rota" tipo="primario" antes={Plus} href="formulario-registro.html" />
+            <Botao rotulo="Registrar rota" tipo="primario" antes={Plus} href="/registrar" />
             <Menu
               nome="Mais ações"
               aparencia="quadrado"
@@ -348,10 +335,6 @@ function VisaoGeral(): JSX.Element {
         }
       />
       <Grade celulas={celulasDe({ kpis, anteriores, semanas, rotas, filtros, consulta, grafico })} />
-    </Casca>
+    </>
   )
 }
-
-const raiz = document.getElementById('app')
-if (raiz === null) throw new Error('a casca da tela nao tem #app')
-createRoot(raiz).render(<VisaoGeral />)

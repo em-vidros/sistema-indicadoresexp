@@ -19,20 +19,18 @@
  * frota, ele nasce com dois botoes, um por bloco.
  */
 import type { JSX } from 'react'
-import { createRoot } from 'react-dom/client'
+import { navegar, useLocalizacao } from '../app/navegacao.tsx'
 import { useRegistros } from '../dashboard/carregar.ts'
 import { brl, calcularKPIs, diaMes, filtrarDados } from '../dashboard/dominio.ts'
 import type { Item } from '../dashboard/dominio.ts'
 import {
   BASES,
-  OPCOES_DE_BASE,
   OPCOES_DE_PERIODO,
   PERIODOS,
   consultaDe,
   lerFiltros,
 } from '../dashboard/filtros.ts'
 import type { Filtros } from '../dashboard/filtros.ts'
-import { Casca, ativaDe } from '../geist/casca.tsx'
 import {
   CabecalhoDeBloco,
   CabecalhoDePagina,
@@ -167,30 +165,20 @@ function celulasDe(manuts: readonly Manutencao[], abasts: readonly Abastecimento
   ]
 }
 
-function Frota(): JSX.Element {
-  const filtros = lerFiltros(window.location.search)
-  const consulta = consultaDe(filtros)
+export default function Frota(): JSX.Element {
+  const { caminho, busca } = useLocalizacao()
+  const filtros = lerFiltros(busca)
   const { itens } = useRegistros()
 
   const kpis = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo))
   const veiculos = veiculosDe([...kpis.manuts, ...kpis.abasts])
 
   const irPara = (novos: Filtros): void => {
-    window.location.search = consultaDe(novos)
+    navegar(caminho + consultaDe(novos))
   }
 
   return (
-    <Casca
-      ativa={ativaDe(window.location.pathname)}
-      consulta={consulta}
-      base={{
-        valor: filtros.base,
-        rotulo: BASES[filtros.base].naCasca,
-        opcoes: OPCOES_DE_BASE,
-        aoEscolher: (base) => irPara({ ...filtros, base }),
-      }}
-      selos={{ viagens: String(kpis.viagens.length) }}
-    >
+    <>
       <CabecalhoDePagina
         titulo="Frota"
         subtitulo={`${veiculos} ${veiculos === 1 ? 'veículo' : 'veículos'} · ${PERIODOS[filtros.periodo].rotulo} · ${BASES[filtros.base].naCasca}`}
@@ -204,10 +192,6 @@ function Frota(): JSX.Element {
         }
       />
       <Grade celulas={celulasDe(kpis.manuts, kpis.abasts)} />
-    </Casca>
+    </>
   )
 }
-
-const raiz = document.getElementById('app')
-if (raiz === null) throw new Error('a casca da tela nao tem #app')
-createRoot(raiz).render(<Frota />)

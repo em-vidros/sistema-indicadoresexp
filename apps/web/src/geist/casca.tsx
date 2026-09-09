@@ -1,86 +1,41 @@
 /**
- * A casca das telas novas: sidebar inset sobre a pagina, e o conteudo num painel com
- * margem, raio 12 e ring. O desenho esta em `var/design-dashboard/build.mjs`.
+ * A casca do app: sidebar inset sobre a pagina, e o conteudo num painel com margem, raio
+ * 12 e ring. O desenho esta em `var/design-dashboard/build.mjs`.
  *
- * Os nove itens sao uma tabela e nao uma sequencia de `if`. Cada um tem rotulo, icone,
- * href e grupo, e o item ativo sai de `ativaDe(location.pathname)`: uma linha nova na
- * tabela ja nasce navegavel, destacavel e no grupo certo, sem tocar em nada abaixo.
+ * Ela e montada uma vez, fora do `Suspense`, e nao volta a montar quando a tela troca. E
+ * isso que faz a sidebar nao piscar entre Visao geral e Viagens: o mesmo elemento continua
+ * ali, so o miolo do painel e substituido.
  *
- * Cada item e um `<a href>` de verdade, sem `onClick`. As quatro telas do Painel dividem
- * os mesmos filtros, entao elas levam a query junto no href e o filtro sobrevive a
- * navegacao sem uma linha de sincronia. As cinco de fora apontam para as telas legadas,
- * que nao leem filtro nenhum.
+ * Os dez itens saem de `app/rotas.ts` e nao de uma lista propria. Uma linha nova la ja
+ * nasce navegavel, destacavel e no grupo certo, sem tocar em nada aqui.
+ *
+ * Cada item e um `<a href>` de verdade dentro de `Ligacao`: clique simples navega sem
+ * recarregar, e abrir em aba nova, copiar o link e o botao do meio continuam sendo o que o
+ * navegador faz com um link. Passar o mouse ou o foco por cima ja traz o pedaco de
+ * JavaScript da tela e, nas do Painel, os registros; quando o clique chega, nao ha o que
+ * esperar.
+ *
+ * Este e o unico arquivo de `geist/` que conhece base, e a razao e o switcher: ele tem que
+ * dizer qual base a tela esta mostrando. Nas rotas do Painel a base vem da query, porque e
+ * ela quem filtra; nas outras vem da sessao, porque ali a base e so onde a pessoa trabalha.
  *
  * O que o canvas desenha e nao esta aqui, por decisao registrada na sintese: a linha de
  * busca ⌘K, porque caixa de busca que nao busca e mentira desenhada, e o ponto ambar de
  * Documentos, porque nao ha fonte de dado para ele.
- *
- * O rodape e a linha de usuario do canvas, com nome e area fixos. O app tem
- * `GET /api/sessao`, mas nenhuma das quatro telas do painel pede sessao hoje, e o
- * switcher de baixo entrega o unico gesto que ele precisa entregar: sair.
  */
 import type { JSX, ReactNode } from 'react'
+import { prefetchar as prefetcharDados, useSessao } from '../app/dados.ts'
+import type { Sessao } from '../app/dados.ts'
+import { Ligacao, navegar, prefetchar as prefetcharRota, useLocalizacao } from '../app/navegacao.tsx'
+import { GRUPOS, ROTAS, rotaDe } from '../app/rotas.ts'
+import type { Rota } from '../app/rotas.ts'
+import { BASES, OPCOES_DE_BASE, consultaDe, lerFiltros } from '../dashboard/filtros.ts'
+import { listarRegistros } from '../js/registros-api.ts'
 import simbolo from './em-simbolo.svg'
-import {
-  ArrowLeftRight,
-  ArrowUpDown,
-  FileText,
-  Gauge,
-  Home,
-  Icone,
-  Layers,
-  Notes,
-  PencilEdit,
-  Route,
-  Wrench,
-} from './icones.tsx'
-import type { Desenho } from './icones.tsx'
+import { ArrowUpDown, Icone } from './icones.tsx'
 import { Menu } from './primitivos.tsx'
-import type { Opcao } from './primitivos.tsx'
+import type { ItemDeMenu } from './primitivos.tsx'
 import './geist.css'
-
-export type IdDeItem =
-  | 'geral'
-  | 'viagens'
-  | 'rotas'
-  | 'frota'
-  | 'registrar'
-  | 'manutencao'
-  | 'documentos'
-  | 'atas'
-  | 'integracoes'
-
-type Grupo = 'Painel' | 'Registros' | 'Gestão'
-
-type Item = {
-  readonly id: IdDeItem
-  readonly rotulo: string
-  readonly icone: Desenho
-  readonly href: string
-  readonly grupo: Grupo
-  /** Só as do Painel dividem os filtros, e só elas levam a query no href. */
-  readonly comFiltros: boolean
-}
-
-const SIDEBAR: readonly Item[] = [
-  { id: 'geral', rotulo: 'Visão geral', icone: Home, href: 'dashboard-semanal.html', grupo: 'Painel', comFiltros: true },
-  { id: 'viagens', rotulo: 'Viagens', icone: Route, href: 'viagens.html', grupo: 'Painel', comFiltros: true },
-  { id: 'rotas', rotulo: 'Rotas', icone: ArrowLeftRight, href: 'rotas.html', grupo: 'Painel', comFiltros: true },
-  { id: 'frota', rotulo: 'Frota', icone: Gauge, href: 'frota.html', grupo: 'Painel', comFiltros: true },
-  { id: 'registrar', rotulo: 'Registrar rota', icone: PencilEdit, href: 'formulario-registro.html', grupo: 'Registros', comFiltros: false },
-  { id: 'manutencao', rotulo: 'Manutenção', icone: Wrench, href: 'manutencao-frota.html', grupo: 'Registros', comFiltros: false },
-  { id: 'documentos', rotulo: 'Documentos', icone: FileText, href: 'documentos-frota.html', grupo: 'Registros', comFiltros: false },
-  { id: 'atas', rotulo: 'Atas de reunião', icone: Notes, href: 'ata-reuniao.html', grupo: 'Gestão', comFiltros: false },
-  { id: 'integracoes', rotulo: 'Integrações', icone: Layers, href: 'integracao-frota.html', grupo: 'Gestão', comFiltros: false },
-]
-
-const GRUPOS: readonly Grupo[] = ['Painel', 'Registros', 'Gestão']
-
-/** Qual item da tabela responde por este caminho. `null` numa tela que nao esta na lista. */
-export function ativaDe(caminho: string): IdDeItem | null {
-  const arquivo = caminho.slice(caminho.lastIndexOf('/') + 1)
-  return SIDEBAR.find((item) => item.href === arquivo)?.id ?? null
-}
 
 function sair(): void {
   // Tem que sair mesmo se a chamada falhar, senao quem clicou fica preso na tela.
@@ -89,20 +44,78 @@ function sair(): void {
   })
 }
 
-export function Casca<B extends string>({ ativa, consulta, base, selos = {}, children }: {
-  readonly ativa: IdDeItem | null
-  /** A query dos filtros, com `?`, ou vazia. */
-  readonly consulta: string
-  readonly base: {
-    readonly valor: B
-    readonly rotulo: string
-    readonly opcoes: readonly Opcao<B>[]
-    readonly aoEscolher: (valor: B) => void
+/** Primeira e ultima palavra do nome. Nome de uma palavra so vira as duas primeiras letras. */
+function iniciaisDe(nome: string): string {
+  const palavras = nome.trim().split(/\s+/).filter((p) => p !== '')
+  if (palavras.length === 0) return '—'
+  if (palavras.length === 1) return (palavras[0] ?? '').slice(0, 2).toUpperCase()
+  return `${palavras[0]?.[0] ?? ''}${palavras[palavras.length - 1]?.[0] ?? ''}`.toUpperCase()
+}
+
+/** A base em que a pessoa trabalha. O admin nao tem uma, e ve todas. */
+function areaDe(sessao: Sessao): string {
+  return sessao.baseFixa ?? 'Todas as bases'
+}
+
+type Switcher = { readonly rotulo: string; readonly itens: readonly ItemDeMenu[] }
+
+/**
+ * Nas telas do Painel o switcher e o filtro de base, e escolher reescreve a query. Nas
+ * outras ele mostra onde a pessoa trabalha, e escolher leva ao Painel ja filtrado por
+ * aquela base; base que o Painel nao conhece cai em "Todas", que e o que `lerFiltros` faz
+ * com qualquer valor de fora.
+ */
+function switcherDe(rota: Rota | null, busca: string, sessao: Sessao | null): Switcher {
+  if (rota !== null && rota.comFiltros) {
+    const filtros = lerFiltros(busca)
+    return {
+      rotulo: BASES[filtros.base].naCasca,
+      itens: OPCOES_DE_BASE.map((opcao) => ({
+        rotulo: opcao.rotulo,
+        aoEscolher: () => navegar(rota.caminho + consultaDe({ ...filtros, base: opcao.valor })),
+      })),
+    }
   }
-  /** Contagem ao lado do item, quando a pagina souber uma. */
-  readonly selos?: Readonly<Partial<Record<IdDeItem, string>>>
-  readonly children: ReactNode
+  return {
+    rotulo: sessao === null ? '—' : areaDe(sessao),
+    itens: (sessao?.bases ?? []).map((base) => ({
+      rotulo: base,
+      aoEscolher: () => navegar(`/visao-geral?base=${encodeURIComponent(base)}&periodo=semana`),
+    })),
+  }
+}
+
+function Item({ rota, ativa, consulta }: {
+  readonly rota: Rota
+  readonly ativa: boolean
+  /** A query dos filtros, com `?`. So as telas do Painel a levam no href. */
+  readonly consulta: string
 }): JSX.Element {
+  const aquecer = (): void => {
+    prefetcharRota(rota.id)
+    if (rota.comFiltros) prefetcharDados('registros', listarRegistros)
+  }
+  return (
+    <Ligacao
+      className="g-item"
+      para={rota.comFiltros ? rota.caminho + consulta : rota.caminho}
+      aria-current={ativa ? 'page' : undefined}
+      onMouseEnter={aquecer}
+      onFocus={aquecer}
+    >
+      <Icone de={rota.icone} />
+      <span className="g-item-rotulo">{rota.titulo}</span>
+    </Ligacao>
+  )
+}
+
+export function Casca({ children }: { readonly children: ReactNode }): JSX.Element {
+  const { caminho, busca } = useLocalizacao()
+  const sessao = useSessao()
+  const rota = rotaDe(caminho)
+  const consulta = consultaDe(lerFiltros(busca))
+  const switcher = switcherDe(rota, busca, sessao.dados)
+
   return (
     <div className="g-app">
       <aside className="g-trilho">
@@ -113,12 +126,12 @@ export function Casca<B extends string>({ ativa, consulta, base, selos = {}, chi
               <span className="g-marca"><img className="g-marca-simbolo" src={simbolo} alt="EM Vidros" /></span>
               <span className="g-identidade">
                 <span className="g-identidade-nome">EM Vidros</span>
-                <span className="g-identidade-apoio">{base.rotulo}</span>
+                <span className="g-identidade-apoio">{switcher.rotulo}</span>
               </span>
               <Icone de={ArrowUpDown} />
             </>
           }
-          itens={base.opcoes.map((o) => ({ rotulo: o.rotulo, aoEscolher: () => base.aoEscolher(o.valor) }))}
+          itens={switcher.itens}
           aparencia="switcher"
         />
 
@@ -126,21 +139,9 @@ export function Casca<B extends string>({ ativa, consulta, base, selos = {}, chi
           {GRUPOS.map((grupo) => (
             <div className="g-grupo" key={grupo}>
               <div className="g-grupo-rotulo">{grupo}</div>
-              {SIDEBAR.filter((item) => item.grupo === grupo).map((item) => {
-                const selo = selos[item.id]
-                return (
-                  <a
-                    key={item.id}
-                    className="g-item"
-                    href={item.comFiltros ? item.href + consulta : item.href}
-                    aria-current={item.id === ativa ? 'page' : undefined}
-                  >
-                    <Icone de={item.icone} />
-                    <span className="g-item-rotulo">{item.rotulo}</span>
-                    {selo === undefined ? null : <span className="g-item-badge">{selo}</span>}
-                  </a>
-                )
-              })}
+              {ROTAS.filter((r) => r.grupo === grupo).map((r) => (
+                <Item key={r.id} rota={r} ativa={r.id === rota?.id} consulta={consulta} />
+              ))}
             </div>
           ))}
         </nav>
@@ -149,10 +150,10 @@ export function Casca<B extends string>({ ativa, consulta, base, selos = {}, chi
           nome="Conta"
           gatilho={
             <>
-              <span className="g-avatar">HM</span>
+              <span className="g-avatar">{sessao.dados === null ? '—' : iniciaisDe(sessao.dados.nome)}</span>
               <span className="g-identidade">
-                <span className="g-identidade-nome">Henrique Martins</span>
-                <span className="g-identidade-apoio">Logística</span>
+                <span className="g-identidade-nome">{sessao.dados?.nome ?? 'Carregando'}</span>
+                <span className="g-identidade-apoio">{sessao.dados === null ? '' : areaDe(sessao.dados)}</span>
               </span>
               <Icone de={ArrowUpDown} />
             </>

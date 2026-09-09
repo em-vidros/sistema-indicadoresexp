@@ -60,10 +60,10 @@ import type { Roteiro } from './paridade/palco.ts'
 type Pagina = { readonly nome: string; readonly url: string }
 
 const PAGINAS: readonly Pagina[] = [
-  { nome: 'geral', url: '/dashboard-semanal.html' },
-  { nome: 'viagens', url: '/viagens.html' },
-  { nome: 'rotas', url: '/rotas.html' },
-  { nome: 'frota', url: '/frota.html' },
+  { nome: 'geral', url: '/visao-geral' },
+  { nome: 'viagens', url: '/viagens' },
+  { nome: 'rotas', url: '/rotas' },
+  { nome: 'frota', url: '/frota' },
 ]
 
 const fixtures = await lerFixtures('dashboard-semanal')

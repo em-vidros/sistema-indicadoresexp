@@ -11,7 +11,7 @@ export type Ambiente = { Variables: { usuarioId: string } }
 export const ROTA_LOGIN = '/entrar.html'
 
 /** Para onde ir depois de entrar quando nao ha destino, ou quando ele nao passa. */
-export const PAGINA_PADRAO = '/formulario-registro.html'
+export const PAGINA_PADRAO = '/registrar'
 
 /**
  * O logo esta aqui porque a tela de login o mostra antes de existir sessao. E o

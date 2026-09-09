@@ -4,7 +4,7 @@
  *
  * A tela nao tem estado nenhum. Tudo que ela mostra sai de `porRota` sobre os registros
  * que base e periodo deixaram passar, e os dois moram na query string, entao trocar
- * qualquer um recarrega. Nao ha busca, nao ha paginacao e a ordem e a do dominio, do
+ * qualquer um navega. Nao ha busca, nao ha paginacao e a ordem e a do dominio, do
  * maior percentual de custo para o menor, que e o que o cabecalho do bloco promete.
  *
  * Os limites de faixa sao os mesmos da tabela de rotas da Visao geral, 7 e 10, para as
@@ -15,7 +15,7 @@
  * O CSV do "Exportar" leva as sete colunas da tabela, com o mesmo texto de cada celula.
  */
 import type { JSX } from 'react'
-import { createRoot } from 'react-dom/client'
+import { navegar, useLocalizacao } from '../app/navegacao.tsx'
 import { useRegistros } from '../dashboard/carregar.ts'
 import {
   ROTULO_DA_FAIXA,
@@ -30,7 +30,6 @@ import {
 import type { Rota, Tom } from '../dashboard/dominio.ts'
 import {
   BASES,
-  OPCOES_DE_BASE,
   OPCOES_DE_PERIODO,
   PERIODOS,
   consultaDe,
@@ -38,7 +37,6 @@ import {
 } from '../dashboard/filtros.ts'
 import type { Filtros } from '../dashboard/filtros.ts'
 import { baixarCsv } from '../dashboard/relatorio.ts'
-import { Casca, ativaDe } from '../geist/casca.tsx'
 import { Download } from '../geist/icones.tsx'
 import {
   Badge,
@@ -168,16 +166,16 @@ function celulasDe(rotas: readonly Rota[], viagens: number): readonly Celula[] {
   ]
 }
 
-function Rotas(): JSX.Element {
-  const filtros = lerFiltros(window.location.search)
-  const consulta = consultaDe(filtros)
+export default function Rotas(): JSX.Element {
+  const { caminho, busca } = useLocalizacao()
+  const filtros = lerFiltros(busca)
   const { itens } = useRegistros()
 
   const viagens = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo)).viagens
   const rotas = porRota(viagens)
 
   const irPara = (novos: Filtros): void => {
-    window.location.search = consultaDe(novos)
+    navegar(caminho + consultaDe(novos))
   }
 
   const exportar = (): void => {
@@ -185,17 +183,7 @@ function Rotas(): JSX.Element {
   }
 
   return (
-    <Casca
-      ativa={ativaDe(window.location.pathname)}
-      consulta={consulta}
-      base={{
-        valor: filtros.base,
-        rotulo: BASES[filtros.base].naCasca,
-        opcoes: OPCOES_DE_BASE,
-        aoEscolher: (base) => irPara({ ...filtros, base }),
-      }}
-      selos={{ viagens: String(viagens.length) }}
-    >
+    <>
       <CabecalhoDePagina
         titulo="Rotas"
         subtitulo={`${rotas.length} ${rotas.length === 1 ? 'rota' : 'rotas'} · ${PERIODOS[filtros.periodo].rotulo} · ${BASES[filtros.base].naCasca}`}
@@ -212,10 +200,6 @@ function Rotas(): JSX.Element {
         }
       />
       <Grade celulas={celulasDe(rotas, viagens.length)} />
-    </Casca>
+    </>
   )
 }
-
-const raiz = document.getElementById('app')
-if (raiz === null) throw new Error('a casca da tela nao tem #app')
-createRoot(raiz).render(<Rotas />)

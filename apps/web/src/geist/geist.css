@@ -667,3 +667,98 @@ body {
 
 .g-grafico { margin-top: 20px; }
 .g-sparkline { display: block; overflow: visible; flex: 0 0 auto; }
+
+/* ---------- troca de tela ---------- */
+
+/* So o corpo do painel troca; o trilho da sidebar e o mesmo elemento antes e depois da
+   navegacao, e anima-lo faria piscar o que nao mudou. O `root` fica de fora por isso. */
+.g-painel-corpo { view-transition-name: g-painel; }
+
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; }
+
+::view-transition-old(g-painel) { animation: g-painel-sai 150ms ease both; }
+::view-transition-new(g-painel) { animation: g-painel-entra 150ms ease both; }
+
+@keyframes g-painel-sai {
+  to { opacity: 0; transform: translateY(-4px); }
+}
+
+@keyframes g-painel-entra {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+/* ---------- esqueleto e estado vazio ---------- */
+
+.g-falso {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--g-raio-controle);
+  background: var(--g-gray-200);
+}
+
+.g-falso::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent);
+  animation: g-brilho 1400ms linear infinite;
+}
+
+@keyframes g-brilho {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .g-falso::after { animation: none; }
+  ::view-transition-old(g-painel),
+  ::view-transition-new(g-painel) { animation: none; }
+}
+
+.g-falso-cabecalho {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  background: var(--g-bg-200);
+  border-top: 1px solid var(--g-gray-400);
+  border-bottom: 1px solid var(--g-gray-400);
+}
+
+.g-falso-linha {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--g-gray-400);
+}
+
+.g-falso-linha:last-child { border-bottom: 0; }
+
+.g-vazio-caixa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 56px 24px;
+}
+
+.g-vazio-icone {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--g-bg-200);
+  box-shadow: var(--g-anel);
+  color: var(--g-gray-900);
+  margin-bottom: 16px;
+}
+
+.g-vazio-titulo { color: var(--g-gray-1000); }
+.g-vazio-texto { margin-top: 4px; color: var(--g-gray-900); max-width: 420px; }
+.g-vazio-acao { margin-top: 20px; }

@@ -5,6 +5,7 @@
  */
 import { describe, expect, test } from 'bun:test'
 import { exigir } from '@ind/db'
+import { PAGINA_PADRAO } from '../src/portao.ts'
 import { cookieDaLivia, NAVEGACAO, pedir } from './ajuda.ts'
 
 const json = { 'content-type': 'application/json' }
@@ -116,10 +117,10 @@ describe('a tela de login com sessao', () => {
     expect(resposta.headers.get('location')).toBe('/manutencao-frota.html')
   })
 
-  test('sem destino, cai no formulario', async () => {
+  test('sem destino, cai na pagina padrao', async () => {
     const cookie = await cookieDaLivia()
     const resposta = await pedir('/entrar.html', { headers: { cookie, ...NAVEGACAO } })
-    expect(resposta.headers.get('location')).toBe('/formulario-registro.html')
+    expect(resposta.headers.get('location')).toBe(PAGINA_PADRAO)
   })
 
   test.each(['//evil.com', 'https://evil.com', 'javascript:alert(1)', '/\\evil.com'])(
@@ -130,7 +131,7 @@ describe('a tela de login com sessao', () => {
         headers: { cookie, ...NAVEGACAO },
       })
       expect(resposta.status).toBe(302)
-      expect(resposta.headers.get('location')).toBe('/formulario-registro.html')
+      expect(resposta.headers.get('location')).toBe(PAGINA_PADRAO)
     },
   )
 })

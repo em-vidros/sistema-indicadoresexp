@@ -8,10 +8,10 @@ import { CODIGO, NAVEGACAO, pedir } from './ajuda.ts'
 
 describe('quem nao tem sessao', () => {
   test('pedindo pagina, e mandado ao login com o destino de volta', async () => {
-    const resposta = await pedir('/dashboard-semanal.html?semana=32', { headers: NAVEGACAO })
+    const resposta = await pedir('/visao-geral?base=Raposa', { headers: NAVEGACAO })
     expect(resposta.status).toBe(302)
     expect(resposta.headers.get('location')).toBe(
-      '/entrar.html?destino=%2Fdashboard-semanal.html%3Fsemana%3D32',
+      '/entrar.html?destino=%2Fvisao-geral%3Fbase%3DRaposa',
     )
   })
 
@@ -75,7 +75,7 @@ describe('a mesma URL responde diferente conforme quem pede', () => {
 
 describe('destino vindo de fora', () => {
   test('caminho normal passa', () => {
-    expect(destinoSeguro('/dashboard-semanal.html?semana=32')).toBe('/dashboard-semanal.html?semana=32')
+    expect(destinoSeguro('/visao-geral?base=Raposa')).toBe('/visao-geral?base=Raposa')
   })
 
   test.each([
@@ -83,7 +83,7 @@ describe('destino vindo de fora', () => {
     ['https://evil.com', 'URL absoluta'],
     ['javascript:alert(1)', 'esquema javascript'],
     ['/\\evil.com', 'barra invertida que o navegador normaliza'],
-    ['dashboard-semanal.html', 'caminho relativo'],
+    ['visao-geral', 'caminho relativo'],
     ['/a\nLocation: /b', 'quebra de linha para injetar cabecalho'],
     ['', 'vazio'],
     [null, 'ausente'],
@@ -111,7 +111,7 @@ describe('o destino envenenado sai da query antes de a tela carregar', () => {
   })
 
   test('destino legitimo continua na query, e a tela e servida', async () => {
-    const resposta = await pedir('/entrar.html?destino=%2Fdashboard-semanal.html', {
+    const resposta = await pedir('/entrar.html?destino=%2Fvisao-geral', {
       headers: NAVEGACAO,
     })
     expect(resposta.status).toBe(200)

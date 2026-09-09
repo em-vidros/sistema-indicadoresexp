@@ -4,15 +4,15 @@
  *
  * Dois mecanismos de estado, e a fronteira entre eles e uma pergunta so: isto atravessa a
  * navegacao? Base e periodo atravessam, porque as quatro telas do painel dividem os dois,
- * entao eles moram na query string e trocar qualquer um recarrega a pagina. Busca,
+ * entao eles moram na query string e trocar qualquer um navega. Busca,
  * pontualidade e numero da pagina nao atravessam: sao o jeito de olhar esta tabela, nao
  * existem nas outras tres, e por isso ficam em `useState`. Poe-los na query obrigaria
  * `consultaDe` a carregar tres campos que so uma tela le, e a sidebar levaria os tres
  * para Rotas e Frota, onde nao significam nada.
  *
- * O preco disso e visivel e foi aceito: trocar base ou periodo recarrega, e a busca e a
- * pontualidade voltam ao padrao junto. E o mesmo preco que a Visao geral paga na janela
- * do grafico.
+ * O preco disso e visivel e foi aceito: trocar base ou periodo navega, e a busca e a
+ * pontualidade voltam ao padrao junto porque o componente da tela e remontado. E o mesmo
+ * preco que a Visao geral paga na janela do grafico.
  *
  * A vista e um objeto so, e nao tres `useState`, porque mudar busca ou pontualidade
  * obriga a pagina a voltar para 1. Com estados separados esse retorno e uma linha que
@@ -21,7 +21,7 @@
  *
  * O botao quadrado de filtro do artboard nao tem comportamento desenhado. Ele ficou, com
  * um trabalho de verdade, que e voltar a tela ao padrao: limpa busca, pontualidade, base
- * e periodo de uma vez, escrevendo a query padrao, o que recarrega e zera tudo pelo mesmo
+ * e periodo de uma vez, navegando para a query padrao, o que zera tudo pelo mesmo
  * caminho. Botao desenhado que nao faz nada e pior que botao ausente.
  *
  * O CSV do "Exportar" leva as mesmas colunas, o mesmo texto de cada celula e a mesma
@@ -30,7 +30,7 @@
  */
 import { useState } from 'react'
 import type { JSX } from 'react'
-import { createRoot } from 'react-dom/client'
+import { navegar, useLocalizacao } from '../app/navegacao.tsx'
 import { useRegistros } from '../dashboard/carregar.ts'
 import { PONTUALIDADES, brl, calcularKPIs, diaMes, filtrarDados, porcento } from '../dashboard/dominio.ts'
 import type { Item, Pontualidade } from '../dashboard/dominio.ts'
@@ -45,7 +45,6 @@ import {
 } from '../dashboard/filtros.ts'
 import type { Filtros } from '../dashboard/filtros.ts'
 import { baixarCsv } from '../dashboard/relatorio.ts'
-import { Casca, ativaDe } from '../geist/casca.tsx'
 import { ChevronLeft, ChevronRight, Download, Filter, Plus } from '../geist/icones.tsx'
 import {
   Badge,
@@ -152,9 +151,9 @@ function Linha({ viagem }: { readonly viagem: Viagem }): JSX.Element {
   )
 }
 
-function Viagens(): JSX.Element {
-  const filtros = lerFiltros(window.location.search)
-  const consulta = consultaDe(filtros)
+export default function Viagens(): JSX.Element {
+  const { caminho, busca } = useLocalizacao()
+  const filtros = lerFiltros(busca)
   const { itens } = useRegistros()
   const [vista, setVista] = useState<Vista>(VISTA_INICIAL)
 
@@ -172,7 +171,7 @@ function Viagens(): JSX.Element {
   const naPagina = achadas.slice(primeira, primeira + POR_PAGINA)
 
   const irPara = (novos: Filtros): void => {
-    window.location.search = consultaDe(novos)
+    navegar(caminho + consultaDe(novos))
   }
 
   const exportar = (): void => {
@@ -211,24 +210,14 @@ function Viagens(): JSX.Element {
   )
 
   return (
-    <Casca
-      ativa={ativaDe(window.location.pathname)}
-      consulta={consulta}
-      base={{
-        valor: filtros.base,
-        rotulo: BASES[filtros.base].naCasca,
-        opcoes: OPCOES_DE_BASE,
-        aoEscolher: (base) => irPara({ ...filtros, base }),
-      }}
-      selos={{ viagens: String(todas.length) }}
-    >
+    <>
       <CabecalhoDePagina
         titulo="Viagens"
         subtitulo={`${todas.length} ${todas.length === 1 ? 'viagem' : 'viagens'} · ${PERIODOS[filtros.periodo].rotulo} · ${BASES[filtros.base].naCasca}`}
         acoes={
           <>
             <Botao rotulo="Exportar" antes={Download} aoClicar={exportar} />
-            <Botao rotulo="Registrar rota" tipo="primario" antes={Plus} href="formulario-registro.html" />
+            <Botao rotulo="Registrar rota" tipo="primario" antes={Plus} href="/registrar" />
           </>
         }
       />
@@ -263,10 +252,6 @@ function Viagens(): JSX.Element {
       </div>
 
       <Grade celulas={[{ col: [1, 13], linha: 1, rente: true, conteudo: tabela }]} />
-    </Casca>
+    </>
   )
 }
-
-const raiz = document.getElementById('app')
-if (raiz === null) throw new Error('a casca da tela nao tem #app')
-createRoot(raiz).render(<Viagens />)

@@ -2,9 +2,10 @@
  * Os dois filtros que as quatro telas do painel dividem, lidos da query string.
  *
  * `?base=Raposa&periodo=mes` e a unica memoria do filtro. Nao ha estado de filtro em
- * React: trocar filtro escreve `location.search` e a pagina recarrega. Isso e o que faz o
- * filtro sobreviver a navegacao entre Visao geral, Viagens, Rotas e Frota sem uma linha de
- * sincronia, e o que torna a troca idempotente, porque o resultado depende so da URL.
+ * React: trocar filtro escreve a query no historico e as telas releem dali. Isso e o que
+ * faz o filtro sobreviver a navegacao entre Visao geral, Viagens, Rotas e Frota sem uma
+ * linha de sincronia, e o que torna a troca idempotente, porque o resultado depende so da
+ * URL. E o que faz o botao voltar do navegador desfazer um filtro sem nenhum codigo.
  *
  * `lerFiltros` e a borda: a query e texto de fora, e sai daqui tipada ou no default.
  * Valor invalido nao estoura nem propaga `string` solta, cai no default, que e o mesmo
