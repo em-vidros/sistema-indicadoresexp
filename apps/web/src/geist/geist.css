@@ -1396,6 +1396,11 @@ body {
 .g-lista-checks { @apply [max-height:300px]; @apply [overflow-y:auto]; }
 .g-grupo-checks + .g-grupo-checks { @apply [margin-top:16px]; }
 
+/* O nome de quem vai a reuniao sai inteiro, em quantas linhas precisar. Numa lista para
+   marcar presenca, dois nomes que dividem o mesmo comeco nao podem dividir o mesmo
+   pedaco visivel, senao o clique marca a pessoa errada. */
+.g-lista-checks .g-check-texto { @apply whitespace-normal; }
+
 /* ---------- folha de impressao ---------- */
 
 /* Ela vive por portal no `<body>`, fora de `.g-app`, para que imprimir seja esconder a
@@ -1497,4 +1502,30 @@ body {
   @apply [margin-top:24px];
   @apply [padding-top:20px];
   @apply [border-top:1px_solid_var(--g-gray-400)];
+}
+
+/* ---------- celular: empilhar em vez de cortar ----------
+ *
+ * A grade de 12 colunas nao se aperta sozinha. Num celular de 390 px, duas celulas lado
+ * a lado viram duas tiras de 150 px e o conteudo corta: o numero da ata, os nomes dos
+ * participantes, o titulo da secao. Abaixo de 768 px cada celula ocupa a linha inteira,
+ * cada campo do formulario tambem, e as barras de titulo e de filtros quebram em mais
+ * de uma linha. No desktop nada muda, e a paridade fotografa a 1440 px, entao ela passa
+ * por esta regra sem ver nada. */
+@media (max-width: 767px) {
+  .g-cruz { @apply hidden; }
+  .g-trio { @apply [grid-template-columns:minmax(0,_1fr)]; }
+  .g-arqs { @apply [grid-template-columns:minmax(0,_1fr)]; }
+  .g-secao, .g-bloco, .g-cabecalho-pagina, .g-barra, .g-cabecalho-acoes { @apply flex-wrap; }
+}
+
+/* As duas que faltam moram na camada de utilidades de proposito: o `!` do Tailwind veste
+   `!important` dentro de `@layer utilities`, e `!important` em camada vence `!important`
+   fora dela. Na mesma camada, a especificidade decide, e o seletor com pai ganha da
+   classe sozinha. */
+@layer utilities {
+  @media (max-width: 767px) {
+    .g-grade > .g-celula { @apply [grid-column:1_/_-1]!; @apply [grid-row:auto]!; }
+    .g-campos > .g-campo { @apply [grid-column:span_12_/_span_12]!; }
+  }
 }

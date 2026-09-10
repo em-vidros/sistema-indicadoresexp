@@ -270,10 +270,10 @@ function Identificacao({ form, faltando, mudar }: {
     <>
       <TituloDeSecao titulo="Identificação da reunião" subtitulo="EM Vidros Indústria e Comércio de Vidros Ltda" />
       <GradeDeCampos>
-        <Campo rotulo="Nº da ata" valor={form.numero} span={2} mono dica="014/2026" aoMudar={(numero) => mudar({ numero })} />
+        <Campo rotulo="Número da ata" valor={form.numero} span={3} mono dica="014/2026" aoMudar={(numero) => mudar({ numero })} />
         <Campo rotulo="Data" tipo="data" valor={form.data} span={3} obrigatorio aoMudar={(data) => mudar({ data })} {...erro('data')} />
         <Campo rotulo="Horário" tipo="hora" valor={form.horario} span={2} aoMudar={(horario) => mudar({ horario })} />
-        <Campo rotulo="Local" valor={form.local} span={5} dica="Expedição Raposa" aoMudar={(local) => mudar({ local })} />
+        <Campo rotulo="Local" valor={form.local} span={4} dica="Expedição Raposa" aoMudar={(local) => mudar({ local })} />
         <Campo
           rotulo="Título da reunião"
           valor={form.titulo}
