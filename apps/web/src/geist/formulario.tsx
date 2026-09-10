@@ -16,7 +16,7 @@
  * que o formulario recalculasse alguma coisa.
  */
 import { createContext, useContext, useEffect, useId, useRef, useState } from 'react'
-import type { JSX, ReactNode, RefObject } from 'react'
+import type { CSSProperties, JSX, ReactNode, RefObject } from 'react'
 import {
   ArrowRight,
   Calendar,
@@ -168,7 +168,7 @@ export function Campo(props: CampoProps): JSX.Element {
   })()
 
   return (
-    <div className="g-campo" style={{ gridColumn: `span ${span}` }}>
+    <div className="g-campo [grid-column:var(--campo-coluna)]!" style={{ '--campo-coluna': `span ${span}` } as CSSProperties}>
       <label className="g-campo-rotulo" htmlFor={id}>
         {rotulo}
         {obrigatorio ? <span className="g-campo-marca" aria-hidden="true">*</span> : null}
@@ -216,7 +216,7 @@ export function CampoDeArquivo({ rotulo, span = 6, texto = TEXTO_PADRAO, aceita,
   }
 
   return (
-    <div className="g-campo" style={{ gridColumn: `span ${span}` }}>
+    <div className="g-campo [grid-column:var(--campo-coluna)]!" style={{ '--campo-coluna': `span ${span}` } as CSSProperties}>
       <span className="g-campo-rotulo">{rotulo}</span>
       <div
         className={classes('g-arquivo', sobre && 'g-arquivo-sobre')}
@@ -259,7 +259,7 @@ export function AreaDeTexto({ rotulo, valor, aoMudar, span = 12, dica, obrigator
   const id = useId()
   const idDoErro = `${id}-erro`
   return (
-    <div className="g-campo" style={{ gridColumn: `span ${span}` }}>
+    <div className="g-campo [grid-column:var(--campo-coluna)]!" style={{ '--campo-coluna': `span ${span}` } as CSSProperties}>
       <label className="g-campo-rotulo" htmlFor={id}>{rotulo}</label>
       <textarea
         id={id}
@@ -379,7 +379,7 @@ export function Barra({ pct, tom = 'teal' }: {
   const preso = Math.max(0, Math.min(100, pct))
   return (
     <div className="g-barra-trilho" role="progressbar" aria-valuenow={Math.round(preso)}>
-      <div className={`g-barra-cheia g-barra-${tom}`} style={{ width: `${preso}%` }} />
+      <div className={`g-barra-cheia g-barra-${tom} [width:var(--barra-largura)]!`} style={{ '--barra-largura': `${preso}%` } as CSSProperties} />
     </div>
   )
 }
@@ -506,8 +506,8 @@ export function Dialogo({ aberto, titulo, subtitulo, aoFechar, largura = 560, ch
   return (
     <dialog
       ref={ref}
-      className="g-dialogo"
-      style={{ width: `min(${largura}px, calc(100vw - 32px))` }}
+      className="g-dialogo [width:var(--dialogo-largura)]!"
+      style={{ '--dialogo-largura': `min(${largura}px, calc(100vw - 32px))` } as CSSProperties}
       onClose={aoFechar}
       onClick={(e) => {
         // Clique no proprio <dialog> e clique no fundo; dentro da caixa o alvo e um filho.

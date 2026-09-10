@@ -40,9 +40,6 @@ achou() {
 
 echo "os cinco segredos sairam do codigo"
 conferir 'o deployment do Apps Script' '0' "$(achou 'AKfycbwUXXAoZeuvTYm3s9')"
-# O escopo e `apps/`, e nao a arvore inteira, porque `infra/extrair-constantes.ts`
-# chama `atob` com razao: ele le os HTMLs originais, que estao fora do repositorio, e
-# redige as senhas antes de escrever o JSON. Quem nao pode ter isso e o que roda.
 conferir 'as senhas em base64 do USUARIOS' '0' "$(achou 'atob(' apps)"
 conferir 'o e-mail do resumo semanal' '0' "$(achou 'livia\.mcc97@gmail\.com')"
 conferir 'o IP do servidor antigo' '0' "$(achou '170\.247\.31\.241')"

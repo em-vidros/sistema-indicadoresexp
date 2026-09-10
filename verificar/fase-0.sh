@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# Prova da fase 0: o banco tem o cadastro que hoje esta escrito dentro dos HTMLs,
-# e o login do better-auth aceita quem deve e recusa quem nao deve.
-#
-# Os numeros esperados nao sao chutes: saem de infra/extrair-constantes.ts rodando
-# sobre os arquivos de origem. Se um deles mudar, rode o extrator e ajuste aqui.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
@@ -36,17 +31,16 @@ conferir 'atividades do programa'  47  "$(sql 'select count(*) from programa_ati
 
 echo
 echo "as atividades, uma a uma"
-# Contar 47 nao prova nada: prova que sao os 47 certos. A fonte e o extrator, nao
-# uma grade que eu invente aqui. A serie real nao e regular: a semana 1 vai ate `f`,
+# A série de atividades não é regular. A semana 1 vai até `f`,
 # as semanas 2 a 4 vao ate `d`, a semana 5 do motorista para em `b` e nao existe m5c.
-if [ ! -f infra/constantes.json ]; then
-  printf '  FALHA %s\n' 'infra/constantes.json nao existe; rode bun infra/extrair-constantes.ts'
+if [ ! -f packages/db/cadastro-inicial.json ]; then
+  printf '  FALHA %s\n' 'packages/db/cadastro-inicial.json não existe; restaure o arquivo versionado'
   falhas=$((falhas + 1))
 else
   esperados=$(bun -e '
-    const c = await Bun.file("infra/constantes.json").json()
+    const c = await Bun.file("packages/db/cadastro-inicial.json").json()
     const codigos = []
-    for (const programa of Object.values(c["integracao-frota.html"].INTEGRACOES))
+    for (const programa of Object.values(c.integracoes.INTEGRACOES))
       JSON.stringify(programa).replace(/"id":"([^"]+)"/g, (todo, id) => (codigos.push(id), todo))
     console.log([...new Set(codigos)].sort().join(","))
   ')

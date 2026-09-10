@@ -13,7 +13,7 @@
  * recusar o `"1/14"` que estoura o grid em silencio.
  */
 import { useEffect, useRef, useState } from 'react'
-import type { JSX, ReactNode } from 'react'
+import type { CSSProperties, JSX, ReactNode } from 'react'
 import { Ligacao } from '../app/navegacao.tsx'
 import { ArrowRight, CheckCircle, ChevronDown, Icone, Information, MagnifyingGlass, Warning } from './icones.tsx'
 import type { Desenho } from './icones.tsx'
@@ -292,7 +292,7 @@ export function Entrada({ marcador, valor, aoDigitar, largura }: {
   readonly largura?: number
 }): JSX.Element {
   return (
-    <div className="g-entrada" style={largura === undefined ? undefined : { width: `${largura}px` }}>
+    <div className={classes('g-entrada', largura !== undefined && '[width:var(--entrada-largura)]!')} style={largura === undefined ? undefined : { '--entrada-largura': `${largura}px` } as CSSProperties}>
       <Icone de={MagnifyingGlass} />
       <input
         className="g-entrada-campo"
@@ -341,12 +341,12 @@ export function Grade({ celulas }: { readonly celulas: readonly Celula[] }): JSX
           <div
             key={`${linha}:${inicio}`}
             className={classes(
-              'g-celula',
+              'g-celula [grid-column:var(--grade-coluna)]! [grid-row:var(--grade-linha)]!',
               rente && 'g-celula-rente',
               fim <= 12 && 'g-celula-direita',
               linha < ultima && 'g-celula-abaixo',
             )}
-            style={{ gridColumn: `${inicio}/${fim}`, gridRow: linha }}
+            style={{ '--grade-coluna': `${inicio}/${fim}`, '--grade-linha': linha } as CSSProperties}
           >
             {inicio > 1 ? <Cruz onde="topo" /> : null}
             {inicio > 1 && linha === ultima ? <Cruz onde="base" /> : null}
@@ -484,7 +484,7 @@ export function CabecalhoDeBloco({ titulo, subtitulo, direita, rente = false }: 
 // ---------- esqueleto e estado vazio ----------
 
 function Falso({ largura, altura }: { readonly largura: number | string; readonly altura: number }): JSX.Element {
-  return <span className="g-falso" style={{ width: typeof largura === 'number' ? `${largura}px` : largura, height: `${altura}px` }} />
+  return <span className="g-falso [width:var(--falso-largura)]! [height:var(--falso-altura)]!" style={{ '--falso-largura': typeof largura === 'number' ? `${largura}px` : largura, '--falso-altura': `${altura}px` } as CSSProperties} />
 }
 
 /**
@@ -498,7 +498,7 @@ export function Esqueleto(): JSX.Element {
       <div className="g-cabecalho-pagina">
         <div>
           <Falso largura={220} altura={32} />
-          <div style={{ marginTop: '6px' }}><Falso largura={300} altura={18} /></div>
+          <div className="mt-[6px]"><Falso largura={300} altura={18} /></div>
         </div>
         <Falso largura={180} altura={32} />
       </div>
@@ -518,8 +518,8 @@ function EstatisticaFalsa(): JSX.Element {
   return (
     <>
       <Falso largura={120} altura={16} />
-      <div style={{ marginTop: '12px' }}><Falso largura={160} altura={40} /></div>
-      <div style={{ marginTop: '8px' }}><Falso largura={200} altura={16} /></div>
+      <div className="mt-[12px]"><Falso largura={160} altura={40} /></div>
+      <div className="mt-[8px]"><Falso largura={200} altura={16} /></div>
     </>
   )
 }

@@ -387,7 +387,7 @@ function ParticipanteExterno({ externo, aoMudar, aoRemover }: {
         dica="Nome completo do convidado"
         aoMudar={aoMudar}
       />
-      <div className="g-campo-acao" style={{ gridColumn: 'span 2' }}>
+      <div className="g-campo-acao [grid-column:span_2]">
         <Botao nome="Remover participante externo" antes={Trash} aoClicar={aoRemover} />
       </div>
     </>
@@ -890,7 +890,7 @@ export default function Atas(): JSX.Element {
               aoEscolherPdf={() => pedirPdf({ tipo: 'linha', id: linha.id })}
             />
           ))}
-          <div style={{ gridColumn: '1 / -1' }}>
+          <div className="[grid-column:1/-1]">
             <Botao
               rotulo="Adicionar linha"
               antes={Plus}
@@ -914,11 +914,11 @@ function LinhaImportada({ linha, aoMudar, aoEscolherPdf }: {
     <>
       {linha.mes === ''
         ? null
-        : <div className="g-l13 g-fraco" style={{ gridColumn: '1 / -1' }}>{`${linha.mes} de 2026`}</div>}
+        : <div className="g-l13 g-fraco [grid-column:1/-1]">{`${linha.mes} de 2026`}</div>}
       <Campo rotulo="Data" tipo="data" valor={linha.data} span={3} aoMudar={(data) => aoMudar({ data })} />
       <Campo rotulo="Título" valor={linha.titulo} span={6} dica="Título da reunião" aoMudar={(titulo) => aoMudar({ titulo })} />
       <Campo rotulo="Nº" valor={linha.numero} span={2} mono dica="001/2026" aoMudar={(numero) => aoMudar({ numero })} />
-      <div className="g-campo-acao" style={{ gridColumn: 'span 1' }}>
+      <div className="g-campo-acao [grid-column:span_1]">
         <Botao
           nome={linha.pdf === null ? 'Anexar o PDF assinado' : `PDF escolhido: ${linha.pdf.name}`}
           antes={linha.pdf === null ? CloudUpload : Check}

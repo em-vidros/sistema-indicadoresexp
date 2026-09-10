@@ -1,11 +1,3 @@
-/**
- * O que sai de `apps/web/dist/`: a casca da SPA, as seis telas legadas e o guia.
- *
- * Ate agora nenhum teste pedia nada por aqui: apagar a contencao de caminho de
- * `paginas.ts` inteira deixava a suite verde. As telas em si sao pouco mais que um
- * 200, mas o `..` que sai da pasta do build serve o repositorio inteiro pela rota
- * que menos parece perigosa, porque e a que so devolve HTML.
- */
 import { describe, expect, test } from 'bun:test'
 import { readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -22,13 +14,10 @@ const RAIZ = resolve(new URL('../../web/dist/', import.meta.url).pathname)
  */
 const LOGIN = 'entrar.html'
 
-const TELAS = ['app.html', 'entrar.html', 'GUIA-CONFIGURACAO.html']
+const TELAS = ['app.html', 'entrar.html']
 
-describe('as tres cascas do build', () => {
-  // Contar tres nao prova nada; prova que sao estas tres. Casca nova entra na lista de
-  // proposito, e nao passa a existir sem ninguem ter escrito o nome dela. Eram onze ate
-  // as dez telas virarem rotas de uma casca so, `app.html`.
-  test('sao exatamente as tres que o `dist` tem', async () => {
+describe('as duas entradas do build', () => {
+  test('sao exatamente as duas que o `dist` tem', async () => {
     const construidas = (await readdir(RAIZ)).filter((n) => n.endsWith('.html')).sort()
     expect(construidas).toEqual([...TELAS].sort())
   })
@@ -125,13 +114,13 @@ describe('o que a rota resolve sozinha', () => {
 
   test('caminho sem extensao acha o .html de mesmo nome', async () => {
     const cookie = await cookieDaLivia()
-    const resposta = await pedir('/GUIA-CONFIGURACAO', { headers: { cookie, ...NAVEGACAO } })
+    const resposta = await pedir('/app', { headers: { cookie, ...NAVEGACAO } })
     expect(resposta.status).toBe(200)
     expect(resposta.headers.get('content-type')).toBe('text/html; charset=utf-8')
     expect(await resposta.text()).toContain('<!DOCTYPE html>')
   })
 
-  test.each(['/nao-existe.html', '/nao-existe', '/planos/app-funcional.md'])(
+  test.each(['/nao-existe.html', '/nao-existe', '/planos/app-funcional.md', '/GUIA-CONFIGURACAO.html', '/GUIA-CONFIGURACAO'])(
     '%s e 404, sem inventar pagina',
     async (caminho) => {
       const cookie = await cookieDaLivia()
@@ -171,7 +160,7 @@ describe('sair da pasta do build', () => {
   // e volta para dentro, entrega a tela: quem decide e a contencao.
   test('a mesma barra codificada, subindo e voltando para dentro, entrega a tela', async () => {
     const cookie = await cookieDaLivia()
-    const resposta = await pedir('/qualquer%2f..%2fGUIA-CONFIGURACAO.html', {
+    const resposta = await pedir('/qualquer%2f..%2fapp.html', {
       headers: { cookie, ...NAVEGACAO },
     })
     expect(resposta.status).toBe(200)

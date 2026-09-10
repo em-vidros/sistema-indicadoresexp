@@ -1,9 +1,4 @@
 /**
- * O seed do cadastro. Ele nao redigita nome, placa nem rota: le
- * `infra/constantes.json`, que `infra/extrair-constantes.ts` produz varrendo os 7
- * HTMLs de origem. Se o arquivo nao existir, o extrator e chamado antes; se falhar,
- * o seed morre dizendo qual comando rodar.
- *
  * `semear` nao conhece o better-auth. As duas constantes que identificam a conta de
  * senha chegam em `Deps`, que e o padrao que o `arquitetura.md` escolheu no lugar
  * de repositorio por tabela ("os casos de uso recebem as funcoes de que precisam
@@ -22,8 +17,7 @@
  * `bun run db:seed`.
  */
 import { createHash } from 'node:crypto'
-import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { and, eq, isNotNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -87,12 +81,7 @@ const sqlExcluded = (coluna: string) => sql.raw(`excluded."${coluna}"`)
 
 type Funcao = (typeof funcaoColaborador.enumValues)[number]
 
-// ---------------------------------------------------------------------------
-// as constantes de origem
-// ---------------------------------------------------------------------------
-
-const RAIZ = fileURLToPath(new URL('../../../', import.meta.url))
-const CONSTANTES = `${RAIZ}infra/constantes.json`
+const CADASTRO_INICIAL = fileURLToPath(new URL('../cadastro-inicial.json', import.meta.url))
 
 const Preventiva = z.object({
   tipo: z.string(),
@@ -110,14 +99,14 @@ const Programa = z.object({
   matriz: z.array(z.object({ criterio: z.string(), padrao: z.string(), freq: z.string() })),
 })
 
-const Constantes = z.object({
-  'ata-reuniao.html': z.object({
+const CadastroInicial = z.object({
+  atas: z.object({
     COLABORADORES: z.record(
       z.enum(['motorista', 'ajudante', 'atendimento', 'logistica']),
       z.array(z.string()),
     ),
   }),
-  'documentos-frota.html': z.object({
+  documentos: z.object({
     DOCS_ESTATICOS: z.record(
       z.string(),
       z.object({
@@ -144,7 +133,7 @@ const Constantes = z.object({
       z.object({ modelo: z.string(), marca: z.string(), ano: z.string() }),
     ),
   }),
-  'formulario-registro.html': z.object({
+  registros: z.object({
     MOTORISTAS_BELEM: z.array(z.string()),
     MOTORISTAS_IMPERATRIZ: z.array(z.string()),
     MOTORISTAS_RAPOSA: z.array(z.string()),
@@ -156,42 +145,26 @@ const Constantes = z.object({
     VEICULOS_IMPERATRIZ: z.array(z.string()),
     VEICULOS_RAPOSA: z.array(z.string()),
   }),
-  'integracao-frota.html': z.object({
+  integracoes: z.object({
     COLABORADORES: z.record(
       z.string(),
       z.array(z.object({ nome: z.string(), cargo: z.string(), admissao: z.string() })),
     ),
     INTEGRACOES: z.record(z.enum(['motorista', 'ajudante']), Programa),
   }),
-  'manutencao-frota.html': z.object({
+  preventiva: z.object({
     CONFIG_PADRAO_RAPOSA: z.record(z.string(), z.array(Preventiva)),
     TIPOS_PREVENTIVA_PADRAO: z.array(Preventiva),
     ULTIMO_KM_PGQ: z.record(z.string(), z.number()),
   }),
 })
 
-export type Constantes = z.infer<typeof Constantes>
+export type CadastroInicial = z.infer<typeof CadastroInicial>
 
-export function carregarConstantes(caminho = CONSTANTES): Constantes {
-  if (!existsSync(caminho)) {
-    try {
-      execFileSync('bun', ['infra/extrair-constantes.ts'], { cwd: RAIZ, stdio: 'inherit' })
-    } catch (erro) {
-      throw new Error(
-        `${caminho} nao existe e o extrator falhou. Rode 'bun infra/extrair-constantes.ts' na raiz do projeto e leia o erro dele. Causa: ${erro instanceof Error ? erro.message : String(erro)}`,
-      )
-    }
-  }
-  if (!existsSync(caminho)) {
-    throw new Error(
-      `${caminho} continua ausente depois de rodar o extrator. O seed nao inventa nome nem placa: sem esse arquivo nao ha o que semear.`,
-    )
-  }
-  const lido = Constantes.safeParse(JSON.parse(readFileSync(caminho, 'utf8')))
+export function carregarCadastroInicial(caminho = CADASTRO_INICIAL): CadastroInicial {
+  const lido = CadastroInicial.safeParse(JSON.parse(readFileSync(caminho, 'utf8')))
   if (!lido.success) {
-    throw new Error(
-      `${caminho} nao tem a forma esperada. Rode 'bun infra/extrair-constantes.ts' de novo.\n${z.prettifyError(lido.error)}`,
-    )
+    throw new Error(`Cadastro inicial inválido em ${caminho}.\n${z.prettifyError(lido.error)}`)
   }
   return lido.data
 }
@@ -223,10 +196,6 @@ const METAS = [
  * Quem existe no sistema quando ele nasce. Os dois sao admin, e nenhum dos dois
  * nasce com senha: o seed gera um link de primeiro acesso e cada um escolhe a
  * dela.
- *
- * A lista saiu de `USUARIOS` em `infra/constantes.json` e virou constante daqui.
- * O objeto do HTML tinha quatro pessoas com as senhas em base64 ao lado, e ele
- * descreve quem usava o sistema antigo, nao quem deve existir no novo.
  *
  * As tres bases sao derivadas destas listas `bases`, e o id de cada uma e o UUIDv5
  * do nome. Manter os tres nomes exatos nos dois nao e zelo: base com id novo deixa
@@ -333,7 +302,7 @@ type Escritor = Parameters<Parameters<Db['transaction']>[0]>[0]
  * recuperar: se a chave derivada mudar entre uma tentativa e outra, o `ON CONFLICT
  * (id)` nao acha a linha velha e o UNIQUE da chave natural recusa a nova.
  */
-export function semear(db: Db, deps: DepsSeed, c = carregarConstantes()): Promise<ResultadoSeed> {
+export function semear(db: Db, deps: DepsSeed, c = carregarCadastroInicial()): Promise<ResultadoSeed> {
   return db.transaction((tx) => semearEm(tx, deps, c))
 }
 
@@ -345,10 +314,10 @@ export function semear(db: Db, deps: DepsSeed, c = carregarConstantes()): Promis
 export async function semearEm(
   db: Escritor,
   deps: DepsSeed,
-  c: Constantes,
+  c: CadastroInicial,
 ): Promise<ResultadoSeed> {
   const agora = deps.agora ?? new Date()
-  const form = c['formulario-registro.html']
+  const form = c.registros
 
   // --- bases -------------------------------------------------------------
   // Nao existe constante BASES em lugar nenhum dos 7 HTMLs. O que existe e a lista
@@ -373,7 +342,7 @@ export async function semearEm(
     .onConflictDoUpdate({ target: base.id, set: { ativo: true } })
 
   // --- veiculos ----------------------------------------------------------
-  const info = c['documentos-frota.html'].VEICULOS_INFO
+  const info = c.documentos.VEICULOS_INFO
   const veiculos = (['RAPOSA', 'IMPERATRIZ', 'BELEM'] as const).flatMap((sufixo) =>
     form[`VEICULOS_${sufixo}`].map((placa) => {
       const i = info[placa]
@@ -411,7 +380,7 @@ export async function semearEm(
   // Severino de Belem, que nao estao em nenhum dos dois `COLABORADORES`. Os 8 da
   // Raposa aparecem nos dois e a uniao os conta uma vez. 22 + 9 = 31.
   const fichas = new Map(
-    Object.values(c['integracao-frota.html'].COLABORADORES)
+    Object.values(c.integracoes.COLABORADORES)
       .flat()
       .map((p) => [p.nome, p]),
   )
@@ -420,7 +389,7 @@ export async function semearEm(
   const juntar = (nome: string, funcao: Funcao, baseNome: string) => {
     if (!pessoas.has(nome)) pessoas.set(nome, { nome, funcao, baseNome })
   }
-  for (const [funcao, nomes] of Object.entries(c['ata-reuniao.html'].COLABORADORES)) {
+  for (const [funcao, nomes] of Object.entries(c.atas.COLABORADORES)) {
     for (const nome of nomes ?? []) juntar(nome, funcao as Funcao, baseDoSufixo('RAPOSA'))
   }
   for (const sufixo of ['RAPOSA', 'IMPERATRIZ', 'BELEM'] as const) {
@@ -457,7 +426,7 @@ export async function semearEm(
   // --- documentos que ja acompanham o sistema --------------------------
   // Os caminhos continuam sob /docs e passam pelo mesmo portao de sessao das
   // paginas. A fase 2 troca apenas os novos uploads por armazenamento privado.
-  const documentosOrigem = c['documentos-frota.html']
+  const documentosOrigem = c.documentos
   const documentosVeiculo = Object.entries(documentosOrigem.DOCS_ESTATICOS).flatMap(
     ([placa, ficha]) => [
       {
@@ -556,7 +525,7 @@ export async function semearEm(
   // --- tipos de preventiva -----------------------------------------------
   // O catalogo. A Lavagem alerta em 200 aqui e em 300 no `item_preventivo` da
   // Raposa: nao e conflito, e nivel. O catalogo e o padrao, a base sobrepoe.
-  const tipos = c['manutencao-frota.html'].TIPOS_PREVENTIVA_PADRAO.map((t) => ({
+  const tipos = c.preventiva.TIPOS_PREVENTIVA_PADRAO.map((t) => ({
     id: id('tipo_preventivo', t.tipo),
     nome: t.tipo,
     intervaloKm: t.intervalo_km,
@@ -573,8 +542,8 @@ export async function semearEm(
   // --- itens de preventiva da Raposa -------------------------------------
   // `ULTIMO_KM_PGQ` cobre 5 das 7 placas. As outras duas ficam com `ultimo_km` nulo,
   // e `statusPreventiva` do dominio le isso como "sem_dado", que e a verdade.
-  const pgq = c['manutencao-frota.html'].ULTIMO_KM_PGQ
-  const itens = Object.entries(c['manutencao-frota.html'].CONFIG_PADRAO_RAPOSA).flatMap(
+  const pgq = c.preventiva.ULTIMO_KM_PGQ
+  const itens = Object.entries(c.preventiva.CONFIG_PADRAO_RAPOSA).flatMap(
     ([placa, lista]) =>
       lista.map((i) => ({
         id: id('item_preventivo', placa, i.tipo),
@@ -625,7 +594,7 @@ export async function semearEm(
   // 47 atividades, 23 do motorista e 24 do ajudante. A semana 5 do motorista tem 2 e
   // nao 3: `m5c` nao existe em integracao-frota.html, e completar a serie seria
   // inventar uma atividade que ninguem escreveu.
-  const programas = Object.entries(c['integracao-frota.html'].INTEGRACOES)
+  const programas = Object.entries(c.integracoes.INTEGRACOES)
   await db
     .insert(programaIntegracao)
     .values(

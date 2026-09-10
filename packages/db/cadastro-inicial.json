@@ -1,0 +1,897 @@
+{
+  "atas": {
+    "COLABORADORES": {
+      "motorista": [
+        "Adinaldo de Souza de Jesus",
+        "Anderson Penha Dos Anjos",
+        "Gabriel Reis Costa",
+        "Leandro do Nascimento Brito",
+        "Raimundo Correia Ferreira",
+        "Raimundo Nonato da Silva Divino",
+        "Saturnino Assumpção Dias Filho",
+        "Silio Vinicius Cruz Castro",
+        "Victor Gonçalves Vasconcelos"
+      ],
+      "ajudante": [
+        "Alejandro Marques Alves",
+        "Carlos Augusto Ferreira",
+        "Edmilson Fonseca Ribeiro",
+        "Emerson Hugo Silva Rodrigues",
+        "Erizelton Abreu Ferreira",
+        "Esteves Gabriel de Sousa de Assis",
+        "Josenilson Pereira da Silva",
+        "Kleryson Cleber Pereira Isaias",
+        "Laurenilson Pereira Dias",
+        "Terles Sousa Dias"
+      ],
+      "atendimento": [
+        "Erika Sousa de Oliveira Reis",
+        "Luís Henrique Pereira Diniz"
+      ],
+      "logistica": [
+        "Andreina Santos Vilar"
+      ]
+    }
+  },
+  "documentos": {
+    "DOCS_ESTATICOS": {
+      "PTV0006": {
+        "seguradora": "Bradesco",
+        "apolice_url": "docs/apolice-PTV0006.pdf",
+        "apolice_venc": "2026-12-26",
+        "tacografo_url": "docs/tacografo-PTV0006.pdf"
+      },
+      "PTT0004": {
+        "seguradora": "MAPFRE",
+        "apolice_url": "docs/apolice-PTT0004.pdf",
+        "apolice_venc": "2026-08-31",
+        "tacografo_url": "docs/tacografo-PTT0004.pdf"
+      },
+      "ROW3A87": {
+        "seguradora": "Bradesco",
+        "apolice_url": "docs/apolice-ROW3A87.pdf",
+        "apolice_venc": "2026-09-11",
+        "tacografo_url": "docs/tacografo-ROW3A87.pdf"
+      },
+      "SM02J13": {
+        "seguradora": "MAPFRE",
+        "apolice_url": "docs/apolice-SM02J13.pdf",
+        "apolice_venc": "2026-06-14",
+        "tacografo_url": "docs/tacografo-SM02J13.pdf"
+      },
+      "SMP6F86": {
+        "seguradora": "MAPFRE",
+        "apolice_url": "docs/apolice-SMP6F86.pdf",
+        "apolice_venc": "2026-06-12",
+        "tacografo_url": "docs/tacografo-SMP6F86.pdf"
+      },
+      "SMW0B96": {
+        "seguradora": "Bradesco",
+        "apolice_url": "docs/apolice-SMW0B96.pdf",
+        "apolice_venc": "2026-12-11",
+        "tacografo_url": "docs/tacografo-SMW0B96.pdf"
+      },
+      "SMQ2I80": {
+        "seguradora": "Bradesco",
+        "apolice_url": "docs/apolice-SMQ2I80.pdf",
+        "apolice_venc": "2027-07-17",
+        "tacografo_url": "docs/tacografo-SMQ2I80.pdf"
+      }
+    },
+    "MANUAIS_RAPOSA": [
+      {
+        "titulo": "Manual ATEGO 2429 / 3030 CE",
+        "marca": "Mercedes-Benz",
+        "modelos": "ATEGO 2429 · ATEGO 3030 CE",
+        "placas": "SM02J13, SMP6F86, SMW0B96, PTV0006",
+        "url": "docs/manual-atego.pdf"
+      },
+      {
+        "titulo": "Manual ACCELO 1316 (Euro V)",
+        "marca": "Mercedes-Benz",
+        "modelos": "ACCELO 1316 (Euro V)",
+        "placas": "PTT0004",
+        "url": "docs/manual-accelo-euro-v.pdf"
+      },
+      {
+        "titulo": "Manual ACCELO 1017 (Euro VI)",
+        "marca": "Mercedes-Benz",
+        "modelos": "ACCELO 1017 (Euro VI)",
+        "placas": "SMQ2I80",
+        "url": "docs/manual-accelo-euro-vi.pdf"
+      },
+      {
+        "titulo": "Manual 26.260 CRM 6x2",
+        "marca": "Volkswagen",
+        "modelos": "26.260 CRM 6x2",
+        "placas": "ROW3A87",
+        "url": "docs/manual-volks.pdf"
+      }
+    ],
+    "PLANOS": [
+      {
+        "titulo": "PGQ MAN — Programa de Manutenção Preventiva 2026",
+        "descricao": "Cronograma anual assinado — todos os veículos Raposa",
+        "url": "docs/pgq-manutencao-2026.pdf",
+        "tipo": "plano"
+      }
+    ],
+    "VEICULOS_INFO": {
+      "PTV0006": {
+        "modelo": "ATEGO 3030 CE",
+        "marca": "Mercedes-Benz",
+        "ano": "2019/2020"
+      },
+      "PTT0004": {
+        "modelo": "ACCELO 1316",
+        "marca": "Mercedes-Benz",
+        "ano": "2019/2020"
+      },
+      "ROW3A87": {
+        "modelo": "26.260 CRM 6x2",
+        "marca": "Volkswagen",
+        "ano": "2023/2024"
+      },
+      "SM02J13": {
+        "modelo": "ATEGO 2429",
+        "marca": "Mercedes-Benz",
+        "ano": "2024/2025"
+      },
+      "SMP6F86": {
+        "modelo": "ATEGO 2429",
+        "marca": "Mercedes-Benz",
+        "ano": "2024/2025"
+      },
+      "SMW0B96": {
+        "modelo": "ATEGO 2429",
+        "marca": "Mercedes-Benz",
+        "ano": "2024/2025"
+      },
+      "SMQ2I80": {
+        "modelo": "ACCELO 1017",
+        "marca": "Mercedes-Benz",
+        "ano": "2024/2024"
+      },
+      "DMG9D41": {
+        "modelo": "—",
+        "marca": "—",
+        "ano": "—"
+      },
+      "NXD4H26": {
+        "modelo": "—",
+        "marca": "—",
+        "ano": "—"
+      },
+      "NXB2H55": {
+        "modelo": "—",
+        "marca": "—",
+        "ano": "—"
+      },
+      "ROW4J37": {
+        "modelo": "—",
+        "marca": "—",
+        "ano": "—"
+      },
+      "SMR2H61": {
+        "modelo": "—",
+        "marca": "—",
+        "ano": "—"
+      },
+      "SND9C34": {
+        "modelo": "—",
+        "marca": "—",
+        "ano": "—"
+      },
+      "SMM4A02": {
+        "modelo": "—",
+        "marca": "—",
+        "ano": "—"
+      },
+      "SMP2F01": {
+        "modelo": "—",
+        "marca": "—",
+        "ano": "—"
+      }
+    }
+  },
+  "registros": {
+    "MOTORISTAS_BELEM": [
+      "Severino Manoel Barata do Nascimento"
+    ],
+    "MOTORISTAS_IMPERATRIZ": [
+      "Nataniel Pereira Rocha",
+      "Francisco Pereira dos Santos",
+      "Evandro de Oliveira Cardim",
+      "Francisco de Sousa Cabral",
+      "Adriel da Silva Santos",
+      "Sebastiao de Brito Matos",
+      "Italo Melo Sales",
+      "Railton da Silva Batista"
+    ],
+    "MOTORISTAS_RAPOSA": [
+      "Anderson Penha Dos Anjos",
+      "Gabriel Reis Costa",
+      "Leandro do Nascimento Brito",
+      "Raimundo Correia Ferreira",
+      "Raimundo Nonato da Silva Divino",
+      "Saturnino Assumpção Dias Filho",
+      "Silio Vinicius Cruz Castro",
+      "Victor Gonçalves Vasconcelos"
+    ],
+    "ROTAS_BELEM": [
+      "BARCARENA",
+      "BELÉM",
+      "SALINÓPOLIS"
+    ],
+    "ROTAS_IMPERATRIZ": [
+      "PARAUAPEBAS",
+      "BURITICUPU",
+      "BALSAS",
+      "BELÉM",
+      "LOJA BELÉM",
+      "FLORIANO",
+      "IMPERATRIZ",
+      "SALINÓPOLIS",
+      "LOJA SANTA INÊS"
+    ],
+    "ROTAS_LOCAIS": [
+      "IMPERATRIZ",
+      "SÃO LUÍS",
+      "LOJA GUAJAJARAS",
+      "LOJA ANGELIM",
+      "LOJA BELÉM",
+      "LOJA SANTA INÊS",
+      "BARCARENA"
+    ],
+    "ROTAS_RAPOSA": [
+      "PINHEIRO",
+      "SANTA INÊS / BACABAL - EXTRA PINHEIRO",
+      "CAXIAS / TERESINA",
+      "SANTA INÊS / BACABAL - EXTRA CAXIAS",
+      "ITAPECURU",
+      "PARNAÍBA / TERESINA",
+      "PARNAÍBA",
+      "SÃO LUÍS",
+      "LOJA GUAJAJARAS",
+      "LOJA ANGELIM"
+    ],
+    "VEICULOS_BELEM": [
+      "SMP2F01"
+    ],
+    "VEICULOS_IMPERATRIZ": [
+      "DMG9D41",
+      "NXD4H26",
+      "NXB2H55",
+      "ROW4J37",
+      "SMR2H61",
+      "SND9C34",
+      "SMM4A02"
+    ],
+    "VEICULOS_RAPOSA": [
+      "PTV0006",
+      "PTT0004",
+      "ROW3A87",
+      "SMW0B96",
+      "SM02J13",
+      "SMP6F86",
+      "SMQ2I80"
+    ]
+  },
+  "integracoes": {
+    "COLABORADORES": {
+      "motorista": [
+        {
+          "nome": "Adinaldo de Souza de Jesus",
+          "cargo": "Motorista Carreteiro",
+          "admissao": "2026-04-01"
+        },
+        {
+          "nome": "Anderson Penha Dos Anjos",
+          "cargo": "Motorista I",
+          "admissao": "2023-11-29"
+        },
+        {
+          "nome": "Gabriel Reis Costa",
+          "cargo": "Motorista I",
+          "admissao": "2026-02-12"
+        },
+        {
+          "nome": "Leandro do Nascimento Brito",
+          "cargo": "Motorista II",
+          "admissao": "2020-07-17"
+        },
+        {
+          "nome": "Raimundo Correia Ferreira",
+          "cargo": "Motorista I",
+          "admissao": "2026-04-24"
+        },
+        {
+          "nome": "Raimundo Nonato da Silva Divino",
+          "cargo": "Motorista II",
+          "admissao": "2022-10-03"
+        },
+        {
+          "nome": "Saturnino Assumpção Dias Filho",
+          "cargo": "Motorista I",
+          "admissao": "2026-04-07"
+        },
+        {
+          "nome": "Silio Vinicius Cruz Castro",
+          "cargo": "Motorista I",
+          "admissao": "2024-04-08"
+        },
+        {
+          "nome": "Victor Gonçalves Vasconcelos",
+          "cargo": "Motorista I",
+          "admissao": "2025-10-15"
+        }
+      ],
+      "ajudante": [
+        {
+          "nome": "Alejandro Marques Alves",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2026-05-27"
+        },
+        {
+          "nome": "Carlos Augusto Ferreira",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2023-10-13"
+        },
+        {
+          "nome": "Edmilson Fonseca Ribeiro",
+          "cargo": "Ajudante de Entrega IV",
+          "admissao": "2015-01-05"
+        },
+        {
+          "nome": "Emerson Hugo Silva Rodrigues",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2026-08-17"
+        },
+        {
+          "nome": "Erizelton Abreu Ferreira",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2026-06-22"
+        },
+        {
+          "nome": "Esteves Gabriel de Sousa de Assis",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2025-04-16"
+        },
+        {
+          "nome": "Josenilson Pereira da Silva",
+          "cargo": "Ajudante de Entrega IV",
+          "admissao": "2020-08-24"
+        },
+        {
+          "nome": "Kleryson Cleber Pereira Isaias",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2026-05-06"
+        },
+        {
+          "nome": "Laurenilson Pereira Dias",
+          "cargo": "Ajudante de Entrega II",
+          "admissao": "2021-08-25"
+        },
+        {
+          "nome": "Terles Sousa Dias",
+          "cargo": "Ajudante de Entrega I",
+          "admissao": "2018-08-22"
+        }
+      ]
+    },
+    "INTEGRACOES": {
+      "motorista": {
+        "funcao": "Motorista de Entrega / Transporte Logístico",
+        "semanas": [
+          {
+            "titulo": "Semana 1 — Integração, Segurança (EPIs), Checklist Veicular, Leitura de Etiquetas e Tipos de Vidro",
+            "atividades": [
+              {
+                "id": "m1a",
+                "titulo": "Boas-vindas e Regulamento Interno",
+                "desc": "Apresentação da equipe de logística e RH, normas da empresa, jornada de trabalho, políticas de frota e conduta profissional."
+              },
+              {
+                "id": "m1b",
+                "titulo": "Segurança e EPIs",
+                "desc": "Treinamento obrigatório sobre o uso de Luvas de Proteção, Botina de Aço/Compósito, Óculos de Proteção e Protetor Auricular, bem como posturas ergométricas para o transporte e condução."
+              },
+              {
+                "id": "m1c",
+                "titulo": "Conhecimento dos Materiais (Tipos de Vidro)",
+                "desc": "Apresentação detalhada dos tipos de produto transportados, entendendo a fragilidade, comportamento da carga durante o transporte e diferenças entre vidro comum, temperado e laminado."
+              },
+              {
+                "id": "m1d",
+                "titulo": "Sistema de Leitura e Conferência de Etiquetas",
+                "desc": "Treinamento no sistema de conferência e leitura de etiquetas para identificação de dimensões, quantidades e destino dos materiais na expedição."
+              },
+              {
+                "id": "m1e",
+                "titulo": "Checklist Veicular Obrigatório",
+                "desc": "Instrução sobre a rotina diária de verificação dos itens de segurança e funcionamento do veículo (pneus, freios, luzes, fluidos, equipamentos obrigatórios e conservação dos cavaletes)."
+              },
+              {
+                "id": "m1f",
+                "titulo": "Prática Orientada com Motorista Experiente",
+                "desc": "Acompanhamento e atuação prática junto a um motorista sênior na rotina de pátio, forragem de peças, inspeção de veículos e movimentação interna na fábrica/depósito, sem atuação direta em rotas longas."
+              }
+            ]
+          },
+          {
+            "titulo": "Semana 2 — Carregamento, Amarração, Distribuição de Carga e Transferências entre Filiais",
+            "atividades": [
+              {
+                "id": "m2a",
+                "titulo": "Foco em Carregamento e Distribuição de Peso",
+                "desc": "Instrução e prática na correta disposição das peças de vidro nos cavaletes e carrinhos móveis do veículo, respeitando os limites de peso e estabilidade."
+              },
+              {
+                "id": "m2b",
+                "titulo": "Técnicas de Amarração e Proteção de Carga",
+                "desc": "Aplicação prática de cantoneiras, proteções de borracha, cintas e catracas para travamento seguro dos vidros, eliminando folgas e riscos de avarias durante a movimentação."
+              },
+              {
+                "id": "m2c",
+                "titulo": "Separação, Leitura e Romaneios de Entrega",
+                "desc": "Treinamento no manuseio de romaneios de carga, leitura das notas fiscais e conferência do manifesto de transporte."
+              },
+              {
+                "id": "m2d",
+                "titulo": "Rotas de Transferência entre Filiais",
+                "desc": "Execução supervisionada de viagens de transferência de carga e insumos entre as filiais Angelim e Guajajaras, aplicando a lógica LIFO de arrumação por ordem de descarregamento."
+              }
+            ]
+          },
+          {
+            "titulo": "Semana 3 — Roteiros de Rotas Urbanas, Condução e Documentação",
+            "atividades": [
+              {
+                "id": "m3a",
+                "titulo": "Primeiras Saídas em Rotas Urbanas",
+                "desc": "Acompanhamento e condução do veículo dentro da cidade sob supervisão direta de um motorista experiente e suporte da coordenação."
+              },
+              {
+                "id": "m3b",
+                "titulo": "Planejamento e Otimização de Roteiros",
+                "desc": "Leitura e interpretação dos roteiros de rota diários, análise de itinerários, rotas permitidas para veículos pesados/médios e gestão do tempo de viagem."
+              },
+              {
+                "id": "m3c",
+                "titulo": "Procedimentos no Cliente",
+                "desc": "Validação dos romaneios/etiquetas e coordenação da descarga junto à equipe de ajudantes, garantindo o manuseio seguro no local de entrega."
+              },
+              {
+                "id": "m3d",
+                "titulo": "Conferência de Documentação e Canhotos",
+                "desc": "Coleta correta de assinaturas, nomes legíveis e documento (RG/CPF) nos canhotos de notas fiscais e comprovantes digitais de entrega."
+              }
+            ]
+          },
+          {
+            "titulo": "Semana 4 — Gestão de Ocorrências em Rota, Devoluções e Postura Profissional",
+            "atividades": [
+              {
+                "id": "m4a",
+                "titulo": "Postura Profissional e Dirigibilidade Defensiva",
+                "desc": "Prática de condução defensiva, respeito às leis de trânsito e postura adequada no atendimento presencial ao cliente."
+              },
+              {
+                "id": "m4b",
+                "titulo": "Gestão de Ocorrências no Trânsito e Entregas",
+                "desc": "Procedimento operacional para reporte imediato à coordenação em casos de avarias em trajeto, divergências no pedido, cliente ausente ou recusa de mercadorias."
+              },
+              {
+                "id": "m4c",
+                "titulo": "Comunicação com a Central/Logística",
+                "desc": "Reporte contínuo do status do roteiro, ocorrências em rota e previsão de retorno à base."
+              },
+              {
+                "id": "m4d",
+                "titulo": "Acondicionamento e Retorno de Devoluções",
+                "desc": "Procedimento para amarração e proteção de produtos recusados ou avariados para transporte seguro de volta à fábrica."
+              }
+            ]
+          },
+          {
+            "titulo": "Semana 5 — Autonomia Progressiva na Condução e Cumprimento de Roteiros",
+            "atividades": [
+              {
+                "id": "m5a",
+                "titulo": "Gestão de Tempo e Eficiência na Rota",
+                "desc": "Cumprimento da programação de entregas previstas no roteiro mantendo a segurança e integridade do veículo e da carga."
+              },
+              {
+                "id": "m5b",
+                "titulo": "Encerramento de Rota e Checklist de Retorno",
+                "desc": "Organização do veículo no final do expediente, limpeza da área de carga, organização de cintas/cantoneiras e registro de divergências no checklist final."
+              }
+            ]
+          },
+          {
+            "titulo": "Semana 6 — Consolidação de Processos e Avaliação do Período (45 dias)",
+            "atividades": [
+              {
+                "id": "m6a",
+                "titulo": "Revisão Geral do Desempenho Operacional",
+                "desc": "Execução autônoma da rotina completa de checklist veicular, carregamento, amarração, condução por roteiro e entregas."
+              },
+              {
+                "id": "m6b",
+                "titulo": "Avaliação Formal de Desempenho",
+                "desc": "Reunião conjunta com a coordenação de logística, gerência e Recursos Humanos (RH) para análise dos 45 dias de experiência."
+              },
+              {
+                "id": "m6c",
+                "titulo": "Decisão de Renovação/Efetivação",
+                "desc": "Feedback estruturado com definição sobre a continuidade do contrato de trabalho."
+              }
+            ]
+          }
+        ],
+        "matriz": [
+          {
+            "criterio": "Segurança, EPIs e Condução Defensiva",
+            "padrao": "Uso 100% correto de EPIs e cumprimento rigoroso das normas de trânsito e segurança.",
+            "freq": "Diária"
+          },
+          {
+            "criterio": "Checklist e Conservação do Veículo",
+            "padrao": "Execução diária do checklist pré-saída e manutenção do veículo em perfeitas condições de uso.",
+            "freq": "Diária"
+          },
+          {
+            "criterio": "Cuidado no Carregamento e Amarração",
+            "padrao": "Zero avarias ou acidentes causados por má distribuição de peso ou amarração inadequada.",
+            "freq": "Semanal"
+          },
+          {
+            "criterio": "Acurácia de Rotas e Documentação",
+            "padrao": "Cumprimento dos roteiros planejados e 100% dos canhotos/romaneios devidamente conferidos e assinados.",
+            "freq": "Diária"
+          },
+          {
+            "criterio": "Assiduidade e Pontualidade",
+            "padrao": "Cumprimento rigoroso dos horários de apresentação, carregamento e saídas de rota.",
+            "freq": "Semanal"
+          }
+        ]
+      },
+      "ajudante": {
+        "funcao": "Ajudante de Entrega / Carga e Descarga",
+        "semanas": [
+          {
+            "titulo": "Semana 1 — Integração, Segurança (EPIs), Leitura de Etiquetas, Tipos de Vidro e Balcão",
+            "atividades": [
+              {
+                "id": "a1a",
+                "titulo": "Boas-vindas e Regulamento Interno",
+                "desc": "Apresentação da equipe de logística e RH, normas da empresa, horários, uso correto do uniforme e conduta."
+              },
+              {
+                "id": "a1b",
+                "titulo": "Segurança e EPIs",
+                "desc": "Treinamento obrigatório sobre uso de Luvas de Proteção, Botina de Aço/Compósito, Óculos de Proteção e Protetor Auricular. Orientação sobre ergonomia ao levantar peso."
+              },
+              {
+                "id": "a1c",
+                "titulo": "Conhecimento dos Materiais (Tipos de Vidro)",
+                "desc": "Introdução aos produtos movimentados, compreendendo as especificidades, particularidades de manuseio, fragilidade e diferenças entre vidro comum, temperado e laminado."
+              },
+              {
+                "id": "a1d",
+                "titulo": "Sistema de Leitura e Conferência de Etiquetas",
+                "desc": "Treinamento prático no sistema de leitura de etiquetas para identificação de dimensões, tamanhos, especificações técnicas e conferência precisa dos materiais."
+              },
+              {
+                "id": "a1e",
+                "titulo": "Prática Orientada",
+                "desc": "Acompanhamento e atuação prática junto a uma equipe experiente, com supervisão direta da coordenação na forragem de peças e início do manuseio de peças temperadas no depósito/expedição, sem atuação direta em rotas ou carregamentos."
+              },
+              {
+                "id": "a1f",
+                "titulo": "Acompanhamento no Balcão da Fábrica",
+                "desc": "Acompanhamento presencial no atendimento a clientes em retiradas no balcão da fábrica, observando a rotina de conferência com o cliente, postura de atendimento e liberação de mercadorias."
+              }
+            ]
+          },
+          {
+            "titulo": "Semana 2 — Separação, Romaneios, Transferência entre Filiais e Carregamento",
+            "atividades": [
+              {
+                "id": "a2a",
+                "titulo": "Separação e Leitura de Carga",
+                "desc": "Acompanhamento prático da rotina de separação de mercadorias no depósito, leitura de etiquetas e conferência de materiais para expedição."
+              },
+              {
+                "id": "a2b",
+                "titulo": "Romaneios de Entrega e Transferência",
+                "desc": "Treinamento no manuseio e conferência de romaneios de entrega e documentação de carga para o transporte de transferência entre as filiais Angelim e Guajajaras."
+              },
+              {
+                "id": "a2c",
+                "titulo": "Checklist de Saída e Arrumação",
+                "desc": "Aprendizado do processo de conferência visual de itens antes da amarração, prática na disposição dos produtos nos carrinhos móveis e cavalete do veículo para evitar deslocamentos e avarias."
+              },
+              {
+                "id": "a2d",
+                "titulo": "Amarração, Proteção e Lógica LIFO",
+                "desc": "Uso de cantoneiras e proteções de borracha, além da organização do carregamento pela ordem de entrega."
+              }
+            ]
+          },
+          {
+            "titulo": "Semana 3 — Rotina de Rota, Conferência de Mercadoria e Documentação",
+            "atividades": [
+              {
+                "id": "a3a",
+                "titulo": "Primeiras Saídas em Rota",
+                "desc": "Acompanhamento presencial no transporte e entregas sob supervisão direta da coordenação e acompanhamento de equipe experiente."
+              },
+              {
+                "id": "a3b",
+                "titulo": "Conferência no Cliente",
+                "desc": "Validação das quantidades, etiquetas e especificações de cada nota fiscal/pedido antes de descarregar a mercadoria no cliente."
+              },
+              {
+                "id": "a3c",
+                "titulo": "Manuseio na Descarga",
+                "desc": "Técnicas corretas para descarregar o material de forma segura até o local de depósito indicado pelo cliente."
+              },
+              {
+                "id": "a3d",
+                "titulo": "Assinatura e Recebimento",
+                "desc": "Coleta de assinaturas, nomes legíveis e RG/CPF no canhoto da nota fiscal ou comprovante digital de entrega."
+              }
+            ]
+          },
+          {
+            "titulo": "Semana 4 — Atendimento ao Cliente, Ocorrências e Devoluções",
+            "atividades": [
+              {
+                "id": "a4a",
+                "titulo": "Postura Profissional",
+                "desc": "Cordialidade, comunicação clara com os responsáveis pelo recebimento e respeito às regras internas do cliente."
+              },
+              {
+                "id": "a4b",
+                "titulo": "Gestão de Ocorrências",
+                "desc": "Procedimento padrão em caso de avaria detectada, ausência do cliente, recusa de mercadoria ou divergência de pedido."
+              },
+              {
+                "id": "a4c",
+                "titulo": "Comunicação com a Central",
+                "desc": "Reporte imediato à coordenação/expedição antes de deixar o local caso haja problemas no recebimento."
+              },
+              {
+                "id": "a4d",
+                "titulo": "Acondicionamento de Devoluções",
+                "desc": "Organização do material recusado ou avariado no veículo para retornar em segurança à fábrica/depósito."
+              }
+            ]
+          },
+          {
+            "titulo": "Semana 5 — Autonomia Progressiva e Agilidade Operacional",
+            "atividades": [
+              {
+                "id": "a5a",
+                "titulo": "Atuação Direta",
+                "desc": "Execução das tarefas de carga, amarração, conferência e descarga com acompanhamento periódico da coordenação."
+              },
+              {
+                "id": "a5b",
+                "titulo": "Gestão de Tempo",
+                "desc": "Foco no ritmo de descarregamento e cumprimento de prazos de rotas programadas."
+              },
+              {
+                "id": "a5c",
+                "titulo": "Organização do Veículo no Retorno",
+                "desc": "Limpeza do espaço de carga ao final do expediente, recolhimento de fitas, proteções e sobras de embalagens."
+              }
+            ]
+          },
+          {
+            "titulo": "Semana 6 — Consolidação de Processos e Avaliação do Período (45 dias)",
+            "atividades": [
+              {
+                "id": "a6a",
+                "titulo": "Revisão Geral",
+                "desc": "Execução completa e autônoma da rotina semanal de entregas."
+              },
+              {
+                "id": "a6b",
+                "titulo": "Avaliação de Desempenho",
+                "desc": "Reunião conjunta com a coordenação de logística e Recursos Humanos (RH) para analisar os primeiros 45 dias."
+              },
+              {
+                "id": "a6c",
+                "titulo": "Decisão de Renovação/Efetivação",
+                "desc": "Feedback estruturado sobre pontos fortes e oportunidades de melhoria para a continuidade do contrato de experiência."
+              }
+            ]
+          }
+        ],
+        "matriz": [
+          {
+            "criterio": "Segurança e EPIs",
+            "padrao": "Uso 100% correto de botas, luvas e óculos durante carga/descarga.",
+            "freq": "Diária"
+          },
+          {
+            "criterio": "Cuidado com a Carga",
+            "padrao": "Zero avarias por manuseio inadequado ou amarração incorreta dos tipos de vidro.",
+            "freq": "Semanal"
+          },
+          {
+            "criterio": "Conferência de Etiquetas e Romaneios",
+            "padrao": "100% de precisão na leitura das etiquetas/romaneios e divergência zero nas transferências entre filiais e entregas.",
+            "freq": "Diária"
+          },
+          {
+            "criterio": "Assiduidade e Pontualidade",
+            "padrao": "Cumprimento rigoroso dos horários de carregamento e saída.",
+            "freq": "Semanal"
+          }
+        ]
+      }
+    }
+  },
+  "preventiva": {
+    "CONFIG_PADRAO_RAPOSA": {
+      "PTV0006": [
+        {
+          "tipo": "Manutenção Preventiva Geral",
+          "intervalo_km": 20000,
+          "alerta_km": 2000,
+          "ultimo_km": 408413,
+          "obs": "ATEGO 3030 CE 2019 — EM Vidros: 20.000 km"
+        },
+        {
+          "tipo": "Lavagem",
+          "intervalo_km": 3000,
+          "alerta_km": 300,
+          "ultimo_km": 408413
+        }
+      ],
+      "PTT0004": [
+        {
+          "tipo": "Manutenção Preventiva Geral",
+          "intervalo_km": 20000,
+          "alerta_km": 2000,
+          "ultimo_km": 354277,
+          "obs": "ACCELO 1316 2019 — EM Vidros: 20.000 km"
+        },
+        {
+          "tipo": "Lavagem",
+          "intervalo_km": 3000,
+          "alerta_km": 300,
+          "ultimo_km": 354277
+        }
+      ],
+      "ROW3A87": [
+        {
+          "tipo": "Manutenção Preventiva Geral",
+          "intervalo_km": 30000,
+          "alerta_km": 3000,
+          "ultimo_km": 176585,
+          "obs": "VW 26.260 2023 — EM Vidros: 30.000 km"
+        },
+        {
+          "tipo": "Lavagem",
+          "intervalo_km": 3000,
+          "alerta_km": 300,
+          "ultimo_km": 176585
+        }
+      ],
+      "SM02J13": [
+        {
+          "tipo": "Manutenção Preventiva Geral",
+          "intervalo_km": 30000,
+          "alerta_km": 3000,
+          "ultimo_km": null,
+          "obs": "ATEGO 2429 2024 — EM Vidros: 30.000 km"
+        },
+        {
+          "tipo": "Lavagem",
+          "intervalo_km": 3000,
+          "alerta_km": 300,
+          "ultimo_km": null
+        }
+      ],
+      "SMP6F86": [
+        {
+          "tipo": "Manutenção Preventiva Geral",
+          "intervalo_km": 30000,
+          "alerta_km": 3000,
+          "ultimo_km": 136720,
+          "obs": "ATEGO 2429 2024 — EM Vidros: 30.000 km"
+        },
+        {
+          "tipo": "Lavagem",
+          "intervalo_km": 3000,
+          "alerta_km": 300,
+          "ultimo_km": 136720
+        }
+      ],
+      "SMW0B96": [
+        {
+          "tipo": "Manutenção Preventiva Geral",
+          "intervalo_km": 30000,
+          "alerta_km": 3000,
+          "ultimo_km": null,
+          "obs": "ATEGO 2429 2024 — EM Vidros: 30.000 km"
+        },
+        {
+          "tipo": "Lavagem",
+          "intervalo_km": 3000,
+          "alerta_km": 300,
+          "ultimo_km": null
+        }
+      ],
+      "SMQ2I80": [
+        {
+          "tipo": "Manutenção Preventiva Geral",
+          "intervalo_km": 30000,
+          "alerta_km": 3000,
+          "ultimo_km": 40000,
+          "obs": "ACCELO 1017 2024 — EM Vidros: 30.000 km"
+        },
+        {
+          "tipo": "Lavagem",
+          "intervalo_km": 3000,
+          "alerta_km": 300,
+          "ultimo_km": 40000
+        }
+      ]
+    },
+    "TIPOS_PREVENTIVA_PADRAO": [
+      {
+        "tipo": "Manutenção Preventiva Geral",
+        "intervalo_km": 30000,
+        "alerta_km": 3000
+      },
+      {
+        "tipo": "Troca de óleo",
+        "intervalo_km": 10000,
+        "alerta_km": 500
+      },
+      {
+        "tipo": "Filtro de ar",
+        "intervalo_km": 30000,
+        "alerta_km": 1000
+      },
+      {
+        "tipo": "Filtro de combustível",
+        "intervalo_km": 30000,
+        "alerta_km": 1000
+      },
+      {
+        "tipo": "Lavagem",
+        "intervalo_km": 3000,
+        "alerta_km": 200
+      },
+      {
+        "tipo": "Revisão de freios",
+        "intervalo_km": 20000,
+        "alerta_km": 1000
+      },
+      {
+        "tipo": "Alinhamento/Balanceamento",
+        "intervalo_km": 15000,
+        "alerta_km": 500
+      },
+      {
+        "tipo": "Tacógrafo (calibração)",
+        "intervalo_km": 30000,
+        "alerta_km": 1000
+      }
+    ],
+    "ULTIMO_KM_PGQ": {
+      "PTV0006": 408413,
+      "PTT0004": 354277,
+      "ROW3A87": 176585,
+      "SMP6F86": 136720,
+      "SMQ2I80": 40000
+    }
+  }
+}

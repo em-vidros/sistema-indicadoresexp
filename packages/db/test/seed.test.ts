@@ -14,7 +14,7 @@
 import { afterAll, expect, test } from 'bun:test'
 import { TransactionRollbackError, sql } from 'drizzle-orm'
 import { criarDb } from '../src/index.ts'
-import { type Contagens, type DepsSeed, carregarConstantes, semearEm } from '../src/seed.ts'
+import { type Contagens, type DepsSeed, carregarCadastroInicial, semearEm } from '../src/seed.ts'
 
 const { db, sql: conexao } = criarDb(undefined, { max: 1 })
 
@@ -87,7 +87,7 @@ const ESPERADO: ContagensBanco = {
 }
 
 test('rodar o seed duas vezes nao muda as nove contagens', async () => {
-  const c = carregarConstantes()
+  const c = carregarCadastroInicial()
   let saida: { primeira: ContagensBanco; segunda: ContagensBanco } | undefined
   let apagados: { primeiro: number; segundo: number } | undefined
 
@@ -114,7 +114,7 @@ test('rodar o seed duas vezes nao muda as nove contagens', async () => {
 })
 
 test('a segunda passada atualiza a linha em vez de criar outra', async () => {
-  const c = carregarConstantes()
+  const c = carregarCadastroInicial()
   let placas: { antes: number; depois: number } | undefined
 
   try {

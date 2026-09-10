@@ -15,7 +15,7 @@ import { TransactionRollbackError, sql } from 'drizzle-orm'
 import { sessaoDoUsuario } from '../src/consultas/sessao.ts'
 import { criarDb } from '../src/index.ts'
 import { base, user, usuarioBase, usuarioTipo } from '../src/schema/index.ts'
-import { type DepsSeed, carregarConstantes, semearEm } from '../src/seed.ts'
+import { type DepsSeed, carregarCadastroInicial, semearEm } from '../src/seed.ts'
 
 const { db, sql: conexao } = criarDb(undefined, { max: 1 })
 
@@ -53,7 +53,7 @@ async function semear(tx: Tx) {
              convite_senha, usuario_base, usuario_tipo
     restart identity cascade
   `)
-  await semearEm(tx, DEPS, carregarConstantes())
+  await semearEm(tx, DEPS, carregarCadastroInicial())
 }
 
 test('o seed grava os dois iniciais como admin sem base', async () => {

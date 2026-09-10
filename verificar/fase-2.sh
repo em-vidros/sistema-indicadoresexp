@@ -47,12 +47,6 @@ conferir 'nenhum modulo chama o Apps Script' '0' \
   "$(grep -rl 'script\.google\|AKfycb' apps/web/src/js/ apps/web/src/telas/ 2>/dev/null | wc -l | tr -d ' ')"
 
 echo
-echo "todo clique acha a funcao dele, e o visual nao mudou"
-# Eram `handlers.ts` e `visual-telas.ts` aqui, apagados no commit 9 da fase 6 com a
-# ultima tela portada. Quem cobra agora e `bash verificar/fase-6.sh`, via
-# `verificar/paridade.ts`, que exercita cada handler por clique de verdade.
-
-echo
 echo "o dado gravado numa sessao aparece em outra"
 livia=$(entrar livia "${SENHA_LIVIA:?defina SENHA_LIVIA}")
 hoje=$(date +%F)
@@ -83,7 +77,7 @@ conferir 'depois de limpar, nao sobra na outra sessao' '0' \
   "$(curl -s -b "$outra" "$BASE/api/registros?base=Raposa" 2>/dev/null \
      | grep -o '"observacao":"prova da fase 2"' | wc -l | tr -d ' ')"
 conferir 'e a tela chama a rota, nao a memoria' '1' \
-  "$(grep -c 'await apagarRegistrosDoDia' apps/web/src/telas/formulario-registro.tsx)"
+  "$(grep -c 'await apagarRegistrosDoDia' apps/web/src/telas/registrar.tsx)"
 
 echo
 echo "o PDF sobe e volta com o mesmo conteudo"

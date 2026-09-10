@@ -1,5 +1,6 @@
 import { readdirSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite-plus'
 
 const RAIZ = new URL('src/', import.meta.url).pathname
@@ -46,7 +47,8 @@ function nome(base: string, extensao: string): string {
 
 export default defineConfig({
   root: 'src',
-  plugins: [react()],
+  // A otimização arredonda transparências. A comparação visual exige os valores exatos.
+  plugins: [react(), tailwindcss({ optimize: false })],
   // Nao ha publicDir. `docs/` continua na raiz do repositorio e quem serve e o
   // Hono, atras da sessao. Um publicDir aqui copiaria os 11 MB de PDF para dentro
   // do bundle, que e exatamente o que a fase 1 desfaz.

@@ -1,15 +1,3 @@
-/**
- * O que sai de `apps/web/dist/`: a casca da SPA, as seis telas legadas e os assets.
- *
- * Os dez caminhos da SPA recebem o mesmo `app.html`, e quem decide o que desenhar e o
- * roteador do navegador. Os `.html` das quatro telas do painel viraram esses caminhos e
- * saem daqui como 302, porque as seis telas legadas ainda linkam para eles.
- *
- * Fora isso nao ha reescrita esperta. `/` vai para `PAGINA_PADRAO`, que era o que o
- * `_redirects` do Netlify fazia, e caminho sem extensao tenta o `.html` de mesmo nome. O
- * resto e 404, que e resposta legitima: inventar fallback para a casca transformaria erro
- * de link em pagina errada servida com 200.
- */
 import type { Handler } from 'hono'
 import { resolve } from 'node:path'
 import { caminhoPedido, dentroDe, extensaoDe, pastaDeConteudo, tipoDe } from './arquivos.ts'
