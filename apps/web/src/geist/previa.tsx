@@ -31,11 +31,12 @@ export type Previa = {
 type Posicao = { readonly x: number; readonly y: number }
 type Aberta = { readonly posicao: Posicao; readonly fixada: boolean }
 
+/** Espelham `.g-previa` e `.g-previa-quadro` de `geist.css`. Mexeu la, mexa aqui. */
 const LARGURA = 340
 const ALTURA = 500
 /** Entre o gatilho e o painel. */
 const FOLGA = 8
-/** Entre o painel e a borda da janela. */
+/** Entre o painel e a borda da janela. O mesmo 12 do `calc(100vw - 24px)` da folha. */
 const MARGEM = 12
 /** Hover curto de quem so esta atravessando a celula nao abre nada. */
 const ESPERA = 400
@@ -50,12 +51,14 @@ function grudar(valor: number, tamanho: number, janela: number): number {
 function posicaoPara(rect: DOMRect): Posicao {
   const abaixo = rect.bottom + FOLGA
   const acima = rect.top - FOLGA - ALTURA
-  // Virar para cima so ajuda se couber para cima. Numa janela de 900 px o painel de 500
-  // nao cabe dos dois lados de uma linha do meio, e sem esta segunda condicao ele subia
-  // para fora da tela.
+  // Numa janela de 900 px o painel de 500 nao cabe dos dois lados de uma linha do meio,
+  // e sem a segunda condicao ele virava para cima e saia da tela.
   const y = abaixo + ALTURA > window.innerHeight && acima >= MARGEM ? acima : abaixo
+  // A folha encolhe o painel em tela estreita, e grudar pela largura cheia empurraria
+  // para a esquerda um painel que ja cabia onde estava.
+  const largura = Math.min(LARGURA, window.innerWidth - MARGEM * 2)
   return {
-    x: grudar(rect.left, LARGURA, window.innerWidth),
+    x: grudar(rect.left, largura, window.innerWidth),
     y: grudar(y, ALTURA, window.innerHeight),
   }
 }
@@ -77,11 +80,9 @@ function QuadroDePdf({ endereco, titulo }: {
   return (
     <>
       {carregado ? null : <div className="g-previa-esqueleto g-falso" />}
-      {/*
-        Sem `sandbox`: o PDF e da mesma origem e o visualizador nativo quebra com
-        sandbox em alguns navegadores. Os parametros depois do `#` sao do visualizador,
-        e enxugam a barra e o painel lateral que nao cabem em 340 px.
-      */}
+      {/* Sem `sandbox`: o PDF e da mesma origem, entao nao ha o que isolar. Os
+          parametros depois do `#` sao contrato do visualizador de PDF da plataforma, e
+          enxugam a barra e o painel lateral que nao cabem em 340 px. */}
       <iframe
         className="g-previa-iframe"
         title={titulo}
@@ -126,8 +127,8 @@ function Gatilho({ previa, children }: {
     if (alvo !== null) setAberta({ posicao: posicaoPara(alvo.getBoundingClientRect()), fixada })
   }
 
-  // Rolar ou redimensionar move o gatilho e deixa o painel para tras, entao os dois
-  // fecham. O `capture` alcanca a rolagem de qualquer caixa interna, que nao borbulha.
+  // `scroll` nao borbulha, e por isso o listener e de captura: sem ele a rolagem de uma
+  // caixa interna moveria o gatilho sem o painel ficar sabendo.
   useEffect(() => {
     if (aberta === null) return
     const fechar = (): void => setAberta(null)
@@ -144,7 +145,7 @@ function Gatilho({ previa, children }: {
     }
   }, [aberta])
 
-  // Timer que dispara depois do desmonte e `setState` em componente morto.
+  // A espera de 400 ms sobrevive ao desmonte se ninguem a cancelar.
   useEffect(() => () => {
     cancelarAbertura()
     cancelarFechamento()
@@ -216,7 +217,7 @@ function Gatilho({ previa, children }: {
 }
 
 export function ComPrevia({ previa, children }: {
-  /** null desliga o preview e o gatilho vira um passa-adiante. */
+  /** null desliga a previa. */
   readonly previa: Previa | null
   readonly children: ReactNode
 }): JSX.Element {

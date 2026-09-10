@@ -245,10 +245,8 @@ function enderecoDe(arquivo: Arquivo | null): string {
 const OUTRA_ORIGEM = /^https?:\/\//
 
 /**
- * `enderecoDe` devolve uma string so, e a previa precisa de duas coisas que ela colapsa.
- * O PDF interno e mesma origem e entra em iframe. O `linkExterno` ainda vale por dois:
- * caminho relativo sai pela rota `/docs/*` do proprio app, tambem mesma origem, tambem
- * embutivel; URL http(s) e de outra origem e so pode virar cartao com o destino.
+ * `enderecoDe` devolve uma string so, e a previa precisa dos dois lados que ela colapsa:
+ * o endereco e se aquele endereco entra num iframe.
  */
 function previaDe(arquivo: Arquivo | null, titulo: string, subtitulo?: string): Previa | null {
   if (arquivo === null || enderecoDe(arquivo) === '') return null
@@ -261,7 +259,10 @@ function previaDe(arquivo: Arquivo | null, titulo: string, subtitulo?: string): 
   if (OUTRA_ORIGEM.test(link)) return { tipo: 'link', endereco: link, ...rotulos }
   // Sem a barra na frente o navegador resolve o caminho a partir da rota atual da SPA,
   // e isso so acerta enquanto a rota tem um segmento so.
-  return { tipo: 'pdf', endereco: link.startsWith('/') ? link : `/${link}`, ...rotulos }
+  const caminho = link.startsWith('/') ? link : `/${link}`
+  // A rota `/docs/*` so serve `.pdf` e `.svg`, e o iframe nao tem o que fazer com um
+  // 404: o esqueleto ficaria girando para sempre porque `onLoad` nunca resolve.
+  return { tipo: caminho.toLowerCase().endsWith('.pdf') ? 'pdf' : 'link', endereco: caminho, ...rotulos }
 }
 
 function indexar(documentos: readonly DocumentoSalvo[]): Indice {
@@ -576,8 +577,6 @@ export default function Documentos(): JSX.Element {
     const arquivo = (indice.veiculos.get(veiculo.id) ?? VEICULO_SEM_DOCUMENTO)[chave]
     const data = arquivo?.vencimento ?? ''
     const classe = CLASSE_DA_FAIXA[faixaDe(data, alerta)]
-    // O icone e o unico sinal na tabela de que existe PDF anexado. Antes dele era
-    // preciso abrir o dialogo de edicao para descobrir.
     const previa = previaDe(arquivo, `${rotulo} · ${veiculo.placa}`)
     return (
       <div className="g-doc-celula">
