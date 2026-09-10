@@ -37,6 +37,15 @@ não de credencial. Corrija, commite e empurre de novo. Se o log acusar problema
 de projeto, avise o Henrique: os secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID` e `VERCEL_PROJECT_ID`
 são dele e ficam em Settings, Secrets and variables, Actions.
 
+Todo push na `main` termina com a fumaça (`verificar/fumaca.sh` no mesmo workflow): cinco
+leituras contra a produção, sem senha e sem escrever no banco. Se ela reprovar, o deploy
+já aconteceu, então reprovar não desfaz nada sozinho. O passo seguinte é o rollback em
+um clique: aba Actions, workflow `rollback`, Run workflow na `main`, com `acao=voltar` e
+sem preencher nada para voltar ao deploy anterior imediato. Depois do rollback a Vercel
+desliga a publicação automática, então push novo para de ir ao ar até alguém religar com
+`acao=religar` apontando o deploy corrigido. Rollback não desfaz migração de banco: se a
+quebra veio de migração, o conserto é outra migração.
+
 ## Variáveis de ambiente
 
 As variáveis de produção (`DATABASE_URL` e companhia) estão cadastradas na Vercel e o build

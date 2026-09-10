@@ -1,0 +1,90 @@
+# Volta a produção para um deploy anterior, em um clique, sem CLI local.
+#
+# Quando usar: a fumaça pós-deploy reprovou, ou alguém viu a produção quebrada
+# depois de um push. O rollback só troca qual deploy recebe o tráfego; migração
+# de banco não desfaz, então se a quebra veio de migração, o conserto é outra
+# migração, não este botão.
+#
+# Efeito colateral que importa: depois do rollback a Vercel desliga a publicação
+# automática, e push novo para de ir ao ar em silêncio. Para religar, rode de novo
+# com acao=religar apontando o deploy corrigido. Se este workflow falhar, o plano B
+# é o botão Instant Rollback no dashboard do projeto, que faz o mesmo.
+#
+# Como usar: aba Actions, workflow `rollback`, Run workflow, branch `main`:
+#   acao=voltar + deployment em branco = volta ao deploy anterior imediato
+#   acao=voltar + deployment=<url ou id> = volta ao deploy nomeado
+#   acao=religar + deployment=<url ou id> = promove e religa a publicação
+
+name: rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      acao:
+        description: 'voltar ao anterior ou religar a publicacao'
+        required: true
+        default: 'voltar'
+        type: choice
+        options: [voltar, religar]
+      deployment:
+        description: 'URL ou ID do deploy (vazio = anterior imediato, so vale para voltar)'
+        required: false
+        default: ''
+
+jobs:
+  executar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: resolve o deploy anterior
+        if: inputs.acao == 'voltar' && inputs.deployment == ''
+        id: anterior
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -uo pipefail
+          LISTA=$(curl -s --max-time 30 -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+            "https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&target=production&limit=10")
+          ALVO=$(printf '%s' "$LISTA" | jq -r '[((.deployments // [])[]) | select(.state == "READY")] | sort_by(.created) | reverse | .[1].uid // empty')
+          if [ -z "$ALVO" ]; then
+            echo 'rollback: nao achei deploy anterior pronto. resposta da API:'
+            printf '%s\n' "$LISTA" | jq . 2>/dev/null || printf '%s\n' "$LISTA"
+            exit 1
+          fi
+          echo "alvo=$ALVO" >> "$GITHUB_OUTPUT"
+          echo "rollback: anterior imediato e $ALVO"
+
+      - name: volta a producao
+        if: inputs.acao == 'voltar'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DEPLOYMENT_INPUT: ${{ inputs.deployment }}
+          ALVO_ANTERIOR: ${{ steps.anterior.outputs.alvo }}
+        run: |
+          set -uo pipefail
+          ALVO="${DEPLOYMENT_INPUT}"
+          [ -z "$ALVO" ] && ALVO="${ALVO_ANTERIOR}"
+          echo "rollback: voltando a producao para $ALVO"
+          npx -y vercel rollback "$ALVO" --yes --token="${VERCEL_TOKEN}"
+          echo 'rollback: feito. a publicacao automatica esta DESLIGADA ate religar.'
+
+      - name: religa a publicacao
+        if: inputs.acao == 'religar'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DEPLOYMENT_INPUT: ${{ inputs.deployment }}
+        run: |
+          set -uo pipefail
+          if [ -z "${DEPLOYMENT_INPUT}" ]; then
+            echo 'rollback: religar precisa do deployment (URL ou ID do deploy corrigido)'
+            exit 1
+          fi
+          npx -y vercel promote "${DEPLOYMENT_INPUT}" --yes --token="${VERCEL_TOKEN}"

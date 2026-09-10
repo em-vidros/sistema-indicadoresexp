@@ -44,3 +44,19 @@ jobs:
           else
             npx -y vercel deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
           fi
+
+  # Fumaça só de leitura, sem segredo: se a produção não responde o esperado,
+  # o run fica vermelho e o passo seguinte é o rollback em um clique, no
+  # workflow `rollback`. Reprovar aqui não desfaz o deploy sozinho, e é de
+  # propósito: voltar atrás por conta própria num alarme falso seria pior.
+  fumaca:
+    needs: publicar
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: fumaca na producao
+        run: bash verificar/fumaca.sh
