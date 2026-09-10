@@ -712,6 +712,7 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
             <Campo
               tipo="dinheiro"
               rotulo="Diárias"
+              span={6}
               mono
               valor={v.diarias}
               aoMudar={(valor) => f.mudarViagem('diarias', valor)}
@@ -719,14 +720,16 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
             <Campo
               tipo="dinheiro"
               rotulo="Combustível"
+              span={6}
               mono
               valor={v.combustivel}
               aoMudar={(valor) => f.mudarViagem('combustivel', valor)}
             />
-            <Campo tipo="calculado" rotulo="Total custo da viagem (R$)" mono valor={duasCasas(custo)} />
+            <Campo tipo="calculado" rotulo="Total custo da viagem (R$)" span={6} mono valor={duasCasas(custo)} />
             <Campo
               tipo="calculado"
               rotulo="% do custo sobre a carga"
+              span={6}
               mono
               valor={pct(custo, decimal(v.valorCarga))}
             />
@@ -1042,6 +1045,7 @@ function celulasDeQuebra(f: Ferramentas): readonly Celula[] {
             <Campo
               tipo="data"
               rotulo="Data"
+              span={6}
               obrigatorio
               valor={q.data}
               aoMudar={(valor) => f.mudarQuebra('data', valor)}
@@ -1049,6 +1053,7 @@ function celulasDeQuebra(f: Ferramentas): readonly Celula[] {
             <Campo
               tipo="numero"
               rotulo="m² expedido"
+              span={6}
               obrigatorio
               mono
               valor={q.m2Expedido}
@@ -1057,6 +1062,7 @@ function celulasDeQuebra(f: Ferramentas): readonly Celula[] {
             <Campo
               tipo="numero"
               rotulo="m² com quebra"
+              span={6}
               mono
               valor={q.m2Quebrado}
               aoMudar={(valor) => f.mudarQuebra('m2Quebrado', valor)}
@@ -1064,6 +1070,7 @@ function celulasDeQuebra(f: Ferramentas): readonly Celula[] {
             <Campo
               tipo="calculado"
               rotulo="% de quebra"
+              span={6}
               mono
               valor={pct(decimal(q.m2Quebrado), decimal(q.m2Expedido))}
             />
