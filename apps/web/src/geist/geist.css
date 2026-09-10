@@ -211,8 +211,13 @@ body {
   color: var(--g-gray-900);
 }
 
+/* O trilho tem 100 vh fixos e a conta mora no rodape dele: sem rolagem propria, uma
+   lista comprida de itens cobre o menu da conta em janela baixa. Com ela, so a
+   navegacao rola, e o fade da secao scroll-fade avisa que ha mais item. */
 .g-nav {
   flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -411,6 +416,10 @@ body {
   right: 0;
   z-index: 10;
   min-width: 208px;
+  /* Teto para a lista rolar dentro do proprio painel em vez de vazar da janela. Com
+     pouco item nada muda: sem overflow, sem fade e sem barra. */
+  max-height: min(320px, calc(100vh - 48px));
+  overflow-y: auto;
   padding: 4px;
   border-radius: var(--g-raio-painel);
   background: var(--g-bg-100);
@@ -539,11 +548,13 @@ body {
  * ha para onde rolar. Em navegador sem scroll-driven animations cai para fade estatico
  * nas duas bordas, que e o fallback que a doc original descreve.
  *
- * `.g-rolagem` (tabela no mobile) desvanece na horizontal; `.g-dialogo-corpo` e
- * `.g-lista-checks` na vertical. `.g-fade-x` e `.g-fade-y` sao a saida para a proxima
+ * `.g-rolagem` (tabela no mobile) desvanece na horizontal, no padrao cheio. O
+ * vertical do painel e sutil: `.g-dialogo-corpo`, `.g-lista-checks`, `.g-nav`,
+ * `.g-menu-painel` e a pagina inteira via `.g-painel-corpo` usam `min(8%, 24px)` de
+ * fundura revelados em 64 px. `.g-fade-x` e `.g-fade-y` sao a saida para a proxima
  * caixa rolavel que aparecer: vestir a classe no elemento com `overflow` e o resto
- * vem junto. `--g-fade-tam` troca a fundura e `--g-fade-revelar` a distancia da
- * revelacao num caso pontual.
+ * vem junto, no padrao cheio. `--g-fade-tam` troca a fundura e `--g-fade-revelar` a
+ * distancia da revelacao num caso pontual.
  *
  * A mascara mora na caixa que rola, dentro da moldura: o `.g-rolagem` dissolve a
  * tabela e nao a borda do bloco, e o `.g-dialogo-corpo` dissolve o formulario e nao
@@ -577,6 +588,8 @@ body {
 
 .g-lista-checks,
 .g-dialogo-corpo,
+.g-nav,
+.g-menu-painel,
 .g-fade-y {
   --_g-fade-cima-tam: var(--g-fade-cima-tam, var(--g-fade-tam, min(12%, 40px)));
   --_g-fade-baixo-tam: var(--g-fade-baixo-tam, var(--g-fade-tam, min(12%, 40px)));
@@ -598,6 +611,8 @@ body {
 @supports (animation-timeline: scroll()) {
   .g-lista-checks,
   .g-dialogo-corpo,
+  .g-nav,
+  .g-menu-painel,
   .g-fade-y {
     animation: g-fade-revelar-cima 1ms ease-in-out, g-fade-revelar-baixo 1ms ease-in-out;
     animation-timeline: scroll(self y), scroll(self y);
@@ -611,6 +626,8 @@ body {
 @supports not (animation-timeline: scroll()) {
   .g-lista-checks,
   .g-dialogo-corpo,
+  .g-nav,
+  .g-menu-painel,
   .g-fade-y {
     --g-fade-cima: var(--_g-fade-cima-tam);
     --g-fade-baixo: var(--_g-fade-baixo-tam);
@@ -653,6 +670,53 @@ body {
   .g-fade-x {
     --g-fade-inicio: var(--_g-fade-inicio-tam);
     --g-fade-fim: var(--_g-fade-fim-tam);
+  }
+}
+
+/* O vertical do painel e sutil: `min(8%, 24px)` revelados em 64 px. `.g-fade-y`
+   segue no padrao cheio para quem pedir pelo nome. */
+.g-lista-checks,
+.g-dialogo-corpo,
+.g-nav,
+.g-menu-painel {
+  --g-fade-tam: min(8%, 24px);
+  --g-fade-revelar: 64px;
+}
+
+/* O rolar da pagina. O `.g-painel-corpo` nao rola sozinho, quem rola e a janela,
+   entao a linha do tempo e a do scroller raiz e nao a propria. Sem
+   `animation-timeline` nao ha fallback estatico aqui: fade parado no topo da pagina
+   pareceria conteudo cortado, e ausencia de fade e graciosa. A fundura e fixa
+   porque a caixa tem a altura do conteudo inteiro, e porcentagem resolveria em
+   centenas de px. */
+.g-painel-corpo {
+  --g-fade-tam: 24px;
+  --g-fade-revelar: 64px;
+  --_g-fade-cima-tam: var(--g-fade-cima-tam, var(--g-fade-tam));
+  --_g-fade-baixo-tam: var(--g-fade-baixo-tam, var(--g-fade-tam));
+  --g-fade-bloco: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--g-fade-cima, 0px),
+    #000 calc(100% - var(--g-fade-baixo, 0px)),
+    transparent 100%
+  );
+  -webkit-mask-image: var(--g-fade-mascara, var(--g-fade-bloco));
+  mask-image: var(--g-fade-mascara, var(--g-fade-bloco));
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+@supports (animation-timeline: scroll()) {
+  .g-painel-corpo {
+    animation: g-fade-revelar-cima 1ms ease-in-out, g-fade-revelar-baixo 1ms ease-in-out;
+    animation-timeline: scroll(root y), scroll(root y);
+    animation-range:
+      0 var(--g-fade-revelar, 64px),
+      calc(100% - var(--g-fade-revelar, 64px)) 100%;
+    animation-fill-mode: both;
   }
 }
 

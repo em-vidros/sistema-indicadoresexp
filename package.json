@@ -23,7 +23,10 @@
   "devDependencies": {
     "@neon/config": "^1.2.0",
     "@types/bun": "^1.4.0",
+    "@types/pngjs": "^6.0.5",
+    "pixelmatch": "^7.2.0",
     "playwright": "^1.62.1",
+    "pngjs": "^7.0.0",
     "typescript": "^5.9.2"
   }
 }
