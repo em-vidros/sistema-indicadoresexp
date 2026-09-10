@@ -13,9 +13,9 @@ import type { Tom } from '../geist/primitivos.tsx'
 export type { Tom }
 import type { Periodo } from './filtros.ts'
 
-// Minutos de tolerancia antes de a chegada contar como atraso. E o parametro
-// `pontualidade_tolerancia_min`, semeado em 15. Nenhuma rota da API entrega
-// parametro ainda, entao o numero esta repetido aqui; quando houver, ele sai daqui.
+// Minutos de tolerancia antes de a chegada contar como atraso. Nenhuma rota da API
+// entrega parametro ainda, e a origem usa `<select>` manual sem numero real, entao
+// o 15 segue hardcoded e pendente da decisao da Livia; quando houver parametro, ele sai daqui.
 export const TOLERANCIA_PONTUALIDADE_MIN = 15
 
 export type Pontualidade = 'adiantado' | 'no_prazo' | 'atrasado'

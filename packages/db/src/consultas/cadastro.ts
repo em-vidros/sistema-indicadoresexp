@@ -35,7 +35,7 @@ export class CadastroInvalido extends Error {
 
 type Leitor = Pick<Db, 'select'>
 
-type Alcance = { admin: boolean; bases: BasePermitida[]; ids: string[] }
+type Alcance = { todasAsBases: boolean; bases: BasePermitida[]; ids: string[] }
 
 /**
  * As bases que este usuario alcanca **no cadastro**, que nao sao as mesmas de
@@ -48,14 +48,14 @@ type Alcance = { admin: boolean; bases: BasePermitida[]; ids: string[] }
 async function alcanceDoCadastro(db: Leitor, usuarioId: string): Promise<Alcance> {
   const permissao = await lerPermissao(db, usuarioId)
   if (!permissao) throw new CadastroInvalido('usuário inexistente')
-  const bases = permissao.admin
+  const bases = permissao.todasAsBases
     ? await db.select({ id: base.id, nome: base.nome }).from(base)
     : permissao.bases
-  return { admin: permissao.admin, bases, ids: bases.map((item) => item.id) }
+  return { todasAsBases: permissao.todasAsBases, bases, ids: bases.map((item) => item.id) }
 }
 
 function exigirAdmin(alcance: Alcance): void {
-  if (!alcance.admin) throw new CadastroInvalido('só administrador altera base')
+  if (!alcance.todasAsBases) throw new CadastroInvalido('só administrador altera base')
 }
 
 /**

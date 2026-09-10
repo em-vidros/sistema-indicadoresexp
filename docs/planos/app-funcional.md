@@ -1388,11 +1388,14 @@ desse código.
 Apontar o DNS obriga a trocar `BETTER_AUTH_URL` e publicar de novo, porque o cookie de
 sessão é assinado com o host. É decisão da Livia com o Henrique, não minha.
 
-**O deploy não sai do git.** `vercel link` recusou o repositório com `The repository
+**O deploy sai do git, sem login na Vercel.** `vercel link` recusou o repositório com `The repository
 "sistema-indicadoresexp" is private and owned by an organization, which is not
-supported on the Hobby plan`. O projeto foi criado do mesmo jeito, mas cada publicação
-é um `vercel deploy --prod` na mão. Quem publicar precisa lembrar de rodar
-`bash verificar/fase-4.sh <URL>` depois, porque não há CI nesse caminho.
+supported on the Hobby plan`, então a integração Git da Vercel não vale aqui. No lugar
+dela, `.github/workflows/deploy.yml` publica a cada `git push` na `main` (e gera preview
+a cada PR) usando `VERCEL_TOKEN`, `VERCEL_ORG_ID` e `VERCEL_PROJECT_ID` guardados nos
+secrets do GitHub. Ninguém precisa de `vercel login`, `vercel link` ou CLI instalada:
+o fluxo da Livia é editar, commitar e dar push. Depois de publicar, rodar
+`bash verificar/fase-4.sh https://sistema-indicadoresexp.vercel.app` continua valendo.
 
 Sobre o `neon.ts` e o `neon deploy`: eles descrevem o estado do projeto Neon e o
 reconciliam, `neon deploy` sendo alias de `neon config apply`. Não publicam o app, e

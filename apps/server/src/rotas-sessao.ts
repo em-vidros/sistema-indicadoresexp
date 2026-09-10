@@ -1,27 +1,37 @@
 /**
- * As tres rotas de sessao que a tela usa: entrar, sair e saber quem esta logado.
+ * As rotas de sessao que a tela usa: entrar, sair, saber quem esta logado e as
+ * duas do primeiro acesso.
  *
- * O e-mail e montado aqui, e nao no navegador. A tela pede "usuario" porque e o que
- * o operador tem na cabeca, e o dominio da casa e a rota interna do better-auth sao
- * detalhe de servidor: mudar `@emvidros.com.br` amanha nao deve exigir republicar
- * as sete telas.
+ * O e-mail e montado no servidor, e nao no navegador. A tela pede "usuario" porque
+ * e o que o operador tem na cabeca, e o dominio da casa e a rota interna do
+ * better-auth sao detalhe de servidor: mudar `@emvidros.com.br` amanha nao deve
+ * exigir republicar as telas. O `emailDe` vem de `@ind/db` porque o cadastro de
+ * usuario ja precisava dele, e duas copias do dominio dariam um usuario que existe
+ * no banco e nao entra.
+ *
+ * O convite mora aqui, e nao em `rotas-usuarios.ts`, por causa do portao: as duas
+ * rotas dele sao publicas, como `/api/entrar`, e ficam sujeitas ao mesmo limitador
+ * por IP. As de `rotas-usuarios.ts` sao o oposto, todas exigem sessao de quem
+ * gerencia usuarios.
  */
-import type { Auth } from '@ind/auth'
-import { type Db, sessaoDoUsuario } from '@ind/db'
+import { ISSUER_SENHA, PROVEDOR_SENHA, type Auth, type Hasher, hasherDe } from '@ind/auth'
+import { type Db, aceitarConvite, emailDe, lerConvite, sessaoDoUsuario } from '@ind/db'
 import { type Context, Hono } from 'hono'
 import { getConnInfo } from 'hono/bun'
 import { z } from 'zod'
 import type { Ambiente } from './portao.ts'
-
-const DOMINIO = '@emvidros.com.br'
 
 /**
  * O freio de tentativa do `/api/entrar`.
  *
  * O limitador do better-auth mora no `onRequest` do roteador dele e so roda quando a
  * requisicao entra por `auth.handler`. Esta rota chama `signInEmail` direto, entao
- * passa por fora dele. E ela e publica, e ate os nomes dos quatro logins ja andaram
+ * passa por fora dele. E ela e publica, e ate os nomes dos logins ja andaram
  * escritos no HTML: o que sobra entre um estranho e o sistema e adivinhar a senha.
+ *
+ * As duas rotas de convite dividem o mesmo contador pelo mesmo motivo, so que ali o
+ * que se adivinha e o token. Cota gasta so em tentativa errada, entao quem tem o
+ * link na mao nunca esbarra nele.
  *
  * O contador vive na memoria deste processo. Ele zera no restart e nao e dividido
  * com outra instancia, o que basta para o custo de uma tentativa deixar de ser zero,
@@ -86,10 +96,25 @@ const Credencial = z.object({
   lembrar: z.boolean().default(true),
 })
 
+/**
+ * Oito caracteres. Nao e forca de senha de verdade, e o piso abaixo do qual nao
+ * vale a pena ter senha. Quem escolhe uma boa continua podendo.
+ */
+const SENHA_MINIMA = 8
+
+const Convite = z.object({
+  token: z.string().min(1).max(256),
+  senha: z.string().min(1).max(256),
+})
+
 export type Dependencias = { auth: Auth; db: Db }
 
 export function rotasSessao({ auth, db }: Dependencias): Hono<Ambiente> {
   const rotas = new Hono<Ambiente>()
+
+  // `hasherDe` abre o contexto do better-auth, que e assincrono e caro. Uma vez por
+  // processo, e so no primeiro convite aceito.
+  let hasher: Promise<Hasher> | null = null
 
   rotas.post('/entrar', async (c) => {
     const corpo = await c.req.json().catch(() => null)
@@ -106,7 +131,7 @@ export function rotasSessao({ auth, db }: Dependencias): Hono<Ambiente> {
     const resposta = await auth.api.signInEmail({
       asResponse: true,
       body: {
-        email: `${entrada.data.usuario.toLowerCase()}${DOMINIO}`,
+        email: emailDe(entrada.data.usuario),
         password: entrada.data.senha,
         rememberMe: entrada.data.lembrar,
       },
@@ -121,6 +146,64 @@ export function rotasSessao({ auth, db }: Dependencias): Hono<Ambiente> {
     // O 204 e nosso, mas o `Set-Cookie` que apaga a sessao e do better-auth. Sem
     // copiar, o navegador seguiria mandando o cookie de uma sessao ja encerrada.
     for (const cookie of resposta.headers.getSetCookie()) saida.headers.append('set-cookie', cookie)
+    return saida
+  })
+
+  /**
+   * O primeiro acesso, em duas rotas publicas.
+   *
+   * Os tres motivos de recusa (token que nao existe, token expirado, token ja
+   * usado) devolvem o mesmo 404 de proposito. Dizer qual deles e conta a quem
+   * estiver testando tokens quais logins existem, que e a informacao que o 401 do
+   * `/api/entrar` ja se recusa a dar.
+   */
+  rotas.get('/convite', async (c) => {
+    const token = c.req.query('token') ?? ''
+    const ip = ipDe(c)
+    const agora = Date.now()
+    if (excedeu(ip, agora)) return c.json({ erro: 'muitas tentativas' }, 429)
+
+    const dono = token === '' ? null : await lerConvite(db, token)
+    if (!dono) {
+      registrarFalha(ip, agora)
+      return c.json({ erro: 'convite invalido' }, 404)
+    }
+    return c.json({ usuario: dono.usuario, nome: dono.nome })
+  })
+
+  rotas.post('/convite', async (c) => {
+    const entrada = Convite.safeParse(await c.req.json().catch(() => null))
+    if (!entrada.success) return c.json({ erro: 'entrada invalida' }, 400)
+
+    const ip = ipDe(c)
+    const agora = Date.now()
+    if (excedeu(ip, agora)) return c.json({ erro: 'muitas tentativas' }, 429)
+
+    // Antes de olhar o banco, porque e a unica recusa que nao depende do token e a
+    // unica cujo motivo pode ser dito sem contar nada a quem esta tentando.
+    if (entrada.data.senha.length < SENHA_MINIMA) return c.json({ erro: 'senha curta' }, 400)
+
+    const hash = await (await (hasher ??= hasherDe(auth))).hash(entrada.data.senha)
+    const dono = await aceitarConvite(db, entrada.data.token, hash, {
+      provedorSenha: PROVEDOR_SENHA,
+      issuerSenha: ISSUER_SENHA,
+    })
+    if (!dono) {
+      registrarFalha(ip, agora)
+      return c.json({ erro: 'convite invalido' }, 404)
+    }
+
+    // A senha acabou de ser gravada, entao entrar e chamar o mesmo `signInEmail` do
+    // `/api/entrar`. Pedir para digitar de novo o que a pessoa digitou ha um
+    // segundo seria so uma chance a mais de errar.
+    const sessao = await auth.api.signInEmail({
+      asResponse: true,
+      body: { email: emailDe(dono.usuario), password: entrada.data.senha, rememberMe: true },
+    })
+    const saida = c.json({ ok: true })
+    for (const cookie of sessao.headers.getSetCookie()) {
+      saida.headers.append('set-cookie', cookie)
+    }
     return saida
   })
 

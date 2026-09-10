@@ -80,7 +80,7 @@ async function permissaoDoUsuario(db: LeitorAtas, usuarioId: string): Promise<Pe
  * as da empresa inteira. Admin nao filtra nada.
  */
 function filtroVisivel(permissao: PermissaoBases): SQL | undefined {
-  if (permissao.admin) return undefined
+  if (permissao.todasAsBases) return undefined
   if (permissao.ids.length === 0) return isNull(ata.baseId)
   return or(isNull(ata.baseId), inArray(ata.baseId, permissao.ids))
 }
@@ -91,7 +91,7 @@ function filtroVisivel(permissao: PermissaoBases): SQL | undefined {
  * ali e 404, nao 403.
  */
 function exigirEscrita(permissao: PermissaoBases, baseDaAta: string | null): void {
-  if (permissao.admin) return
+  if (permissao.todasAsBases) return
   if (baseDaAta === null) throw new AtaInvalida('ata da empresa: só o administrador altera', 403)
   if (!permissao.ids.includes(baseDaAta)) throw new AtaInvalida('ata inexistente', 404)
 }
@@ -101,8 +101,8 @@ export async function catalogoAta(db: Db, usuarioId: string) {
   // O catalogo e o cadastro de pessoal, e o operador so precisa do da base dele.
   // Sem este filtro a tela de ata entregava os 31 colaboradores das tres bases a
   // qualquer sessao.
-  if (!permissao.admin && permissao.ids.length === 0) return []
-  const daBase = permissao.admin ? undefined : inArray(colaborador.baseId, permissao.ids)
+  if (!permissao.todasAsBases && permissao.ids.length === 0) return []
+  const daBase = permissao.todasAsBases ? undefined : inArray(colaborador.baseId, permissao.ids)
   return await db
     .select({
       id: colaborador.id,
@@ -312,9 +312,9 @@ function gravarAta(
       // Convidado de outra base entra pelo `nomeExterno`, que nao passa por
       // aqui. Se um dia a ata precisar do vinculo de verdade com pessoa de
       // outra base, a regra vira explicita; hoje ela era so um buraco.
-      const daBase = permissao.admin ? undefined : inArray(colaborador.baseId, permissao.ids)
+      const daBase = permissao.todasAsBases ? undefined : inArray(colaborador.baseId, permissao.ids)
       const visiveis =
-        permissao.admin || permissao.ids.length > 0
+        permissao.todasAsBases || permissao.ids.length > 0
           ? await tx
               .select({ id: colaborador.id })
               .from(colaborador)
@@ -346,7 +346,7 @@ function gravarAta(
     // A base nasce de quem grava e nunca do corpo: o admin cria ata da empresa
     // (base nula), o operador cria ata da base fixa dele. No UPDATE a base fica
     // como esta, entao nao ha como mover uma ata de base pela tela.
-    if (!permissao.admin && permissao.baseFixa === null) {
+    if (!permissao.todasAsBases && permissao.baseFixa === null) {
       throw new AtaInvalida('usuário sem base fixa', 403)
     }
     const alvos = idAtual
@@ -359,7 +359,7 @@ function gravarAta(
           .insert(ata)
           .values({
             ...valores,
-            baseId: permissao.admin ? null : permissao.baseFixa,
+            baseId: permissao.todasAsBases ? null : permissao.baseFixa,
             criadoPor: usuarioId,
           })
           .returning({ id: ata.id })

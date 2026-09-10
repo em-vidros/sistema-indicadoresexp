@@ -15,6 +15,7 @@
  * so sem virar um punhado de flags, e a flag errada e exatamente por onde o
  * vazamento entra.
  */
+import { CAPACIDADES, type Papel } from '@ind/core'
 import { eq } from 'drizzle-orm'
 import type { Db } from '../index.ts'
 import { user, usuarioBase } from '../schema/auth.ts'
@@ -25,10 +26,16 @@ type Leitor = Pick<Db, 'select'>
 export type BasePermitida = { id: string; nome: string }
 
 export type PermissaoBases = {
-  admin: boolean
+  papel: Papel
   /**
-   * A base que o usuario tem travada no formulario. Sempre `null` no admin: o
-   * CHECK `user_admin_sem_base_ck` nao deixa admin ter `base_id`.
+   * A capacidade, e nao o papel, porque e ela que decide o alcance. Quem consome
+   * isto nao compara papel com string: a tabela CAPACIDADES de `@ind/core` e a
+   * unica que decide, e ela ja decidiu aqui.
+   */
+  todasAsBases: boolean
+  /**
+   * A base que o usuario tem travada no formulario. Sempre `null` em quem ve
+   * todas: o CHECK `user_papel_base_ck` nao deixa admin ter `base_id`.
    */
   baseFixa: string | null
   /** As bases que ele alcanca, com nome, porque o registro casa base por nome. */
@@ -38,8 +45,9 @@ export type PermissaoBases = {
 }
 
 /**
- * Admin enxerga toda base ativa; o resto enxerga o que `usuario_base` lista,
- * ativa ou nao; quem perdeu a base perde a lista inteira, e nao meia lista.
+ * Quem tem `todasAsBases` enxerga toda base ativa; o resto enxerga o que
+ * `usuario_base` lista, ativa ou nao; quem perdeu a base perde a lista inteira,
+ * e nao meia lista.
  *
  * Usuario que nao existe volta `null`, e nao erro: cada dominio tem o proprio
  * vocabulario de recusa (`RegistroInvalido` com booleano, `AtaInvalida` e
@@ -51,12 +59,13 @@ export async function lerPermissao(
   usuarioId: string,
 ): Promise<PermissaoBases | null> {
   const [pessoa] = await db
-    .select({ admin: user.admin, baseFixa: user.baseId })
+    .select({ papel: user.papel, baseFixa: user.baseId })
     .from(user)
     .where(eq(user.id, usuarioId))
   if (!pessoa) return null
 
-  const bases = pessoa.admin
+  const todasAsBases = CAPACIDADES[pessoa.papel].todasAsBases
+  const bases = todasAsBases
     ? await db.select({ id: base.id, nome: base.nome }).from(base).where(eq(base.ativo, true))
     : await db
         .select({ id: base.id, nome: base.nome })
@@ -65,7 +74,8 @@ export async function lerPermissao(
         .where(eq(usuarioBase.usuarioId, usuarioId))
 
   return {
-    admin: pessoa.admin,
+    papel: pessoa.papel,
+    todasAsBases,
     baseFixa: pessoa.baseFixa,
     bases,
     ids: bases.map((item) => item.id),

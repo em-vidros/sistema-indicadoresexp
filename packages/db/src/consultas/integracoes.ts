@@ -107,7 +107,7 @@ async function permissaoDoUsuario(
  * criou (ou o admin).
  */
 function filtroVisivel(permissao: PermissaoBases): SQL | undefined {
-  if (permissao.admin) return undefined
+  if (permissao.todasAsBases) return undefined
   if (permissao.ids.length === 0) return isNull(integracao.colaboradorId)
   return or(isNull(integracao.colaboradorId), inArray(colaborador.baseId, permissao.ids))
 }
@@ -119,7 +119,7 @@ export async function catalogoIntegracao(
   const permissao = await permissaoDoUsuario(db, usuarioId)
   // O catalogo entregava o cadastro de pessoal das tres bases a qualquer sessao.
   // O operador so precisa de quem trabalha nas bases dele.
-  const daBase = permissao.admin
+  const daBase = permissao.todasAsBases
     ? undefined
     : permissao.ids.length === 0
       ? sql`false`
@@ -290,7 +290,7 @@ async function integracaoParaEscrita(
     .leftJoin(colaborador, eq(colaborador.id, integracao.colaboradorId))
     .where(and(eq(integracao.id, id), isNull(integracao.apagadoEm)))
   if (!alvo) throw new IntegracaoInvalida('integracao inexistente', 404)
-  if (permissao.admin) return
+  if (permissao.todasAsBases) return
   if (alvo.colaboradorId === null) {
     if (alvo.criadoPor === usuarioId) return
     throw new IntegracaoInvalida('ficha sem colaborador: só quem a criou altera', 403)
@@ -326,7 +326,7 @@ function gravarIntegracao(
       // A ficha e do colaborador, entao a base dele decide quem pode escrever.
       // 403 e nao 404 aqui: o id do colaborador veio no corpo, quem enviou ja
       // sabe que ele existe, e a recusa nao conta nada novo.
-      if (!permissao.admin && !permissao.ids.includes(pessoa.baseId)) {
+      if (!permissao.todasAsBases && !permissao.ids.includes(pessoa.baseId)) {
         throw new IntegracaoInvalida('colaborador fora das suas bases', 403)
       }
     }

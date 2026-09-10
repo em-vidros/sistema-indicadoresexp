@@ -4,6 +4,7 @@
  * deles quebra a tela em silencio.
  */
 import { describe, expect, test } from 'bun:test'
+import { CAPACIDADES } from '@ind/core'
 import { exigir } from '@ind/db'
 import { PAGINA_PADRAO } from '../src/portao.ts'
 import { cookieDaLivia, NAVEGACAO, pedir } from './ajuda.ts'
@@ -83,10 +84,11 @@ describe('GET /api/sessao', () => {
 
     const corpo = (await resposta.json()) as Record<string, unknown>
     expect(Object.keys(corpo).sort()).toEqual(
-      ['admin', 'baseFixa', 'bases', 'nome', 'tipos', 'usuario', 'usuarioId'].sort(),
+      ['baseFixa', 'bases', 'capacidades', 'nome', 'papel', 'tipos', 'usuario', 'usuarioId'].sort(),
     )
     expect(corpo['usuario']).toBe('livia')
-    expect(corpo['admin']).toBe(true)
+    expect(corpo['papel']).toBe('admin')
+    expect(corpo['capacidades']).toEqual(CAPACIDADES.admin)
     expect(corpo['baseFixa']).toBeNull()
     expect(corpo['bases']).toEqual(['Belém', 'Imperatriz', 'Raposa'])
     expect(corpo['tipos']).toEqual(['abastecimento', 'manutencao', 'quebra', 'viagem'])

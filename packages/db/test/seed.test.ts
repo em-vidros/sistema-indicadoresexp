@@ -9,9 +9,7 @@
  * de TRUNCATE, que apagaria registro de viagem junto com o cadastro.
  *
  * Roda dentro de uma transacao que ele mesmo desfaz, entao nao encosta no banco de
- * verdade nem depende de ordem entre os arquivos de teste. O hasher e falso de
- * proposito: o que esta sob teste sao as nove contagens, e scrypt de 8 senhas
- * custaria segundos para nao provar nada a mais.
+ * verdade nem depende de ordem entre os arquivos de teste.
  */
 import { afterAll, expect, test } from 'bun:test'
 import { TransactionRollbackError, sql } from 'drizzle-orm'
@@ -23,16 +21,16 @@ const { db, sql: conexao } = criarDb(undefined, { max: 1 })
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 const DEPS: DepsSeed = {
-  hashSenha: async (senha) => `falso:${senha}`,
   provedorSenha: 'credential',
   issuerSenha: 'local:credential',
-  senhaDe: (chave) => `senha-de-teste-${chave}`,
   agora: new Date('2026-08-31T12:00:00Z'),
 }
 
 // As contagens saem do banco, e nao do que `semear` devolve: o retorno mede o que o
-// seed quis gravar, e a pergunta aqui e o que ficou gravado.
-async function doBanco(tx: Tx): Promise<Contagens> {
+// seed quis gravar, e a pergunta aqui e o que ficou gravado. `apagados` nao e
+// contagem de tabela e por isso nao sai do banco: ele e conferido no retorno.
+type ContagensBanco = Omit<Contagens, 'apagados'>
+async function doBanco(tx: Tx): Promise<ContagensBanco> {
   const [linha] = await tx.execute<Record<keyof Contagens, string>>(sql`
     select
       (select count(*) from base)                as bases,
@@ -69,20 +67,20 @@ async function zerar(tx: Tx) {
   await tx.execute(sql`set local client_min_messages = warning`)
   await tx.execute(sql`
     truncate base, veiculo, colaborador, rota, tipo_preventivo, item_preventivo,
-             meta, parametro, programa_integracao, programa_semana,
+             meta, parametro, politica_documento, programa_integracao, programa_semana,
              programa_atividade, programa_criterio, "user", account, session,
-             usuario_base, usuario_tipo
+             convite_senha, usuario_base, usuario_tipo
     restart identity cascade
   `)
 }
 
-const ESPERADO: Contagens = {
+const ESPERADO: ContagensBanco = {
   bases: 3,
   veiculos: 15,
   colaboradores: 31,
   rotas: 22,
   tiposPreventiva: 8,
-  usuarios: 4,
+  usuarios: 2,
   metas: 4,
   programas: 2,
   atividades: 47,
@@ -90,18 +88,20 @@ const ESPERADO: Contagens = {
 
 test('rodar o seed duas vezes nao muda as nove contagens', async () => {
   const c = carregarConstantes()
-  let saida: { primeira: Contagens; segunda: Contagens } | undefined
+  let saida: { primeira: ContagensBanco; segunda: ContagensBanco } | undefined
+  let apagados: { primeiro: number; segundo: number } | undefined
 
   try {
     await db.transaction(async (tx) => {
       await zerar(tx)
 
-      await semearEm(tx, DEPS, c)
+      const r1 = await semearEm(tx, DEPS, c)
       const primeira = await doBanco(tx)
-      await semearEm(tx, DEPS, c)
+      const r2 = await semearEm(tx, DEPS, c)
       const segunda = await doBanco(tx)
 
       saida = { primeira, segunda }
+      apagados = { primeiro: r1.contagens.apagados, segundo: r2.contagens.apagados }
       tx.rollback()
     })
   } catch (erro) {
@@ -110,6 +110,7 @@ test('rodar o seed duas vezes nao muda as nove contagens', async () => {
 
   expect(saida?.primeira).toEqual(ESPERADO)
   expect(saida?.segunda).toEqual(ESPERADO)
+  expect(apagados).toEqual({ primeiro: 0, segundo: 0 })
 })
 
 test('a segunda passada atualiza a linha em vez de criar outra', async () => {

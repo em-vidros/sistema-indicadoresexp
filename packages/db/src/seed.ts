@@ -4,12 +4,16 @@
  * HTMLs de origem. Se o arquivo nao existir, o extrator e chamado antes; se falhar,
  * o seed morre dizendo qual comando rodar.
  *
- * `semear` nao conhece o better-auth. A senha chega como funcao em `Deps`, que e o
- * padrao que o `arquitetura.md` escolheu no lugar de repositorio por tabela ("os
- * casos de uso recebem as funcoes de que precisam num objeto `Deps`, tipado
- * estruturalmente"). Isso e o que mantem a cerca verde: `packages/db/src/**` nao
- * pode importar `@ind/auth`, e quem liga os dois e o entrypoint
- * `packages/db/semear.ts`, fora de `src/`.
+ * `semear` nao conhece o better-auth. As duas constantes que identificam a conta de
+ * senha chegam em `Deps`, que e o padrao que o `arquitetura.md` escolheu no lugar
+ * de repositorio por tabela ("os casos de uso recebem as funcoes de que precisam
+ * num objeto `Deps`, tipado estruturalmente"). Isso e o que mantem a cerca verde:
+ * `packages/db/src/**` nao pode importar `@ind/auth`, e quem liga os dois e o
+ * entrypoint `packages/db/semear.ts`, fora de `src/`.
+ *
+ * Ninguem nasce com senha. Quem nao tem conta de senha ganha um link de primeiro
+ * acesso, que o entrypoint imprime; quem ja definiu a dele nao ganha nada, e por
+ * isso rodar o seed de novo nao derruba ninguem.
  *
  * Rodar duas vezes deixa o banco no mesmo estado. Nao ha TRUNCATE: cada tabela entra
  * por `onConflictDoUpdate`, e o alvo do conflito e sempre a chave primaria, porque
@@ -21,9 +25,11 @@ import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { sql } from 'drizzle-orm'
+import { and, eq, isNotNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db } from './index.ts'
+import { criarConvite } from './consultas/convites.ts'
+import { apagarUsuariosForaDe, emailDe, idDeUsuario } from './consultas/usuarios.ts'
 import {
   account,
   base,
@@ -33,6 +39,7 @@ import {
   funcaoColaborador,
   itemPreventivo,
   meta,
+  papelUsuario,
   parametro,
   politicaDocumento,
   programaAtividade,
@@ -41,6 +48,7 @@ import {
   programaSemana,
   rota,
   tipoPreventivo,
+  tipoRegistro,
   user,
   usuarioBase,
   usuarioTipo,
@@ -102,17 +110,6 @@ const Programa = z.object({
   matriz: z.array(z.object({ criterio: z.string(), padrao: z.string(), freq: z.string() })),
 })
 
-const Usuario = z.object({
-  nome: z.string(),
-  // `admin: true` so aparece no objeto da livia; nos outros tres a chave nao existe
-  // no HTML. Quem nao e admin e por ausencia, e nao por um `false` escrito la.
-  admin: z.boolean().optional(),
-  // `base` e a base fixa da tela, e vem explicita em todos: `null` na livia.
-  base: z.string().nullable(),
-  bases: z.array(z.string()),
-  tipos: z.array(z.enum(['viagem', 'abastecimento', 'manutencao', 'quebra'])),
-})
-
 const Constantes = z.object({
   'ata-reuniao.html': z.object({
     COLABORADORES: z.record(
@@ -155,7 +152,6 @@ const Constantes = z.object({
     ROTAS_IMPERATRIZ: z.array(z.string()),
     ROTAS_LOCAIS: z.array(z.string()),
     ROTAS_RAPOSA: z.array(z.string()),
-    USUARIOS: z.record(z.string(), Usuario),
     VEICULOS_BELEM: z.array(z.string()),
     VEICULOS_IMPERATRIZ: z.array(z.string()),
     VEICULOS_RAPOSA: z.array(z.string()),
@@ -206,10 +202,11 @@ export function carregarConstantes(caminho = CONSTANTES): Constantes {
 
 /**
  * Os quatro limiares de KPI. Sao a unica parte do seed que nao sai de constante
- * nomeada, porque no dashboard eles estao embutidos dentro das condicionais que
- * pintam o card, com valores que divergem entre o card, a tabela de rotas e o texto
- * do WhatsApp. `docs/planos/arquitetura.md`, secao "os valores que estavam em
- * aberto", decidiu por um par so: o do card, que e a superficie que a Livia olha.
+ * nomeada, porque no dashboard eles estao embutidos nas condicionais que pintam o
+ * card (linhas 394, 404, 414 e 431 de `dashboard-semanal.html`), com valores que
+ * divergem entre o card, a tabela de rotas e o texto do WhatsApp.
+ * `docs/planos/arquitetura.md`, secao "os valores que estavam em aberto", decidiu
+ * por um par so: o do card, que e a superficie que a Livia olha.
  *
  * A ordem `(limiteOk, limiteAtencao)` obedece ao `meta_limite_ck` do schema e ao
  * `Limiar` do dominio: em `menor_melhor`, atencao >= ok.
@@ -222,21 +219,61 @@ const METAS = [
   { chave: 'atraso', direcao: 'menor_melhor', limiteOk: '5', limiteAtencao: null },
 ] as const
 
-/** Escalar sem direcao e sem faixa nao e meta. Vive em `parametro`, por decisao do arquitetura.md. */
-const PARAMETROS = [
-  {
-    chave: 'pontualidade_tolerancia_min',
-    valor: '15',
-    descricao: 'Minutos de tolerancia antes de a chegada contar como atraso.',
+/**
+ * Quem existe no sistema quando ele nasce. Os dois sao admin, e nenhum dos dois
+ * nasce com senha: o seed gera um link de primeiro acesso e cada um escolhe a
+ * dela.
+ *
+ * A lista saiu de `USUARIOS` em `infra/constantes.json` e virou constante daqui.
+ * O objeto do HTML tinha quatro pessoas com as senhas em base64 ao lado, e ele
+ * descreve quem usava o sistema antigo, nao quem deve existir no novo.
+ *
+ * As tres bases sao derivadas destas listas `bases`, e o id de cada uma e o UUIDv5
+ * do nome. Manter os tres nomes exatos nos dois nao e zelo: base com id novo deixa
+ * veiculo, rota e registro apontando para uma linha que nao existe mais.
+ */
+const USUARIOS_INICIAIS = {
+  henrique: {
+    nome: 'Henrique Martins',
+    papel: 'admin',
+    base: null,
+    bases: ['Raposa', 'Imperatriz', 'Belém'],
+    tipos: ['viagem', 'abastecimento', 'manutencao', 'quebra'],
   },
+  livia: {
+    nome: 'Livia',
+    papel: 'admin',
+    base: null,
+    bases: ['Raposa', 'Imperatriz', 'Belém'],
+    tipos: ['viagem', 'abastecimento', 'manutencao', 'quebra'],
+  },
+} as const satisfies Record<string, UsuarioInicial>
+
+type UsuarioInicial = {
+  nome: string
+  papel: (typeof papelUsuario.enumValues)[number]
+  /** A base travada. `null` em quem ve todas, que o CHECK do banco exige. */
+  base: string | null
+  bases: readonly string[]
+  tipos: readonly (typeof tipoRegistro.enumValues)[number][]
+}
+
+/**
+ * Escalar sem direcao e sem faixa nao e meta. Vive em `parametro`, por decisao do arquitetura.md.
+ *
+ * So entra aqui o que tem fonte nos HTMLs. `upload_max_mb` vale 6 porque
+ * `documentos-frota.html` recusa acima de 6 MB em dois pontos e `ata-reuniao.html`
+ * recusa acima de 4 MB em dois pontos: o maior teto real vence. O maior PDF do
+ * parque tem 1,66 MB. A tolerancia de pontualidade nao entra: a origem usa
+ * `<select>` manual e nenhum numero real existe para ela.
+ */
+const PARAMETROS = [
   {
     chave: 'upload_max_mb',
     valor: '6',
     descricao: 'Teto de tamanho de arquivo enviado, em MB. O maior PDF do parque tem 1,66 MB.',
   },
 ] as const
-
-const DOMINIO_EMAIL = 'emvidros.com.br'
 
 // `—` no lugar do modelo, da marca ou do ano nao e dado, e um travessao de tela.
 // Gravar a string faria `modelo = '—'` aparecer em relatorio e em filtro.
@@ -251,17 +288,23 @@ const semAcento = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, 
 // as deps
 // ---------------------------------------------------------------------------
 
+/**
+ * O seed nao hasheia senha nenhuma, porque nao grava senha nenhuma. O par
+ * `(providerId, issuer)` continua aqui para a outra pergunta: quem ja tem conta de
+ * senha, e portanto nao precisa de convite novo.
+ */
 export type DepsSeed = {
-  /** O hasher do proprio better-auth. Ver `packages/auth`: o login verifica com ele. */
-  hashSenha: (senha: string) => Promise<string>
   /** `account.provider_id` que o `sign-in/email` exige. */
   provedorSenha: string
   /** `account.issuer` que o `sign-in/email` exige, hoje `local:credential`. */
   issuerSenha: string
-  /** Uma variavel por usuario, lida do `.env`. As senhas antigas ja vazaram no HTML. */
-  senhaDe: (chaveUsuario: string) => string
   agora?: Date
 }
+
+/** O link de primeiro acesso de quem ainda nao tem senha. `semear.ts` imprime. */
+export type ConviteDoSeed = { usuario: string; url: string; expiraEm: Date }
+
+export type ResultadoSeed = { contagens: Contagens; convites: ConviteDoSeed[] }
 
 export type Contagens = {
   bases: number
@@ -273,6 +316,8 @@ export type Contagens = {
   metas: number
   programas: number
   atividades: number
+  /** Quantos usuarios saíram por nao estarem em `USUARIOS_INICIAIS`. */
+  apagados: number
 }
 
 // ---------------------------------------------------------------------------
@@ -288,7 +333,7 @@ type Escritor = Parameters<Parameters<Db['transaction']>[0]>[0]
  * recuperar: se a chave derivada mudar entre uma tentativa e outra, o `ON CONFLICT
  * (id)` nao acha a linha velha e o UNIQUE da chave natural recusa a nova.
  */
-export function semear(db: Db, deps: DepsSeed, c = carregarConstantes()): Promise<Contagens> {
+export function semear(db: Db, deps: DepsSeed, c = carregarConstantes()): Promise<ResultadoSeed> {
   return db.transaction((tx) => semearEm(tx, deps, c))
 }
 
@@ -297,23 +342,28 @@ export function semear(db: Db, deps: DepsSeed, c = carregarConstantes()): Promis
  * idempotencia poder rodar o seed duas vezes dentro de uma transacao que ele mesmo
  * desfaz no fim, em vez de gravar no banco de verdade para depois limpar.
  */
-export async function semearEm(db: Escritor, deps: DepsSeed, c: Constantes): Promise<Contagens> {
+export async function semearEm(
+  db: Escritor,
+  deps: DepsSeed,
+  c: Constantes,
+): Promise<ResultadoSeed> {
   const agora = deps.agora ?? new Date()
   const form = c['formulario-registro.html']
-  const USUARIOS = form.USUARIOS
 
   // --- bases -------------------------------------------------------------
   // Nao existe constante BASES em lugar nenhum dos 7 HTMLs. O que existe e a lista
-  // de bases de cada usuario, e a da Livia (admin) e o conjunto inteiro. Derivar
-  // dali evita a unica lista digitada a mao que ainda faltava.
-  const nomesBase = [...new Set(Object.values(USUARIOS).flatMap((u) => u.bases))]
+  // de bases de cada usuario, e a de quem ve todas e o conjunto inteiro. Derivar
+  // dali evita a unica lista digitada a mao que ainda faltava, e e por isso que os
+  // tres nomes em USUARIOS_INICIAIS nao podem mudar: o id da base e o UUIDv5 do
+  // nome, e nome novo orfana veiculo, rota e registro.
+  const nomesBase = [...new Set(Object.values(USUARIOS_INICIAIS).flatMap((u) => u.bases))]
   const idBase = (nome: string) => id('base', nome)
   // O sufixo das constantes (`_RAPOSA`, `_BELEM`) e o nome da base sem acento e em
   // caixa alta. `Belém` -> `BELEM`.
   const porSufixo = new Map(nomesBase.map((n) => [semAcento(n).toUpperCase(), n]))
   const baseDoSufixo = (sufixo: string): string => {
     const nome = porSufixo.get(sufixo)
-    if (!nome) throw new Error(`sufixo ${sufixo} nao casa com nenhuma base de USUARIOS`)
+    if (!nome) throw new Error(`sufixo ${sufixo} nao casa com nenhuma base de USUARIOS_INICIAIS`)
     return nome
   }
 
@@ -468,6 +518,9 @@ export async function semearEm(db: Escritor, deps: DepsSeed, c: Constantes): Pro
     })),
   )
   await db.insert(documentoVeiculo).values(manuaisVeiculos).onConflictDoNothing()
+  // Janelas de alerta reais de `documentos-frota.html`: 30 dias para tacografo e 60
+  // para os demais com vencimento. Manual e plano_pgq nao entram porque nunca têm
+  // vencimento e nenhum numero real existe para eles.
   await db
     .insert(politicaDocumento)
     .values([
@@ -475,8 +528,6 @@ export async function semearEm(db: Escritor, deps: DepsSeed, c: Constantes): Pro
       { tipo: 'crlv', alertaDias: 60 },
       { tipo: 'tacografo', alertaDias: 30 },
       { tipo: 'cnh', alertaDias: 60 },
-      { tipo: 'manual', alertaDias: 0 },
-      { tipo: 'plano_pgq', alertaDias: 0 },
     ])
     .onConflictDoNothing()
 
@@ -651,61 +702,41 @@ export async function semearEm(db: Escritor, deps: DepsSeed, c: Constantes): Pro
     })
 
   // --- usuarios ----------------------------------------------------------
-  // As quatro senhas antigas estao em base64 dentro de formulario-registro.html, com
-  // um atob() ao lado: ja vazaram para qualquer um que abriu a pagina. O extrator as
-  // apaga do JSON, e o seed le uma senha nova por usuario do `.env`. Nenhuma das
-  // antigas pode autenticar, e `verificar/fase-0.sh` cobra isso com as quatro.
-  const chaves = Object.keys(USUARIOS)
+  // Os quatro logins antigos vinham do objeto USUARIOS do HTML, com as senhas em
+  // base64 ao lado: elas ja vazaram para quem abriu a pagina. Ninguem nasce com
+  // senha agora, entao nao ha o que vazar: o seed grava a pessoa, apaga quem saiu
+  // da lista e gera um link de primeiro acesso para quem ainda nao tem conta.
+  const chaves = Object.keys(USUARIOS_INICIAIS) as (keyof typeof USUARIOS_INICIAIS)[]
   const usuarios = chaves.map((chave) => {
-    const u = USUARIOS[chave]!
+    const u = USUARIOS_INICIAIS[chave]
     return {
-      id: `usr_${chave}`,
+      id: idDeUsuario(chave),
       name: u.nome,
-      // Minusculo porque o `sign-in/email` procura por `email.toLowerCase()`.
-      email: `${chave.toLowerCase()}@${DOMINIO_EMAIL}`,
+      email: emailDe(chave),
+      // Nao ha servidor de e-mail neste app, e exigir verificacao trancaria os dois
+      // do lado de fora.
       emailVerified: true,
-      admin: u.admin === true,
+      papel: u.papel,
       baseId: u.base === null ? null : idBase(u.base),
     }
   })
+
+  // Apagar antes de inserir, e nao depois: se alguem que sai da lista tiver o mesmo
+  // e-mail de alguem que entra, o UNIQUE de `user.email` recusaria o INSERT.
+  const apagados = await apagarUsuariosForaDe(db, [...chaves])
+
   await db
     .insert(user)
     .values(usuarios)
     .onConflictDoUpdate({
       target: user.id,
-      // `admin` e `base_id` entram no set junto com o resto: sem eles, um usuario
+      // `papel` e `base_id` entram no set junto com o resto: sem eles, um usuario
       // que ficou com a permissao errada continuaria errado depois do segundo seed.
       set: {
         name: sqlExcluded('name'),
         email: sqlExcluded('email'),
-        admin: sqlExcluded('admin'),
+        papel: sqlExcluded('papel'),
         baseId: sqlExcluded('base_id'),
-        updatedAt: agora,
-      },
-    })
-
-  const contas = await Promise.all(
-    chaves.map(async (chave) => ({
-      id: `acc_${chave}`,
-      // Os tres campos que o `sign-in/email` casa. `accountId` tem que ser o proprio
-      // id do usuario; `issuer` e `local:credential` nesta versao do better-auth.
-      issuer: deps.issuerSenha,
-      accountId: `usr_${chave}`,
-      providerId: deps.provedorSenha,
-      userId: `usr_${chave}`,
-      password: await deps.hashSenha(deps.senhaDe(chave)),
-    })),
-  )
-  await db
-    .insert(account)
-    .values(contas)
-    .onConflictDoUpdate({
-      target: account.id,
-      set: {
-        issuer: sqlExcluded('issuer'),
-        accountId: sqlExcluded('account_id'),
-        providerId: sqlExcluded('provider_id'),
-        password: sqlExcluded('password'),
         updatedAt: agora,
       },
     })
@@ -714,7 +745,10 @@ export async function semearEm(db: Escritor, deps: DepsSeed, c: Constantes): Pro
     .insert(usuarioBase)
     .values(
       chaves.flatMap((chave) =>
-        USUARIOS[chave]!.bases.map((nome) => ({ usuarioId: `usr_${chave}`, baseId: idBase(nome) })),
+        USUARIOS_INICIAIS[chave].bases.map((nome) => ({
+          usuarioId: idDeUsuario(chave),
+          baseId: idBase(nome),
+        })),
       ),
     )
     .onConflictDoNothing()
@@ -723,20 +757,54 @@ export async function semearEm(db: Escritor, deps: DepsSeed, c: Constantes): Pro
     .insert(usuarioTipo)
     .values(
       chaves.flatMap((chave) =>
-        USUARIOS[chave]!.tipos.map((tipo) => ({ usuarioId: `usr_${chave}`, tipo })),
+        USUARIOS_INICIAIS[chave].tipos.map((tipo) => ({ usuarioId: idDeUsuario(chave), tipo })),
       ),
     )
     .onConflictDoNothing()
 
+  // O convite so nasce para quem ainda nao tem conta de senha. E o que faz o
+  // segundo `bun run db:seed` nao derrubar a senha de quem ja definiu a dele, e o
+  // que faz esta parte do seed ser idempotente como o resto.
+  const comSenha = new Set(
+    (
+      await db
+        .select({ usuarioId: account.userId })
+        .from(account)
+        .where(
+          and(
+            eq(account.providerId, deps.provedorSenha),
+            eq(account.issuer, deps.issuerSenha),
+            isNotNull(account.password),
+          ),
+        )
+    ).map((linha) => linha.usuarioId),
+  )
+
+  const convites: ConviteDoSeed[] = []
+  for (const chave of chaves) {
+    const usuarioId = idDeUsuario(chave)
+    if (comSenha.has(usuarioId)) continue
+    const convite = await criarConvite(db, usuarioId, agora)
+    convites.push({
+      usuario: chave,
+      url: `/entrar.html?convite=${convite.token}`,
+      expiraEm: convite.expiraEm,
+    })
+  }
+
   return {
-    bases: nomesBase.length,
-    veiculos: veiculos.length,
-    colaboradores: colaboradores.length,
-    rotas: rotas.length,
-    tiposPreventiva: tipos.length,
-    usuarios: usuarios.length,
-    metas: METAS.length,
-    programas: programas.length,
-    atividades: atividades.length,
+    contagens: {
+      bases: nomesBase.length,
+      veiculos: veiculos.length,
+      colaboradores: colaboradores.length,
+      rotas: rotas.length,
+      tiposPreventiva: tipos.length,
+      usuarios: usuarios.length,
+      metas: METAS.length,
+      programas: programas.length,
+      atividades: atividades.length,
+      apagados,
+    },
+    convites,
   }
 }

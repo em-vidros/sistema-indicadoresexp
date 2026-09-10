@@ -11,16 +11,23 @@
  * tipo, e por isso o teste roda a consulta dentro do proprio rollback que semeia o
  * banco.
  */
+import { CAPACIDADES, type Capacidades, type Papel } from '@ind/core'
 import type { SQL } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
 
 export type DadosSessao = {
   usuarioId: string
-  /** A parte local do e-mail: 'livia', 'andreina'. E a chave do objeto USUARIOS. */
+  /** A parte local do e-mail: 'livia', 'henrique'. E o login que a tela pede. */
   usuario: string
   nome: string
-  admin: boolean
-  /** Nome da base travada. Nulo so no admin, e o CHECK `user_admin_sem_base_ck` garante. */
+  papel: Papel
+  /**
+   * Resolvida aqui, e nao no navegador. Mandar so o papel obrigaria a tela a ter
+   * a propria copia de CAPACIDADES, e copia de regra de autorizacao nao quebra
+   * teste quando diverge: ela desenha um botao a mais para quem nao pode.
+   */
+  capacidades: Capacidades
+  /** Nome da base travada. Nulo so em quem ve todas, e o CHECK `user_papel_base_ck` garante. */
   baseFixa: string | null
   bases: string[]
   tipos: string[]
@@ -32,7 +39,7 @@ type Linha = {
   id: string
   email: string
   name: string
-  admin: boolean
+  papel: Papel
   base_fixa: string | null
   bases: string[]
   tipos: string[]
@@ -44,7 +51,7 @@ export async function sessaoDoUsuario(db: Leitor, usuarioId: string): Promise<Da
       u.id,
       u.email,
       u.name,
-      u.admin,
+      u.papel,
       b.nome as base_fixa,
       coalesce(
         (select array_agg(bb.nome order by bb.nome)
@@ -71,7 +78,8 @@ export async function sessaoDoUsuario(db: Leitor, usuarioId: string): Promise<Da
     usuarioId: linha.id,
     usuario: linha.email.split('@')[0] ?? linha.email,
     nome: linha.name,
-    admin: linha.admin,
+    papel: linha.papel,
+    capacidades: CAPACIDADES[linha.papel],
     baseFixa: linha.base_fixa,
     bases: linha.bases,
     tipos: linha.tipos,
