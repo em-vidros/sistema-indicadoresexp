@@ -1,0 +1,46 @@
+# Deploy na Vercel sem que ninguem precise de `vercel login` local.
+#
+# Por que isto existe: o repositorio e privado e pertence a uma organizacao, e o
+# plano Hobby da Vercel recusa a integracao Git nesses casos. O fluxo antigo era
+# `vercel deploy --prod` na mao, que exige login e link na maquina de quem publica.
+# Este workflow faz esse passo no CI. Quem altera, incluida a Livia, so faz
+# `git push`. Nenhum colaborador precisa de conta na Vercel nem de CLI instalada.
+#
+# Configuracao unica, feita uma vez pelo Henrique em
+# https://github.com/em-vidros/sistema-indicadoresexp/settings/secrets/actions:
+#   VERCEL_TOKEN      token criado em https://vercel.com/account/tokens
+#   VERCEL_ORG_ID     team_U6fkatk4zMrCO5gucUbRNW2b (esta em .vercel/project.json, fora do git)
+#   VERCEL_PROJECT_ID prj_3sMvKmLT0zfPXqyjoA7KQlKp22kE (idem)
+#
+# O build roda na Vercel, com as variaveis ja cadastradas la (DATABASE_URL e as
+# demais). Nada de `.env` de producao passa por aqui.
+
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: publica na Vercel
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            npx -y vercel deploy --yes --token="${{ secrets.VERCEL_TOKEN }}"
+          else
+            npx -y vercel deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}"
+          fi
