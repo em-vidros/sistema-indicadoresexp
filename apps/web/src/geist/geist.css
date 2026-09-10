@@ -1586,9 +1586,15 @@ body {
 
 .g-previa-sub { @apply [margin-top:2px]; }
 
+/* 300 e nao a altura de uma pagina inteira. Com `view=FitH` uma A4 em pe mede 481 px
+   nestes 340 de largura, e o quadro cheio so cabia por cima da propria linha que abriu
+   a previa. Em 300 o painel inteiro cabe embaixo de quase qualquer linha de uma janela
+   de 900, mostra o cabecalho e os primeiros campos do documento, que e o que se quer
+   conferir, e a pagina deitada para de deixar uma tarja escura de visualizador na
+   metade de baixo. */
 .g-previa-quadro {
   @apply relative;
-  @apply [height:440px];
+  @apply [height:300px];
   @apply [background:var(--g-gray-200)];
 }
 

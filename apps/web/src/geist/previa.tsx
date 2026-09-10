@@ -13,6 +13,11 @@
  * `showModal()`, que sobe o elemento para a top layer. Montado em `document.body` o
  * painel ficaria embaixo do dialogo, invisivel; montado dentro do proprio `<dialog>`
  * ele aparece. Por isso a raiz e `closest('dialog')` e so cai no `body` fora dele.
+ *
+ * O painel nao leva `role`. Ele nao e dialogo, que se entra e do qual se sai, nem
+ * tooltip, que nao carrega botao dentro. Um `div` sem papel, alcancado pelo
+ * `aria-describedby` do gatilho, e lido pelo texto que tem e nao anuncia uma interacao
+ * que nao existe.
  */
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -33,7 +38,7 @@ type Aberta = { readonly posicao: Posicao; readonly fixada: boolean }
 
 /** Espelham `.g-previa` e `.g-previa-quadro` de `geist.css`. Mexeu la, mexa aqui. */
 const LARGURA = 340
-const ALTURA = 500
+const ALTURA = 360
 /** Entre o gatilho e o painel. */
 const FOLGA = 8
 /** Entre o painel e a borda da janela. O mesmo 12 do `calc(100vw - 24px)` da folha. */
@@ -51,8 +56,9 @@ function grudar(valor: number, tamanho: number, janela: number): number {
 function posicaoPara(rect: DOMRect): Posicao {
   const abaixo = rect.bottom + FOLGA
   const acima = rect.top - FOLGA - ALTURA
-  // Numa janela de 900 px o painel de 500 nao cabe dos dois lados de uma linha do meio,
-  // e sem a segunda condicao ele virava para cima e saia da tela.
+  // A segunda condicao e o que impede o painel de virar para cima e sair da tela quando
+  // nao cabe de nenhum dos dois lados. Nesse caso ele fica embaixo e o `grudar` o traz
+  // de volta para dentro da janela, ainda que por cima da linha que o abriu.
   const y = abaixo + ALTURA > window.innerHeight && acima >= MARGEM ? acima : abaixo
   // A folha encolhe o painel em tela estreita, e grudar pela largura cheia empurraria
   // para a esquerda um painel que ja cabia onde estava.
@@ -154,8 +160,6 @@ function Gatilho({ previa, children }: {
   const painel = aberta === null ? null : createPortal(
     <div
       id={id}
-      role="dialog"
-      aria-label={previa.titulo}
       className="g-previa"
       style={{ left: `${aberta.posicao.x}px`, top: `${aberta.posicao.y}px` }}
       onPointerEnter={cancelarFechamento}

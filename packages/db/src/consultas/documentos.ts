@@ -276,7 +276,6 @@ export async function arquivoDoDocumento(db: Db, usuarioId: string, id: string) 
       caminho: arquivo.caminho,
       nomeOriginal: arquivo.nomeOriginal,
       sha256: arquivo.sha256,
-      tamanho: arquivo.tamanho,
     })
     .from(documento)
     .innerJoin(arquivo, eq(arquivo.id, documento.arquivoId))
