@@ -1300,7 +1300,14 @@ body {
   @apply overflow-hidden;
 }
 .g-dialogo::backdrop { @apply [background:rgba(65,_65,_65,_.32)]; }
-.g-dialogo[open] { @apply [animation:g-dialogo-entra_150ms_ease_both]; }
+/* `backwards` e nao `both`, e a diferenca nao e cosmetica. Com `both` o keyframe final
+   continua aplicado depois da animacao, e `transform: none` animado computa como
+   `matrix(1, 0, 0, 1, 0, 0)`: o dialogo vira bloco de contencao de qualquer descendente
+   `position: fixed` e o `overflow: hidden` daqui de cima passa a recortar. A previa,
+   que o portal monta dentro do `<dialog>` de proposito, aparecia deslocada pela
+   distancia ate a borda do dialogo e cortada na sobra. O estado final e o mesmo nos
+   dois casos, entao a animacao nao muda de aparencia. */
+.g-dialogo[open] { @apply [animation:g-dialogo-entra_150ms_ease_backwards]; }
 @keyframes g-dialogo-entra {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
@@ -1529,3 +1536,99 @@ body {
     .g-campos > .g-campo { @apply [grid-column:span_12_/_span_12]!; }
   }
 }
+/* ---------- previa de documento em hover ----------
+   O painel flutua em `fixed` e a tela manda a coordenada calculada no momento da
+   abertura. O `z-index` fica acima dos avisos, que estao em 20; dentro do `<dialog>`
+   quem resolve a pilha e a top layer, e o portal ja monta o painel la dentro. */
+.g-previa {
+  @apply fixed;
+  @apply [z-index:30];
+  @apply [width:min(340px,_calc(100vw_-_24px))];
+  @apply [border:1px_solid_var(--g-gray-400)];
+  @apply [border-radius:var(--g-raio-painel)];
+  @apply [background:var(--g-bg-100)];
+  @apply [box-shadow:var(--g-sombra-menu)];
+  @apply [color:var(--g-gray-1000)];
+  @apply overflow-hidden;
+  @apply [animation:g-previa-entra_120ms_ease_both];
+}
+
+@keyframes g-previa-entra {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .g-previa { @apply [animation:none]; }
+}
+
+.g-previa-cabecalho {
+  @apply flex;
+  @apply items-center;
+  @apply [gap:10px];
+  @apply [min-height:56px];
+  @apply [padding:10px_14px];
+  @apply [border-bottom:1px_solid_var(--g-gray-400)];
+}
+
+.g-previa-cabecalho .g-icone { @apply [color:var(--g-gray-900)]; @apply [flex:0_0_auto]; }
+
+.g-previa-titulo {
+  @apply flex;
+  @apply flex-col;
+  @apply [flex:1_1_auto];
+  @apply [min-width:0];
+}
+
+/* Placa e nome de arquivo cabem; titulo longo corta em vez de esticar o painel. */
+.g-previa-titulo > span {
+  @apply overflow-hidden;
+  @apply [text-overflow:ellipsis];
+  @apply whitespace-nowrap;
+}
+
+.g-previa-sub { @apply [margin-top:2px]; }
+
+.g-previa-quadro {
+  @apply relative;
+  @apply [height:440px];
+  @apply [background:var(--g-gray-200)];
+}
+
+.g-previa-iframe {
+  @apply absolute;
+  @apply [inset:0];
+  @apply block;
+  @apply [width:100%];
+  @apply [height:100%];
+  @apply [border:0];
+}
+
+.g-previa-esqueleto { @apply absolute; @apply [inset:0]; @apply [border-radius:0]; }
+
+.g-previa-link {
+  @apply absolute;
+  @apply [inset:0];
+  @apply flex;
+  @apply flex-col;
+  @apply items-center;
+  @apply justify-center;
+  @apply [gap:8px];
+  @apply [padding:24px];
+  @apply text-center;
+}
+
+.g-previa-link .g-icone { @apply [color:var(--g-gray-900)]; }
+
+/* Agrupa o icone de anexo e o conteudo do gatilho sem quebrar o flex da celula. */
+.g-previa-gatilho {
+  @apply inline-flex;
+  @apply items-center;
+  @apply [gap:4px];
+  @apply [cursor:default];
+}
+
+.g-previa-gatilho .g-icone { @apply [color:var(--g-gray-900)]; @apply [flex:0_0_auto]; }
+
+/* Na grade de arquivos o gatilho vira o item da grade, e sem esticar o botao dentro
+   dele para de encostar no fim da linha e a borda de baixo flutua no meio. */
+.g-arqs > .g-previa-gatilho { @apply items-stretch; }

@@ -31,6 +31,8 @@ import {
   useAvisos,
 } from '../geist/formulario.tsx'
 import { CloudUpload, Download, FileText, Icone, Information, PencilEdit } from '../geist/icones.tsx'
+import { ComPrevia } from '../geist/previa.tsx'
+import type { Previa } from '../geist/previa.tsx'
 import {
   Badge,
   Botao,
@@ -237,6 +239,29 @@ function arquivoDe(doc: DocumentoSalvo): Arquivo {
 function enderecoDe(arquivo: Arquivo | null): string {
   if (arquivo === null) return ''
   return arquivo.temArquivo ? caminhoArquivoDocumento(arquivo.id) : arquivo.linkExterno
+}
+
+/** A mesma divisao que o zod do servidor faz em `LINK_ABSOLUTO` e `CAMINHO_RELATIVO`. */
+const OUTRA_ORIGEM = /^https?:\/\//
+
+/**
+ * `enderecoDe` devolve uma string so, e a previa precisa de duas coisas que ela colapsa.
+ * O PDF interno e mesma origem e entra em iframe. O `linkExterno` ainda vale por dois:
+ * caminho relativo sai pela rota `/docs/*` do proprio app, tambem mesma origem, tambem
+ * embutivel; URL http(s) e de outra origem e so pode virar cartao com o destino.
+ */
+function previaDe(arquivo: Arquivo | null, titulo: string, subtitulo?: string): Previa | null {
+  if (arquivo === null || enderecoDe(arquivo) === '') return null
+  const legenda = subtitulo ?? arquivo.nomeArquivo
+  const rotulos = { titulo, ...(legenda === '' ? {} : { subtitulo: legenda }) }
+  if (arquivo.temArquivo) {
+    return { tipo: 'pdf', endereco: caminhoArquivoDocumento(arquivo.id), ...rotulos }
+  }
+  const link = arquivo.linkExterno
+  if (OUTRA_ORIGEM.test(link)) return { tipo: 'link', endereco: link, ...rotulos }
+  // Sem a barra na frente o navegador resolve o caminho a partir da rota atual da SPA,
+  // e isso so acerta enquanto a rota tem um segmento so.
+  return { tipo: 'pdf', endereco: link.startsWith('/') ? link : `/${link}`, ...rotulos }
 }
 
 function indexar(documentos: readonly DocumentoSalvo[]): Indice {
@@ -551,11 +576,17 @@ export default function Documentos(): JSX.Element {
     const arquivo = (indice.veiculos.get(veiculo.id) ?? VEICULO_SEM_DOCUMENTO)[chave]
     const data = arquivo?.vencimento ?? ''
     const classe = CLASSE_DA_FAIXA[faixaDe(data, alerta)]
+    // O icone e o unico sinal na tabela de que existe PDF anexado. Antes dele era
+    // preciso abrir o dialogo de edicao para descobrir.
+    const previa = previaDe(arquivo, `${rotulo} · ${veiculo.placa}`)
     return (
       <div className="g-doc-celula">
-        <span className={classes('g-l13m', classe, data !== '' && classe !== null && 'g-forte')}>
-          {data === '' ? '·' : dataBr(data)}
-        </span>
+        <ComPrevia previa={previa}>
+          {previa === null ? null : <Icone de={FileText} tamanho={12} />}
+          <span className={classes('g-l13m', classe, data !== '' && classe !== null && 'g-forte')}>
+            {data === '' ? '·' : dataBr(data)}
+          </span>
+        </ComPrevia>
         <BotaoDeEnvio
           nome={`Enviar ${rotulo} de ${veiculo.placa}`}
           aoEscolher={(arq) => void enviarDoVeiculo(veiculo, chave, arq)}
@@ -629,6 +660,7 @@ export default function Documentos(): JSX.Element {
             const cnh = indice.cnhs.get(pessoa.id)
             const data = cnh?.vencimento ?? ''
             const classe = CLASSE_DA_FAIXA[faixaDe(data, ALERTA_DA_CNH)]
+            const previa = previaDe(cnh ?? null, `CNH · ${pessoa.nome}`)
             return (
               <tr key={pessoa.id}>
                 <Td><span className="g-forte">{pessoa.nome}</span></Td>
@@ -636,9 +668,12 @@ export default function Documentos(): JSX.Element {
                 <Td>{cnh?.categoria === undefined || cnh.categoria === '' ? <span className="g-fraco">·</span> : cnh.categoria}</Td>
                 <Td direita>
                   <div className="g-doc-celula">
-                    <span className={classes('g-l13m', classe, data !== '' && classe !== null && 'g-forte')}>
-                      {data === '' ? '·' : dataBr(data)}
-                    </span>
+                    <ComPrevia previa={previa}>
+                      {previa === null ? null : <Icone de={FileText} tamanho={12} />}
+                      <span className={classes('g-l13m', classe, data !== '' && classe !== null && 'g-forte')}>
+                        {data === '' ? '·' : dataBr(data)}
+                      </span>
+                    </ComPrevia>
                     <BotaoDeEnvio
                       nome={`Enviar CNH de ${pessoa.nome}`}
                       aoEscolher={(arq) => void enviarCnh(pessoa, arq)}
@@ -672,17 +707,19 @@ export default function Documentos(): JSX.Element {
         ? (
           <div className="g-arqs">
             {ARQUIVOS_FIXOS.map((fixo) => {
-              const endereco = enderecoDe(indice.fixos.get(fixo.titulo) ?? null)
+              const arquivo = indice.fixos.get(fixo.titulo) ?? null
+              const endereco = enderecoDe(arquivo)
               return (
-                <LinhaDeArquivo
-                  key={fixo.titulo}
-                  titulo={fixo.rotulo}
-                  subtitulo={fixo.subtitulo}
-                  aoAbrir={() => {
-                    if (endereco === '') avisar('Este arquivo ainda não foi enviado.', 'erro')
-                    else window.open(endereco, '_blank')
-                  }}
-                />
+                <ComPrevia key={fixo.titulo} previa={previaDe(arquivo, fixo.rotulo, fixo.subtitulo)}>
+                  <LinhaDeArquivo
+                    titulo={fixo.rotulo}
+                    subtitulo={fixo.subtitulo}
+                    aoAbrir={() => {
+                      if (endereco === '') avisar('Este arquivo ainda não foi enviado.', 'erro')
+                      else window.open(endereco, '_blank')
+                    }}
+                  />
+                </ComPrevia>
               )
             })}
           </div>
@@ -811,8 +848,9 @@ function DialogoDeEdicao({ edicao, indice, salvando, aoMudar, aoFechar, aoSalvar
 }
 
 /** Os dois botoes que so existem quando o documento ja tem arquivo ou link. */
-function AcoesDoArquivo({ arquivo, nomeReserva }: {
+function AcoesDoArquivo({ arquivo, titulo, nomeReserva }: {
   readonly arquivo: Arquivo | null
+  readonly titulo: string
   readonly nomeReserva: string
 }): JSX.Element | null {
   const endereco = enderecoDe(arquivo)
@@ -820,7 +858,9 @@ function AcoesDoArquivo({ arquivo, nomeReserva }: {
   const nome = arquivo?.nomeArquivo === undefined || arquivo.nomeArquivo === '' ? nomeReserva : arquivo.nomeArquivo
   return (
     <div className="g-rodape-acoes">
-      <Botao rotulo="Ver" antes={FileText} aoClicar={() => window.open(endereco, '_blank')} />
+      <ComPrevia previa={previaDe(arquivo, titulo)}>
+        <Botao rotulo="Ver" antes={FileText} aoClicar={() => window.open(endereco, '_blank')} />
+      </ComPrevia>
       <Botao rotulo="Baixar" antes={Download} aoClicar={() => baixar(endereco, nome)} />
     </div>
   )
@@ -844,7 +884,7 @@ function CamposDoVeiculo({ edicao, indice, aoMudar }: {
       <TituloDeSecao
         titulo="Seguro"
         subtitulo="Alerta 60 dias antes do vencimento"
-        direita={<AcoesDoArquivo arquivo={docs.apolice} nomeReserva={`${veiculo.placa}-apolice.pdf`} />}
+        direita={<AcoesDoArquivo arquivo={docs.apolice} titulo={`Apólice · ${veiculo.placa}`} nomeReserva={`${veiculo.placa}-apolice.pdf`} />}
       />
       <GradeDeCampos>
         <Campo
@@ -879,7 +919,7 @@ function CamposDoVeiculo({ edicao, indice, aoMudar }: {
       <TituloDeSecao
         titulo="Tacógrafo"
         subtitulo="Alerta 30 dias antes do vencimento"
-        direita={<AcoesDoArquivo arquivo={docs.tacografo} nomeReserva={`${veiculo.placa}-tacografo.pdf`} />}
+        direita={<AcoesDoArquivo arquivo={docs.tacografo} titulo={`Tacógrafo · ${veiculo.placa}`} nomeReserva={`${veiculo.placa}-tacografo.pdf`} />}
       />
       <GradeDeCampos>
         <Campo
@@ -900,7 +940,7 @@ function CamposDoVeiculo({ edicao, indice, aoMudar }: {
       <TituloDeSecao
         titulo="CRLV"
         subtitulo="Alerta 60 dias antes do vencimento"
-        direita={<AcoesDoArquivo arquivo={docs.crlv} nomeReserva={`${veiculo.placa}-crlv.pdf`} />}
+        direita={<AcoesDoArquivo arquivo={docs.crlv} titulo={`CRLV · ${veiculo.placa}`} nomeReserva={`${veiculo.placa}-crlv.pdf`} />}
       />
       <GradeDeCampos>
         <Campo
@@ -936,7 +976,7 @@ function CamposDaCnh({ edicao, indice, aoMudar }: {
       <TituloDeSecao
         titulo="Habilitação"
         subtitulo="Alerta 60 dias antes do vencimento"
-        direita={<AcoesDoArquivo arquivo={cnh} nomeReserva={`cnh-${pessoa.nome.split(' ')[0]?.toLowerCase() ?? 'motorista'}.pdf`} />}
+        direita={<AcoesDoArquivo arquivo={cnh} titulo={`CNH · ${pessoa.nome}`} nomeReserva={`cnh-${pessoa.nome.split(' ')[0]?.toLowerCase() ?? 'motorista'}.pdf`} />}
       />
       <GradeDeCampos>
         <Campo rotulo="Número da CNH" span={6} mono valor={form.numero} aoMudar={(numero) => mudar({ numero })} />

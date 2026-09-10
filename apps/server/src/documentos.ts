@@ -42,7 +42,14 @@ export const documentos: Handler<Ambiente> = async (c) => {
   const arquivo = Bun.file(alvo)
   if (!(await arquivo.exists())) return c.notFound()
 
-  const cabecalhos: Record<string, string> = { 'content-type': tipoDe(extensao) }
+  // A previa da tela de Documentos rebaixa este PDF a cada abertura do painel. Aqui
+  // `max-age` e seguro, ao contrario de `/api/documentos/:id/arquivo`: o arquivo em
+  // `docs/` e estatico e o proprio nome o identifica, entao ele nao troca de conteudo
+  // por baixo do cache como troca um documento que recebe um PDF novo por cima.
+  const cabecalhos: Record<string, string> = {
+    'content-type': tipoDe(extensao),
+    'cache-control': 'private, max-age=300',
+  }
   if (extensao === '.pdf') {
     // `documentos-frota.html` abre o PDF num iframe e tambem em aba nova. Sem
     // `inline` o navegador baixa o arquivo e o iframe fica em branco.
