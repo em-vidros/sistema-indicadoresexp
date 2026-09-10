@@ -597,7 +597,6 @@ export default function Integracoes(): JSX.Element {
           <CabecalhoDeBloco
             titulo="Matriz de avaliação contínua"
             subtitulo={`Critérios fixos do programa do ${ROTULO_DA_FUNCAO[ficha.funcao].toLowerCase()}`}
-            rente
           />
           <Tabela cabecalho={<><Th>Critério</Th><Th>Frequência</Th><Th>Padrão esperado</Th></>}>
             {programa.criterios.map((criterio) => (
@@ -630,7 +629,7 @@ export default function Integracoes(): JSX.Element {
       rente: true,
       conteudo: (
         <>
-          <CabecalhoDeBloco titulo="Histórico de integrações" subtitulo="Fichas salvas, da mais recente para a mais antiga" rente />
+          <CabecalhoDeBloco titulo="Histórico de integrações" subtitulo="Fichas salvas, da mais recente para a mais antiga" />
           <Tabela
             cabecalho={
               <>

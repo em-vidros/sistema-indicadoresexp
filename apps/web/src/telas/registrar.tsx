@@ -513,7 +513,6 @@ function Historico({ registros, estado, deHoje }: {
   return (
     <>
       <CabecalhoDeBloco
-        rente
         titulo="Histórico recente"
         subtitulo="Últimos lançamentos da base, do mais novo para o mais antigo"
         direita={<span className="g-l13 g-fraco">{deHoje} hoje</span>}
