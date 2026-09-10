@@ -527,6 +527,135 @@ body {
 
 .g-tabela td.g-vazio { text-align: center; color: var(--g-gray-900); }
 
+/* ---------- scroll-fade: o desvanecer das bordas ao rolar ----------
+ *
+ * Porte do `scroll-fade` do shadcn/ui (https://ui.shadcn.com/docs/utils/scroll-fade)
+ * para o vocabulario `g-`. Sem Tailwind aqui, entao o `@utility` de la virou regra
+ * comum e a escala de espacamento virou numero fixo: o fade tem `min(12%, 40px)` de
+ * fundura e se revela ao longo de 96 px de rolagem, os mesmos padroes de la.
+ *
+ * O fade e mascara sobre o proprio conteudo, nao overlay de cor, entao funciona em
+ * qualquer fundo sem configurar. Sem overflow, sem fade: a mascara so aparece quando
+ * ha para onde rolar. Em navegador sem scroll-driven animations cai para fade estatico
+ * nas duas bordas, que e o fallback que a doc original descreve.
+ *
+ * `.g-rolagem` (tabela no mobile) desvanece na horizontal; `.g-dialogo-corpo` e
+ * `.g-lista-checks` na vertical. `.g-fade-x` e `.g-fade-y` sao a saida para a proxima
+ * caixa rolavel que aparecer: vestir a classe no elemento com `overflow` e o resto
+ * vem junto. `--g-fade-tam` troca a fundura e `--g-fade-revelar` a distancia da
+ * revelacao num caso pontual.
+ *
+ * A mascara mora na caixa que rola, dentro da moldura: o `.g-rolagem` dissolve a
+ * tabela e nao a borda do bloco, e o `.g-dialogo-corpo` dissolve o formulario e nao
+ * o cabecalho nem as acoes do dialogo. */
+
+@property --g-fade-cima { syntax: '<length-percentage>'; inherits: false; initial-value: 0px; }
+@property --g-fade-baixo { syntax: '<length-percentage>'; inherits: false; initial-value: 0px; }
+@property --g-fade-inicio { syntax: '<length-percentage>'; inherits: false; initial-value: 0px; }
+@property --g-fade-fim { syntax: '<length-percentage>'; inherits: false; initial-value: 0px; }
+@property --g-fade-mascara { syntax: '*'; inherits: false; }
+
+@keyframes g-fade-revelar-cima {
+  from { --g-fade-cima: 0px; }
+  to { --g-fade-cima: var(--_g-fade-cima-tam, var(--g-fade-tam, min(12%, 40px))); }
+}
+
+@keyframes g-fade-revelar-baixo {
+  from { --g-fade-baixo: var(--_g-fade-baixo-tam, var(--g-fade-tam, min(12%, 40px))); }
+  to { --g-fade-baixo: 0px; }
+}
+
+@keyframes g-fade-revelar-inicio {
+  from { --g-fade-inicio: 0px; }
+  to { --g-fade-inicio: var(--_g-fade-inicio-tam, var(--g-fade-tam, min(12%, 40px))); }
+}
+
+@keyframes g-fade-revelar-fim {
+  from { --g-fade-fim: var(--_g-fade-fim-tam, var(--g-fade-tam, min(12%, 40px))); }
+  to { --g-fade-fim: 0px; }
+}
+
+.g-lista-checks,
+.g-dialogo-corpo,
+.g-fade-y {
+  --_g-fade-cima-tam: var(--g-fade-cima-tam, var(--g-fade-tam, min(12%, 40px)));
+  --_g-fade-baixo-tam: var(--g-fade-baixo-tam, var(--g-fade-tam, min(12%, 40px)));
+  --g-fade-bloco: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--g-fade-cima, 0px),
+    #000 calc(100% - var(--g-fade-baixo, 0px)),
+    transparent 100%
+  );
+  -webkit-mask-image: var(--g-fade-mascara, var(--g-fade-bloco));
+  mask-image: var(--g-fade-mascara, var(--g-fade-bloco));
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+@supports (animation-timeline: scroll()) {
+  .g-lista-checks,
+  .g-dialogo-corpo,
+  .g-fade-y {
+    animation: g-fade-revelar-cima 1ms ease-in-out, g-fade-revelar-baixo 1ms ease-in-out;
+    animation-timeline: scroll(self y), scroll(self y);
+    animation-range:
+      0 var(--g-fade-revelar, 96px),
+      calc(100% - var(--g-fade-revelar, 96px)) 100%;
+    animation-fill-mode: both;
+  }
+}
+
+@supports not (animation-timeline: scroll()) {
+  .g-lista-checks,
+  .g-dialogo-corpo,
+  .g-fade-y {
+    --g-fade-cima: var(--_g-fade-cima-tam);
+    --g-fade-baixo: var(--_g-fade-baixo-tam);
+  }
+}
+
+.g-rolagem,
+.g-fade-x {
+  --_g-fade-inicio-tam: var(--g-fade-inicio-tam, var(--g-fade-tam, min(12%, 40px)));
+  --_g-fade-fim-tam: var(--g-fade-fim-tam, var(--g-fade-tam, min(12%, 40px)));
+  --g-fade-linha: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--g-fade-inicio, 0px),
+    #000 calc(100% - var(--g-fade-fim, 0px)),
+    transparent 100%
+  );
+  -webkit-mask-image: var(--g-fade-mascara, var(--g-fade-linha));
+  mask-image: var(--g-fade-mascara, var(--g-fade-linha));
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+@supports (animation-timeline: scroll()) {
+  .g-rolagem,
+  .g-fade-x {
+    animation: g-fade-revelar-inicio 1ms ease-in-out, g-fade-revelar-fim 1ms ease-in-out;
+    animation-timeline: scroll(self inline), scroll(self inline);
+    animation-range:
+      0 var(--g-fade-revelar, 96px),
+      calc(100% - var(--g-fade-revelar, 96px)) 100%;
+    animation-fill-mode: both;
+  }
+}
+
+@supports not (animation-timeline: scroll()) {
+  .g-rolagem,
+  .g-fade-x {
+    --g-fade-inicio: var(--_g-fade-inicio-tam);
+    --g-fade-fim: var(--_g-fade-fim-tam);
+  }
+}
+
 /* ---------- KPI, estatistica, cabecalhos ---------- */
 
 .g-kpi { display: flex; flex-direction: column; height: 100%; }
