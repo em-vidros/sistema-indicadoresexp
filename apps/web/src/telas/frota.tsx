@@ -19,7 +19,6 @@
  * frota, ele nasce com dois botoes, um por bloco.
  */
 import type { JSX } from 'react'
-import { navegar, useLocalizacao } from '../app/navegacao.tsx'
 import { useRegistros } from '../dashboard/carregar.ts'
 import { brl, calcularKPIs, diaMes, filtrarDados } from '../dashboard/dominio.ts'
 import type { Item } from '../dashboard/dominio.ts'
@@ -27,8 +26,7 @@ import {
   BASES,
   OPCOES_DE_PERIODO,
   PERIODOS,
-  consultaDe,
-  lerFiltros,
+  useFiltros,
 } from '../dashboard/filtros.ts'
 import type { Filtros } from '../dashboard/filtros.ts'
 import {
@@ -166,15 +164,14 @@ function celulasDe(manuts: readonly Manutencao[], abasts: readonly Abastecimento
 }
 
 export default function Frota(): JSX.Element {
-  const { caminho, busca } = useLocalizacao()
-  const filtros = lerFiltros(busca)
+  const [filtros, definirFiltros] = useFiltros()
   const { itens } = useRegistros()
 
   const kpis = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo))
   const veiculos = veiculosDe([...kpis.manuts, ...kpis.abasts])
 
   const irPara = (novos: Filtros): void => {
-    navegar(caminho + consultaDe(novos))
+    void definirFiltros(novos)
   }
 
   return (

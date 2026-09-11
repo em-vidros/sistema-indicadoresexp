@@ -3,8 +3,8 @@
  * `var/design-dashboard/build.mjs`, e ele manda no desenho.
  *
  * A tela nao tem estado nenhum. Tudo que ela mostra sai de `porRota` sobre os registros
- * que base e periodo deixaram passar, e os dois moram na query string, entao trocar
- * qualquer um navega. Nao ha busca, nao ha paginacao e a ordem e a do dominio, do
+ * que base e periodo deixaram passar, e os dois moram na query string pelo `useFiltros`
+ * do nuqs, entao trocar qualquer um escreve a query nova. Nao ha busca, nao ha paginacao e a ordem e a do dominio, do
  * maior percentual de custo para o menor, que e o que o cabecalho do bloco promete.
  *
  * Os limites de faixa sao os mesmos da tabela de rotas da Visao geral, 7 e 10, para as
@@ -15,7 +15,6 @@
  * O CSV do "Exportar" leva as sete colunas da tabela, com o mesmo texto de cada celula.
  */
 import type { JSX } from 'react'
-import { navegar, useLocalizacao } from '../app/navegacao.tsx'
 import { useRegistros } from '../dashboard/carregar.ts'
 import {
   ROTULO_DA_FAIXA,
@@ -32,8 +31,7 @@ import {
   BASES,
   OPCOES_DE_PERIODO,
   PERIODOS,
-  consultaDe,
-  lerFiltros,
+  useFiltros,
 } from '../dashboard/filtros.ts'
 import type { Filtros } from '../dashboard/filtros.ts'
 import { baixarCsv } from '../dashboard/relatorio.ts'
@@ -167,15 +165,14 @@ function celulasDe(rotas: readonly Rota[], viagens: number): readonly Celula[] {
 }
 
 export default function Rotas(): JSX.Element {
-  const { caminho, busca } = useLocalizacao()
-  const filtros = lerFiltros(busca)
+  const [filtros, definirFiltros] = useFiltros()
   const { itens } = useRegistros()
 
   const viagens = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo)).viagens
   const rotas = porRota(viagens)
 
   const irPara = (novos: Filtros): void => {
-    navegar(caminho + consultaDe(novos))
+    void definirFiltros(novos)
   }
 
   const exportar = (): void => {

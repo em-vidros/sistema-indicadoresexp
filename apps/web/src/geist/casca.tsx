@@ -31,7 +31,8 @@ import type { Sessao } from '../app/dados.ts'
 import { Ligacao, navegar, prefetchar as prefetcharRota, useLocalizacao } from '../app/navegacao.tsx'
 import { GRUPOS, ROTAS, liberada, rotaDe } from '../app/rotas.ts'
 import type { Rota } from '../app/rotas.ts'
-import { BASES, OPCOES_DE_BASE, consultaDe, lerFiltros } from '../dashboard/filtros.ts'
+import { BASES, OPCOES_DE_BASE, consultaDe, useFiltros } from '../dashboard/filtros.ts'
+import type { Base, Filtros } from '../dashboard/filtros.ts'
 import { listarRegistros } from '../js/registros-api.ts'
 import simbolo from './em-simbolo.svg'
 import { ArrowUpDown, Icone } from './icones.tsx'
@@ -69,19 +70,23 @@ function areaDe(sessao: Sessao): string {
 type Switcher = { readonly rotulo: string; readonly itens: readonly ItemDeMenu[] }
 
 /**
- * Nas telas do Painel o switcher e o filtro de base, e escolher reescreve a query. Nas
- * outras ele mostra onde a pessoa trabalha, e escolher leva ao Painel ja filtrado por
- * aquela base; base que o Painel nao conhece cai em "Todas", que e o que `lerFiltros` faz
- * com qualquer valor de fora.
+ * Nas telas do Painel o switcher e o filtro de base, e escolher reescreve a query pelo
+ * nuqs. Nas outras ele mostra onde a pessoa trabalha, e escolher leva ao Painel ja
+ * filtrado por aquela base; base que o Painel nao conhece cai em "Todas", que e o que
+ * o parser faz com qualquer valor de fora.
  */
-function switcherDe(rota: Rota | null, busca: string, sessao: Sessao | null): Switcher {
+function switcherDe(
+  rota: Rota | null,
+  filtros: Filtros,
+  aoEscolherBase: (base: Base) => void,
+  sessao: Sessao | null,
+): Switcher {
   if (rota !== null && rota.comFiltros) {
-    const filtros = lerFiltros(busca)
     return {
       rotulo: BASES[filtros.base].naCasca,
       itens: OPCOES_DE_BASE.map((opcao) => ({
         rotulo: opcao.rotulo,
-        aoEscolher: () => navegar(rota.caminho + consultaDe({ ...filtros, base: opcao.valor })),
+        aoEscolher: () => aoEscolherBase(opcao.valor),
       })),
     }
   }
@@ -119,11 +124,12 @@ function Item({ rota, ativa, consulta }: {
 }
 
 export function Casca({ children }: { readonly children: ReactNode }): JSX.Element {
-  const { caminho, busca } = useLocalizacao()
+  const { caminho } = useLocalizacao()
+  const [filtros, definirFiltros] = useFiltros()
   const sessao = useSessao()
   const rota = rotaDe(caminho)
-  const consulta = consultaDe(lerFiltros(busca))
-  const switcher = switcherDe(rota, busca, sessao.dados)
+  const consulta = consultaDe(filtros)
+  const switcher = switcherDe(rota, filtros, (base) => void definirFiltros({ base }), sessao.dados)
   const capacidades = sessao.dados?.capacidades ?? null
   const visiveis = ROTAS.filter((r) => liberada(r, capacidades))
 

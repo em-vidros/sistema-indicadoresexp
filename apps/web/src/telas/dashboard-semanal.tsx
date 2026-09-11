@@ -5,10 +5,11 @@
  * O nome do arquivo fica. As seis telas congeladas linkam para `dashboard-semanal.html`, e
  * o servidor redireciona esse caminho velho para `/visao-geral`.
  *
- * Nao ha estado de filtro. Base e periodo saem da query da localizacao, e trocar qualquer
- * um dos dois navega para a mesma tela com a query nova. E o mesmo mecanismo que leva o
- * filtro para Viagens, Rotas e Frota pelo href da sidebar, sem uma linha de sincronia
- * entre as quatro telas, e ele e idempotente porque o que a tela mostra depende so da URL.
+ * Nao ha estado de filtro. Base e periodo saem da query pelo `useFiltros` do nuqs, e
+ * trocar qualquer um dos dois escreve a query nova no historico. E o mesmo mecanismo
+ * que leva o filtro para Viagens, Rotas e Frota pelo href da sidebar, sem uma linha de
+ * sincronia entre as quatro telas, e ele e idempotente porque o que a tela mostra
+ * depende so da URL.
  *
  * A janela do grafico e a unica coisa que fica em `useState`. Ela nao e filtro: nao muda
  * numero nenhum fora do proprio grafico e nao tem por que sobreviver a navegacao.
@@ -18,7 +19,6 @@
  */
 import { useState } from 'react'
 import type { JSX } from 'react'
-import { navegar, useLocalizacao } from '../app/navegacao.tsx'
 import { useRegistros } from '../dashboard/carregar.ts'
 import type { Sincronia } from '../dashboard/carregar.ts'
 import {
@@ -37,8 +37,8 @@ import {
   OPCOES_DE_PERIODO,
   PERIODOS,
   consultaDe,
-  lerFiltros,
   periodoAnterior,
+  useFiltros,
 } from '../dashboard/filtros.ts'
 import type { Filtros } from '../dashboard/filtros.ts'
 import { GraficoCustoCarga, Sparkline } from '../dashboard/graficos.tsx'
@@ -253,8 +253,7 @@ function celulasDe({ kpis, anteriores, semanas, rotas, filtros, consulta, grafic
 }
 
 export default function VisaoGeral(): JSX.Element {
-  const { caminho, busca } = useLocalizacao()
-  const filtros = lerFiltros(busca)
+  const [filtros, definirFiltros] = useFiltros()
   const consulta = consultaDe(filtros)
   const { itens, sincronia } = useRegistros()
   const [janela, setJanela] = useState(0)
@@ -272,7 +271,7 @@ export default function VisaoGeral(): JSX.Element {
   const semanas = semanasDoGrafico(filtrarDados(itens, filtros.base, 'tudo'), janelaEmSemanas)
 
   const irPara = (novos: Filtros): void => {
-    navegar(caminho + consultaDe(novos))
+    void definirFiltros(novos)
   }
 
   const copiarWhatsApp = (): void => {

@@ -10,7 +10,13 @@
  * `lerFiltros` e a borda: a query e texto de fora, e sai daqui tipada ou no default.
  * Valor invalido nao estoura nem propaga `string` solta, cai no default, que e o mesmo
  * que a tela mostrava antes de alguem mexer.
+ *
+ * `useFiltros` e a mesma borda, mas pelo nuqs: os parsers validam e o default e aplicado
+ * pelo proprio hook, entao a tela recebe `Filtros` tipado sem ler `location.search` a
+ * mao. `lerFiltros` e `consultaDe` continuam existindo porque href precisa de string, e
+ * string nao e hook: a sidebar e o switcher da casca montam o destino do link com elas.
  */
+import { parseAsStringLiteral, useQueryStates } from 'nuqs'
 
 /** O rotulo da tela e o do relatorio sao dois. O relatorio e formato congelado. */
 type Descricao = { readonly rotulo: string; readonly noRelatorio: string }
@@ -79,6 +85,38 @@ export function lerFiltros(busca: string): Filtros {
 /** A query com `?`, pronta para colar num href ou em `location.search`. */
 export function consultaDe(filtros: Filtros): string {
   return `?base=${encodeURIComponent(filtros.base)}&periodo=${encodeURIComponent(filtros.periodo)}`
+}
+
+/**
+ * Os parsers do nuqs, tirados das mesmas tabelas que `lerFiltros` valida. Valor fora da
+ * tabela cai no default, igual a borda manual fazia. `clearOnDefault: false` mantem a
+ * query sempre explicita, no mesmo formato que `consultaDe` escreve, para o link
+ * copiado da barra continuar igual ao que a sidebar montava.
+ */
+const BASES_VALIDAS = Object.keys(BASES) as unknown as readonly Base[]
+const PERIODOS_VALIDOS = Object.keys(PERIODOS) as unknown as readonly Periodo[]
+
+const PARSERS_DE_FILTROS = {
+  base: parseAsStringLiteral(BASES_VALIDAS).withDefault(FILTROS_PADRAO.base),
+  periodo: parseAsStringLiteral(PERIODOS_VALIDOS).withDefault(FILTROS_PADRAO.periodo),
+}
+
+/**
+ * Base e periodo como estado da query, pelo nuqs. Trocar escreve no historico com push,
+ * que e o que faz o voltar do navegador desfazer o filtro, igual o `navegar` fazia.
+ * Sem scroll: trocar periodo no meio da pagina nao joga a pessoa para o topo.
+ */
+export function useFiltros(): readonly [
+  Filtros,
+  (novos: Partial<Filtros>) => Promise<URLSearchParams>,
+] {
+  const [filtros, definir] = useQueryStates(PARSERS_DE_FILTROS, {
+    history: 'push',
+    scroll: false,
+    clearOnDefault: false,
+    shallow: true,
+  })
+  return [filtros, (novos) => definir(novos)] as const
 }
 
 /**

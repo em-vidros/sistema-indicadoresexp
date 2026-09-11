@@ -4,15 +4,16 @@
  *
  * Dois mecanismos de estado, e a fronteira entre eles e uma pergunta so: isto atravessa a
  * navegacao? Base e periodo atravessam, porque as quatro telas do painel dividem os dois,
- * entao eles moram na query string e trocar qualquer um navega. Busca,
+ * entao eles moram na query string pelo `useFiltros` do nuqs e trocar qualquer um
+ * escreve a query nova. Busca,
  * pontualidade e numero da pagina nao atravessam: sao o jeito de olhar esta tabela, nao
  * existem nas outras tres, e por isso ficam em `useState`. Poe-los na query obrigaria
  * `consultaDe` a carregar tres campos que so uma tela le, e a sidebar levaria os tres
  * para Rotas e Frota, onde nao significam nada.
  *
- * O preco disso e visivel e foi aceito: trocar base ou periodo navega, e a busca e a
- * pontualidade voltam ao padrao junto porque o componente da tela e remontado. E o mesmo
- * preco que a Visao geral paga na janela do grafico.
+ * O preco disso e visivel e foi aceito: trocar base ou periodo escreve a query nova, e
+ * a busca e a pontualidade voltam ao padrao junto porque o componente da tela e
+ * remontado. E o mesmo preco que a Visao geral paga na janela do grafico.
  *
  * A vista e um objeto so, e nao tres `useState`, porque mudar busca ou pontualidade
  * obriga a pagina a voltar para 1. Com estados separados esse retorno e uma linha que
@@ -30,7 +31,6 @@
  */
 import { useState } from 'react'
 import type { JSX } from 'react'
-import { navegar, useLocalizacao } from '../app/navegacao.tsx'
 import { useRegistros } from '../dashboard/carregar.ts'
 import { PONTUALIDADES, brl, calcularKPIs, diaMes, filtrarDados, porcento } from '../dashboard/dominio.ts'
 import type { Item, Pontualidade } from '../dashboard/dominio.ts'
@@ -40,8 +40,7 @@ import {
   OPCOES_DE_BASE,
   OPCOES_DE_PERIODO,
   PERIODOS,
-  consultaDe,
-  lerFiltros,
+  useFiltros,
 } from '../dashboard/filtros.ts'
 import type { Filtros } from '../dashboard/filtros.ts'
 import { baixarCsv } from '../dashboard/relatorio.ts'
@@ -152,8 +151,7 @@ function Linha({ viagem }: { readonly viagem: Viagem }): JSX.Element {
 }
 
 export default function Viagens(): JSX.Element {
-  const { caminho, busca } = useLocalizacao()
-  const filtros = lerFiltros(busca)
+  const [filtros, definirFiltros] = useFiltros()
   const { itens } = useRegistros()
   const [vista, setVista] = useState<Vista>(VISTA_INICIAL)
 
@@ -171,7 +169,7 @@ export default function Viagens(): JSX.Element {
   const naPagina = achadas.slice(primeira, primeira + POR_PAGINA)
 
   const irPara = (novos: Filtros): void => {
-    navegar(caminho + consultaDe(novos))
+    void definirFiltros(novos)
   }
 
   const exportar = (): void => {

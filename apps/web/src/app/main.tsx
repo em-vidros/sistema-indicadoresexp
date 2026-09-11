@@ -11,10 +11,14 @@
  *
  * `Avisos` fica por fora de tudo porque o toast sobrevive a troca de tela: salvar um
  * registro e ir para a Visao geral nao pode apagar a confirmacao do salvamento.
+ *
+ * `NuqsAdapter` envolve o app porque base e periodo sao estado da query pelo nuqs, e
+ * todo `useFiltros` precisa dele acima.
  */
 import { Suspense, lazy, useEffect } from 'react'
 import type { ComponentType, JSX } from 'react'
 import { createRoot } from 'react-dom/client'
+import { NuqsAdapter, enableHistorySync } from 'nuqs/adapters/react'
 import { Ligacao, useLocalizacao } from './navegacao.tsx'
 import { rotaDe } from './rotas.ts'
 import type { Rota } from './rotas.ts'
@@ -74,4 +78,15 @@ function App(): JSX.Element {
 
 const raiz = document.getElementById('app')
 if (raiz === null) throw new Error('a casca da tela nao tem #app')
-createRoot(raiz).render(<App />)
+/**
+ * O roteador da casa escreve na History API direto pelo `navegar`, sem passar pelo
+ * nuqs. Sem isto o nuqs so reagiria as proprias escritas e ao popstate, e a troca de
+ * tela pela sidebar deixaria os filtros do nuqs para tras. Com o remendo, o push do
+ * `navegar` tambem acorda os hooks.
+ */
+enableHistorySync()
+createRoot(raiz).render(
+  <NuqsAdapter>
+    <App />
+  </NuqsAdapter>,
+)
