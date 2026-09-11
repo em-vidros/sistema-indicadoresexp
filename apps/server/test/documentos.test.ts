@@ -478,3 +478,57 @@ describe('os veículos de um manual', () => {
     expect(daAdmin?.veiculos.length).toBeGreaterThan(daAndreina!.veiculos.length)
   })
 })
+
+describe('o cache do download', () => {
+  /** O sha256 de '%PDF-DOC', o PDF que o `beforeAll` enviou. Conferido com `shasum -a 256`. */
+  const ETAG = '"422d913b50a7d7eb966b25b8a6713edbdb33a066e63db87932b9e2a408edf483"'
+
+  test('o download anuncia o ETag do conteúdo, entre aspas', async () => {
+    const resposta = await pedir(`/api/documentos/${docImperatriz.id}/arquivo`, { headers: { cookie } })
+    expect(resposta.status).toBe(200)
+    expect(resposta.headers.get('etag')).toBe(ETAG)
+    expect(resposta.headers.get('cache-control')).toBe('private, no-cache')
+  })
+
+  test('o mesmo ETag de volta é 304 com corpo vazio', async () => {
+    const resposta = await pedir(`/api/documentos/${docImperatriz.id}/arquivo`, {
+      headers: { cookie, 'if-none-match': ETAG },
+    })
+    expect(resposta.status).toBe(304)
+    expect(await resposta.text()).toBe('')
+    expect(resposta.headers.get('etag')).toBe(ETAG)
+    expect(resposta.headers.get('cache-control')).toBe('private, no-cache')
+  })
+
+  test('ETag que não confere continua baixando o PDF', async () => {
+    const resposta = await pedir(`/api/documentos/${docImperatriz.id}/arquivo`, {
+      headers: { cookie, 'if-none-match': '"nao-e-o-sha"' },
+    })
+    expect(resposta.status).toBe(200)
+    expect(new Uint8Array(await resposta.arrayBuffer())).toEqual(PDF)
+  })
+
+  test('o 304 sai sem tocar no armazenamento', async () => {
+    // Os outros tres testes deste describe passam com a checagem do `if-none-match`
+    // DEPOIS da leitura, e a ordem e o ponto do ETag: 6 MB de PDF buscados de novo so
+    // para o cliente descobrir que ja tinha o arquivo. Um armazenamento que estoura ao
+    // ler prende a ordem pela porta da frente. Se o 304 sai, a leitura nao aconteceu.
+    const semLeitura: ArmazenamentoArquivo = {
+      async guardar() {
+        throw new Error('este duble nao guarda')
+      },
+      async ler() {
+        throw new Error('o 304 nao pode ler o arquivo')
+      },
+      async apagar() {},
+    }
+    const appSemLeitura = montarRotas(new Hono<Ambiente>(), { auth, db, arquivos: semLeitura })
+    const resposta = await appSemLeitura.request(
+      new Request(`http://teste.local/api/documentos/${docImperatriz.id}/arquivo`, {
+        headers: { cookie, 'if-none-match': ETAG },
+      }),
+    )
+    expect(resposta.status).toBe(304)
+    expect(await resposta.text()).toBe('')
+  })
+})

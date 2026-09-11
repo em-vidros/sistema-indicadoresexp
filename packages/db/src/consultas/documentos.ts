@@ -272,7 +272,11 @@ export function gravarDocumento(
 export async function arquivoDoDocumento(db: Db, usuarioId: string, id: string) {
   const permitidas = await basesPermitidas(db, usuarioId)
   const [linha] = await db
-    .select({ caminho: arquivo.caminho, nomeOriginal: arquivo.nomeOriginal })
+    .select({
+      caminho: arquivo.caminho,
+      nomeOriginal: arquivo.nomeOriginal,
+      sha256: arquivo.sha256,
+    })
     .from(documento)
     .innerJoin(arquivo, eq(arquivo.id, documento.arquivoId))
     .leftJoin(veiculo, eq(veiculo.id, documento.veiculoId))

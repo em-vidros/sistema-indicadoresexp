@@ -220,6 +220,12 @@ export function rotasDocumentos(db: Db, arquivos: ArmazenamentoArquivo): Hono<Am
       throw falha
     }
     if (!metadado) return c.json({ erro: 'arquivo inexistente' }, 404)
+    // Validacao, e nao janela de frescor: reenviar um PDF mantem o id do documento,
+    // entao `max-age` serviria o arquivo velho ate a janela vencer. O sha256 ja esta
+    // gravado desde o upload, entao o 304 sai sem tocar no armazenamento.
+    const etag = `"${metadado.sha256}"`
+    const comuns = { 'cache-control': 'private, no-cache', etag }
+    if (c.req.header('if-none-match') === etag) return new Response(null, { status: 304, headers: comuns })
     const conteudo = await arquivos.ler(metadado.caminho)
     if (!conteudo) return c.json({ erro: 'arquivo inexistente' }, 404)
     // O tipo e literal, e nao o `mime` da linha do banco: aquele valor veio do
@@ -227,6 +233,7 @@ export function rotasDocumentos(db: Db, arquivos: ArmazenamentoArquivo): Hono<Am
     // o que transforma upload em XSS. `nosniff` fecha o palpite do navegador.
     return new Response(new Blob([copiarBuffer(conteudo)], { type: 'application/pdf' }), {
       headers: {
+        ...comuns,
         'content-type': 'application/pdf',
         'x-content-type-options': 'nosniff',
         'content-disposition': `inline; filename="${metadado.nomeOriginal.replace(/["\\\r\n]/g, '')}"`,

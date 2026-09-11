@@ -1300,7 +1300,12 @@ body {
   @apply overflow-hidden;
 }
 .g-dialogo::backdrop { @apply [background:rgba(65,_65,_65,_.32)]; }
-.g-dialogo[open] { @apply [animation:g-dialogo-entra_150ms_ease_both]; }
+/* `backwards` e nao `both`: com `both` o keyframe final fica aplicado, e `transform:
+   none` animado computa como `matrix(1, 0, 0, 1, 0, 0)`. Ai o dialogo vira bloco de
+   contencao de descendente `position: fixed` e o `overflow: hidden` daqui de cima
+   recorta, o que deslocava e cortava a previa que o portal monta aqui dentro. Os dois
+   terminam no mesmo estado, entao a animacao nao muda de aparencia. */
+.g-dialogo[open] { @apply [animation:g-dialogo-entra_150ms_ease_backwards]; }
 @keyframes g-dialogo-entra {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
@@ -1529,3 +1534,103 @@ body {
     .g-campos > .g-campo { @apply [grid-column:span_12_/_span_12]!; }
   }
 }
+/* ---------- previa de documento em hover ----------
+   `z-index: 30` fica acima dos avisos, que estao em 20. Dentro do `<dialog>` quem
+   resolve a pilha e a top layer, e o portal ja monta o painel la dentro. A animacao usa
+   `backwards` pelo mesmo motivo que a do dialogo: `both` deixaria um transform
+   preso e o painel viraria bloco de contencao do que vier fixed aqui dentro. */
+.g-previa {
+  @apply fixed;
+  @apply [z-index:30];
+  @apply [width:min(340px,_calc(100vw_-_24px))];
+  @apply [border:1px_solid_var(--g-gray-400)];
+  @apply [border-radius:var(--g-raio-painel)];
+  @apply [background:var(--g-bg-100)];
+  @apply [box-shadow:var(--g-sombra-menu)];
+  @apply [color:var(--g-gray-1000)];
+  @apply overflow-hidden;
+  @apply [animation:g-previa-entra_120ms_ease_backwards];
+}
+
+@keyframes g-previa-entra {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .g-previa { @apply [animation:none]; }
+}
+
+.g-previa-cabecalho {
+  @apply flex;
+  @apply items-center;
+  @apply [gap:10px];
+  @apply [min-height:56px];
+  @apply [padding:10px_14px];
+  @apply [border-bottom:1px_solid_var(--g-gray-400)];
+}
+
+.g-previa-cabecalho .g-icone { @apply [color:var(--g-gray-900)]; @apply [flex:0_0_auto]; }
+
+.g-previa-titulo {
+  @apply flex;
+  @apply flex-col;
+  @apply [flex:1_1_auto];
+  @apply [min-width:0];
+}
+
+.g-previa-titulo > span {
+  @apply overflow-hidden;
+  @apply [text-overflow:ellipsis];
+  @apply whitespace-nowrap;
+}
+
+.g-previa-sub { @apply [margin-top:2px]; }
+
+/* 300 e nao a altura de uma pagina inteira. Com `view=FitH` uma A4 em pe mede 481 px
+   nestes 340 de largura, e o quadro cheio so cabia por cima da propria linha que abriu
+   a previa. Em 300 o painel inteiro cabe embaixo de quase qualquer linha de uma janela
+   de 900, mostra o cabecalho e os primeiros campos do documento, que e o que se quer
+   conferir, e a pagina deitada para de deixar uma tarja escura de visualizador na
+   metade de baixo. */
+.g-previa-quadro {
+  @apply relative;
+  @apply [height:300px];
+  @apply [background:var(--g-gray-200)];
+}
+
+.g-previa-iframe {
+  @apply absolute;
+  @apply [inset:0];
+  @apply block;
+  @apply [width:100%];
+  @apply [height:100%];
+  @apply [border:0];
+}
+
+.g-previa-esqueleto { @apply absolute; @apply [inset:0]; @apply [border-radius:0]; }
+
+.g-previa-link {
+  @apply absolute;
+  @apply [inset:0];
+  @apply flex;
+  @apply flex-col;
+  @apply items-center;
+  @apply justify-center;
+  @apply [gap:8px];
+  @apply [padding:24px];
+  @apply text-center;
+}
+
+.g-previa-link .g-icone { @apply [color:var(--g-gray-900)]; }
+
+/* `inline-flex` para nao quebrar o flex da celula, e `stretch` porque num container
+   grade o gatilho passa a ser o item da grade no lugar do conteudo que ele embrulha:
+   sem esticar, a borda de baixo da linha de arquivo flutuaria no meio da celula. */
+.g-previa-gatilho {
+  @apply inline-flex;
+  @apply items-stretch;
+  @apply [gap:4px];
+  @apply [cursor:default];
+}
+
+.g-previa-gatilho .g-icone { @apply [color:var(--g-gray-900)]; @apply [flex:0_0_auto]; }
