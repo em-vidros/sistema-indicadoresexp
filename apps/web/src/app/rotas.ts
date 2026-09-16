@@ -60,6 +60,7 @@ export const ROTAS: readonly Rota[] = [
     grupo: 'Painel',
     icone: Home,
     comFiltros: true,
+    exige: 'veGestao',
     carregar: () => import('../telas/dashboard-semanal.tsx'),
   },
   {
@@ -69,6 +70,7 @@ export const ROTAS: readonly Rota[] = [
     grupo: 'Painel',
     icone: Route,
     comFiltros: true,
+    exige: 'veGestao',
     carregar: () => import('../telas/viagens.tsx'),
   },
   {
@@ -78,6 +80,7 @@ export const ROTAS: readonly Rota[] = [
     grupo: 'Painel',
     icone: ArrowLeftRight,
     comFiltros: true,
+    exige: 'veGestao',
     carregar: () => import('../telas/rotas.tsx'),
   },
   {
@@ -87,6 +90,7 @@ export const ROTAS: readonly Rota[] = [
     grupo: 'Painel',
     icone: Gauge,
     comFiltros: true,
+    exige: 'veGestao',
     carregar: () => import('../telas/frota.tsx'),
   },
   {

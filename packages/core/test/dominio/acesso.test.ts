@@ -28,10 +28,17 @@ describe('CAPACIDADES', () => {
       todasAsBases: true,
       gerenciaUsuarios: true,
       editaCadastro: true,
+      veGestao: true,
     })
     expect(CAPACIDADES.gestor.gerenciaUsuarios).toBe(false)
     expect(CAPACIDADES.gestor.editaCadastro).toBe(true)
     expect(CAPACIDADES.operador.editaCadastro).toBe(false)
+  })
+
+  test('admin e gestor veem os paineis de gestao, operador nao', () => {
+    expect(CAPACIDADES.admin.veGestao).toBe(true)
+    expect(CAPACIDADES.gestor.veGestao).toBe(true)
+    expect(CAPACIDADES.operador.veGestao).toBe(false)
   })
 
   /**

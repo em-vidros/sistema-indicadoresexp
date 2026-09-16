@@ -169,6 +169,7 @@ export type Capacidades = {
   readonly todasAsBases: boolean
   readonly gerenciaUsuarios: boolean
   readonly editaCadastro: boolean
+  readonly veGestao: boolean
 }
 
 export type Capacidade = keyof Capacidades

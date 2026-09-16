@@ -20,6 +20,9 @@ export type Capacidades = {
   readonly todasAsBases: boolean
   readonly gerenciaUsuarios: boolean
   readonly editaCadastro: boolean
+  /** Os quatro paineis do grupo "Painel" (visao geral, viagens, rotas, frota):
+   * leitura agregada entre registros, e nao o que o operador lanca. */
+  readonly veGestao: boolean
 }
 
 /**
@@ -32,9 +35,9 @@ export type Capacidades = {
  * linha desta tabela em vez de uma cacada por `=== 'admin'`.
  */
 export const CAPACIDADES: Readonly<Record<Papel, Capacidades>> = {
-  admin: { todasAsBases: true, gerenciaUsuarios: true, editaCadastro: true },
-  gestor: { todasAsBases: false, gerenciaUsuarios: false, editaCadastro: true },
-  operador: { todasAsBases: false, gerenciaUsuarios: false, editaCadastro: false },
+  admin: { todasAsBases: true, gerenciaUsuarios: true, editaCadastro: true, veGestao: true },
+  gestor: { todasAsBases: false, gerenciaUsuarios: false, editaCadastro: true, veGestao: true },
+  operador: { todasAsBases: false, gerenciaUsuarios: false, editaCadastro: false, veGestao: false },
 }
 
 export const Permissao = z.object({
