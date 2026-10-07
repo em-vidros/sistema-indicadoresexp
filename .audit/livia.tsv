@@ -1,0 +1,10 @@
+ts	phase	decision	why	evidence	result
+2026-10-07T14:52:15Z	frame	Revisar lançamentos e acesso antes de publicar	O primeiro acesso e a edição determinam se a equipe consegue trabalhar	apps/server/src/portao.ts	baseline 436 pass e 5 fail
+2026-10-07T14:52:15Z	ui	Separar leitura de número nativo e dinheiro e usar calendário local	1.234 era multiplicado por mil e UTC mudava o dia às 21h	docs/auditoria-livia-2026-10-07.md	criação local lida como 1.23
+2026-10-07T14:52:15Z	documentos	Recusar PDF acima de 4 MB e retirar anexo fictício da manutenção	Evitar requisição acima do limite e confirmação de arquivo que não existe	apps/server/test/documentos.test.ts	23 testes passaram
+2026-10-07T14:56:20Z	acesso	Corrigir convites e permissões sem migração	Novas contas precisam entrar e pedidos simultâneos precisam preservar as regras	apps/server/test/convites.test.ts	concorrência e login passaram
+2026-10-07T14:56:20Z	verificar	Rodar fronteiras, build, assets públicos, tipos e testes	Prove It Works exige conferir o resultado antes de publicar	docs/auditoria-livia-2026-10-07.md	453 pass e 0 fail
+2026-10-07T14:58:47Z	revisao	Rejeitar texto inválido sem bloquear valor zero	O revisor mostrou que abc podia virar manutenção gratuita	apps/web/test/digitado.test.ts	parser corrigido e suíte 453 pass
+2026-10-07T14:58:47Z	mobile	Mover navegação acima do painel no celular e conter tabela no bloco	O painel tinha 126 px e o rodapé escapava da página	apps/web/src/geist/geist.css	390 px sem overflow; desktop 1280 px sem overflow
+2026-10-07T14:59:33Z	gate	Aprovar a alteração após revisão independente	O revisor não escreveu o código e executou convites, páginas, números e datas	apps/server/test/convites.test.ts	gpt-6-luna PASS; 56 pass; 0 fail
+2026-10-07T14:59:33Z	fumaca	Cobrar primeiro acesso público na fumaça pós-deploy	Sem token a API responde 404; exigir sessão responderia 401	verificar/fumaca.sh	seis verificações locais passaram

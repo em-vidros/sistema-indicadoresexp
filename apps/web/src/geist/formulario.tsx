@@ -187,7 +187,7 @@ export function Campo(props: CampoProps): JSX.Element {
   )
 }
 
-const TEXTO_PADRAO = 'Arraste o PDF ou clique · máx 6 MB'
+const TEXTO_PADRAO = 'Arraste o PDF ou clique · máx 4 MB'
 
 /**
  * A caixa tracejada de 48 px que recebe um arquivo, por clique ou por arraste.

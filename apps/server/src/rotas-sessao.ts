@@ -200,6 +200,7 @@ export function rotasSessao({ auth, db }: Dependencias): Hono<Ambiente> {
       asResponse: true,
       body: { email: emailDe(dono.usuario), password: entrada.data.senha, rememberMe: true },
     })
+    if (!sessao.ok) return sessao
     const saida = c.json({ ok: true })
     for (const cookie of sessao.headers.getSetCookie()) {
       saida.headers.append('set-cookie', cookie)

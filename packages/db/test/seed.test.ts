@@ -146,6 +146,23 @@ test('a segunda passada atualiza a linha em vez de criar outra', async () => {
   expect(placas?.depois).toBe(placas?.antes)
 })
 
+test('rodar o seed preserva usuarios cadastrados fora da lista inicial', async () => {
+  try {
+    await db.transaction(async (tx) => {
+      await zerar(tx)
+      await semearEm(tx, DEPS, carregarCadastroInicial())
+      await tx.execute(sql`insert into "user" (id, name, email, papel)
+        values ('usr_teste_seed', 'Pessoa Cadastrada', 'teste-seed@emvidros.com.br', 'admin')`)
+      await semearEm(tx, DEPS, carregarCadastroInicial())
+      const linhas = await tx.execute<{ name: string }>(sql`select name from "user" where id = 'usr_teste_seed'`)
+      expect(linhas.map((l) => l.name)).toEqual(['Pessoa Cadastrada'])
+      tx.rollback()
+    })
+  } catch (erro) {
+    if (!(erro instanceof TransactionRollbackError)) throw erro
+  }
+})
+
 afterAll(async () => {
   await conexao.end()
 })

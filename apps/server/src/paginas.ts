@@ -18,8 +18,8 @@ const SEM_HASH = new Set(PUBLICOS_DE_ASSET)
 /**
  * O nome dentro de `/assets/` carrega o hash do conteudo, entao ele nunca serve conteudo
  * diferente e pode ficar guardado para sempre. As excecoes sao os sem hash, cujo nome e
- * estavel e cujo conteudo muda a cada build: eles ficam guardados por dez minutos e depois
- * voltam a perguntar, e a pergunta sai em 304 enquanto a publicacao for a mesma.
+ * estavel e cujo conteudo muda a cada build: eles revalidam a cada pedido
+ * e recebem 304 enquanto a publicação for a mesma.
  * `verificar/publicos.ts` prova que esses sao exatamente os que o portao libera.
  */
 function cacheDe(caminho: string, extensao: string): string {
@@ -27,7 +27,7 @@ function cacheDe(caminho: string, extensao: string): string {
   if (caminho.startsWith('/assets/') && !SEM_HASH.has(caminho)) {
     return 'public, max-age=31536000, immutable'
   }
-  if (caminho.startsWith('/assets/')) return 'public, max-age=600, must-revalidate'
+  if (caminho.startsWith('/assets/')) return 'public, no-cache'
   return 'no-cache'
 }
 

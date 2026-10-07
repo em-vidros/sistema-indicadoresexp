@@ -21,3 +21,10 @@ export function lerNumero(digitado: string, { milhar = true }: { readonly milhar
   const lido = Number(normalizado)
   return Number.isFinite(lido) ? lido : 0
 }
+
+export function lerDinheiro(digitado: string): number | null {
+  const limpo = digitado.trim().replace(/^R\$\s*/, '')
+  const brasileiro = /^-?(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d+)?$/
+  const decimal = /^-?\d+(?:\.\d+)?$/
+  return brasileiro.test(limpo) || decimal.test(limpo) ? lerNumero(limpo) : null
+}

@@ -21,7 +21,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { and, eq, gt, isNull, ne } from 'drizzle-orm'
 import type { Db } from '../index.ts'
-import { account, conviteSenha, user } from '../schema/auth.ts'
+import { account, conviteSenha, session, user } from '../schema/auth.ts'
 import { type DepsConta, loginDe } from './usuarios.ts'
 
 /**
@@ -44,6 +44,7 @@ export type DonoDoConvite = { usuarioId: string; usuario: string; nome: string }
  * serve ao seed, que ja esta dentro de uma transacao, e a rota, que nao esta.
  */
 type Gravador = Pick<Db, 'select' | 'insert' | 'update' | 'delete'>
+type Transacional = Gravador & Pick<Db, 'transaction'>
 type Leitor = Pick<Db, 'select'>
 
 const hashDe = (token: string): string => createHash('sha256').update(token).digest('hex')
@@ -67,23 +68,26 @@ const novoToken = (): string => randomBytes(32).toString('base64url')
  * perguntar se o link vazado chegou a ser usado.
  */
 export async function criarConvite(
-  db: Gravador,
+  db: Transacional,
   usuarioId: string,
   agora = new Date(),
 ): Promise<ConviteGerado> {
   const token = novoToken()
   const expiraEm = validoAte(agora)
 
-  await derrubarAbertos(db, usuarioId)
-  await db.insert(conviteSenha).values({
-    id: `cnv_${randomUUID()}`,
-    usuarioId,
-    tokenHash: hashDe(token),
-    expiraEm,
-    criadoEm: agora,
-  })
+  return db.transaction(async (tx) => {
+    await tx.select({ id: user.id }).from(user).where(eq(user.id, usuarioId)).for('update')
+    await derrubarAbertos(tx, usuarioId)
+    await tx.insert(conviteSenha).values({
+      id: `cnv_${randomUUID()}`,
+      usuarioId,
+      tokenHash: hashDe(token),
+      expiraEm,
+      criadoEm: agora,
+    })
 
-  return { token, expiraEm }
+    return { token, expiraEm }
+  })
 }
 
 /**
@@ -136,13 +140,16 @@ export function aceitarConvite(
       .where(valido(token, agora))
     if (!linha) return null
 
-    await gravarSenha(tx, linha.usuarioId, loginDe(linha.email), senhaHash, deps, agora)
-
-    await tx
+    await tx.select({ id: user.id }).from(user).where(eq(user.id, linha.usuarioId)).for('update')
+    const consumidos = await tx
       .update(conviteSenha)
       .set({ usadoEm: agora })
-      .where(eq(conviteSenha.id, linha.conviteId))
+      .where(and(eq(conviteSenha.id, linha.conviteId), valido(token, agora)))
+      .returning({ id: conviteSenha.id })
+    if (consumidos.length === 0) return null
 
+    await gravarSenha(tx, linha.usuarioId, loginDe(linha.email), senhaHash, deps, agora)
+    await tx.delete(session).where(eq(session.userId, linha.usuarioId))
     await derrubarAbertos(tx, linha.usuarioId, linha.conviteId)
 
     return { usuarioId: linha.usuarioId, usuario: loginDe(linha.email), nome: linha.nome }

@@ -24,7 +24,9 @@ const json = { 'content-type': 'application/json' }
 type Usuario = {
   usuario: string
   nome: string
-  admin: boolean
+  papel: 'admin' | 'gestor' | 'operador'
+  senhaDefinida: boolean
+  conviteAberto: boolean
   baseFixa: string | null
   bases: string[]
   tipos: string[]
@@ -100,7 +102,7 @@ afterAll(async () => {
   const resposta = await salvar(
     cookie,
     original
-      .filter((u) => !u.admin)
+      .filter((u) => u.papel !== 'admin')
       .map((u) => ({
         usuario: u.usuario,
         nome: u.nome,
@@ -120,24 +122,26 @@ describe('quem nao e admin', () => {
 
     const leitura = await pedir('/api/usuarios', { headers: { cookie } })
     expect(leitura.status).toBe(403)
-    expect(await leitura.json()).toEqual({ erro: 'somente administrador' })
+    expect(await leitura.json()).toEqual({ erro: 'sem permissão para gerenciar usuários' })
 
     const escrita = await salvar(cookie, [{ usuario: 'andreina', nome: 'Eu Mesma' }])
     expect(escrita.status).toBe(403)
-    expect(await escrita.json()).toEqual({ erro: 'somente administrador' })
+    expect(await escrita.json()).toEqual({ erro: 'sem permissão para gerenciar usuários' })
   })
 })
 
 describe('GET /api/usuarios', () => {
-  test('devolve os quatro, em ordem, com bases e tipos', async () => {
+  test('devolve os cinco, em ordem, com bases e tipos', async () => {
     const lista = await listar(await cookieAdmin())
 
-    expect(lista.map((u) => u.usuario)).toEqual(['andreina', 'belem', 'livia', 'lucascunha'])
+    expect(lista.map((u) => u.usuario)).toEqual(['andreina', 'belem', 'henrique', 'livia', 'lucascunha'])
 
     expect(achar(lista, 'livia')).toEqual({
       usuario: 'livia',
       nome: 'Livia (Admin)',
-      admin: true,
+      papel: 'admin',
+      senhaDefinida: true,
+      conviteAberto: false,
       baseFixa: null,
       bases: ['Belém', 'Imperatriz', 'Raposa'],
       tipos: ['abastecimento', 'manutencao', 'quebra', 'viagem'],
@@ -146,7 +150,9 @@ describe('GET /api/usuarios', () => {
     expect(achar(lista, 'lucascunha')).toEqual({
       usuario: 'lucascunha',
       nome: 'Lucas Cunha',
-      admin: false,
+      papel: 'operador',
+      senhaDefinida: true,
+      conviteAberto: false,
       baseFixa: 'Imperatriz',
       bases: ['Imperatriz'],
       tipos: ['abastecimento', 'manutencao', 'quebra', 'viagem'],
@@ -159,7 +165,7 @@ describe('GET /api/usuarios', () => {
     const lista = await listar(await cookieAdmin())
     for (const u of lista) {
       expect(Object.keys(u).sort()).toEqual(
-        ['admin', 'baseFixa', 'bases', 'nome', 'tipos', 'usuario'].sort(),
+        ['papel', 'baseFixa', 'bases', 'nome', 'tipos', 'usuario', 'senhaDefinida', 'conviteAberto'].sort(),
       )
     }
   })
@@ -205,9 +211,8 @@ describe('PUT /api/usuarios: a base fixa nao pode sair das liberadas', () => {
 
       const sessao = await sessaoCom(await cookieDe('lucascunha', exigir('SENHA_LUCASCUNHA')))
       expect(sessao.bases).toEqual(['Imperatriz', 'Raposa'])
-      // A base fixa e o `admin` nao sao editaveis por esta rota; so as permissoes sao.
       expect(sessao.baseFixa).toBe('Imperatriz')
-      expect(sessao.admin).toBe(false)
+      expect(sessao.papel).toBe('operador')
     } finally {
       await salvar(cookie, [{ usuario: 'lucascunha', nome: 'Lucas Cunha', bases: ['Imperatriz'] }])
     }
@@ -353,24 +358,13 @@ describe('PUT /api/usuarios', () => {
     expect((await entrar('belem', exigir('SENHA_BELEM'))).status).toBe(200)
   })
 
-  test('`admin` e `baseFixa` no corpo nao promovem nem mudam a base de ninguem', async () => {
+  test('trocar somente a base fixa exige que ela esteja nas bases liberadas', async () => {
     const cookie = await cookieAdmin()
     const resposta = await salvar(cookie, [
-      {
-        usuario: 'andreina',
-        nome: 'Andreina',
-        admin: true,
-        baseFixa: 'Belém',
-        bases: ['Raposa'],
-        tipos: ['viagem', 'quebra'],
-      },
+      { usuario: 'andreina', nome: 'Andreina', baseFixa: 'Belém' },
     ])
-    expect(resposta.status).toBe(200)
-
-    const andreina = achar(await listar(cookie), 'andreina')
-    expect(andreina.admin).toBe(false)
-    expect(andreina.baseFixa).toBe('Raposa')
-    expect(andreina.tipos).toEqual(['quebra', 'viagem'])
+    expect(resposta.status).toBe(400)
+    expect(achar(await listar(cookie), 'andreina').baseFixa).toBe('Raposa')
   })
 
   test('admin nao tem permissao editavel: bases e tipos que chegam para ele sao ignorados', async () => {

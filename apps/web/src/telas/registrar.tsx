@@ -15,12 +15,12 @@ import type { JSX, ReactNode } from 'react'
 import { invalidar, useRecurso, useSessao } from '../app/dados.ts'
 import { useLocalizacao } from '../app/navegacao.tsx'
 import { brl, numero, texto } from '../dashboard/dominio.ts'
-import { lerNumero } from '../dashboard/digitado.ts'
+import { lerDinheiro, lerNumero } from '../dashboard/digitado.ts'
+import { hojeISO } from '../app/data.ts'
 import {
   AreaDeTexto,
   Caixa,
   Campo,
-  CampoDeArquivo,
   Chips,
   Dialogo,
   GradeDeCampos,
@@ -142,9 +142,6 @@ type Manutencao = {
   readonly fornecedor: string
   readonly servico: string
   readonly valor: string
-  /** So o nome do arquivo escolhido importa: o upload em si nao existe nesta tela. */
-  readonly temOrcamento: string | null
-  readonly temOS: string | null
 }
 
 type CampoDeManutencao =
@@ -175,21 +172,17 @@ type Rascunho = {
 
 // ---------- numeros, datas e texto ----------
 
-function hojeISO(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
 function decimal(valor: string): number {
   return lerNumero(valor)
 }
 
-/** O preco do litro tem tres casas e nunca passa de mil: o ponto dele e sempre decimal. */
-function precoDoLitro(valor: string): number {
+/** Campos numéricos nativos devolvem ponto decimal, sem separador de milhar. */
+function numeroDoCampo(valor: string): number {
   return lerNumero(valor, { milhar: false })
 }
 
 function inteiro(valor: string): number {
-  return Math.trunc(lerNumero(valor))
+  return Math.trunc(lerNumero(valor, { milhar: false }))
 }
 
 function duasCasas(valor: number): string {
@@ -295,8 +288,6 @@ function rascunhoVazio(): Rascunho {
       fornecedor: '',
       servico: '',
       valor: '',
-      temOrcamento: null,
-      temOS: null,
     },
     quebra: { data: hoje, m2Expedido: '', m2Quebrado: '', observacao: '' },
   }
@@ -358,8 +349,8 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
         valor_carga: valorCarga,
         combustivel,
         diarias,
-        m2: decimal(viagem.m2),
-        peso_kg: decimal(viagem.peso),
+        m2: numeroDoCampo(viagem.m2),
+        peso_kg: numeroDoCampo(viagem.peso),
         observacao: viagem.observacao.trim(),
       }],
     }
@@ -378,8 +369,8 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
 
     if (!abastecimento.longa) {
       const parada = abastecimento.paradas[0]
-      const litros = decimal(parada.litros)
-      const vlLitro = precoDoLitro(parada.vlLitro)
+      const litros = numeroDoCampo(parada.litros)
+      const vlLitro = numeroDoCampo(parada.vlLitro)
       if (litros <= 0 || vlLitro <= 0) return { erro: 'Preencha os litros e o valor por litro.' }
       return {
         registros: [{
@@ -396,12 +387,12 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
 
     const registros: Registro[] = []
     abastecimento.paradas.forEach((parada, i) => {
-      const litros = decimal(parada.litros)
+      const litros = numeroDoCampo(parada.litros)
       if (litros <= 0) return
       registros.push({
         ...comum,
         litros,
-        vl_litro: precoDoLitro(parada.vlLitro),
+        vl_litro: numeroDoCampo(parada.vlLitro),
         km: inteiro(parada.km) || null,
         posto: parada.posto.trim(),
         slot: ROTULOS_DE_PARADA[i] ?? null,
@@ -415,8 +406,8 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
   manutencao: ({ manutencao }, base) => {
     const placa = manutencao.placa.trim().toUpperCase()
     const servico = manutencao.servico.trim()
-    const valor = decimal(manutencao.valor)
-    if (manutencao.dataEntrada === '' || placa === '' || servico === '' || valor <= 0) {
+    const valor = lerDinheiro(manutencao.valor)
+    if (manutencao.dataEntrada === '' || placa === '' || servico === '' || valor === null || valor < 0) {
       return { erro: 'Preencha a data de entrada, a placa, o serviço e o valor.' }
     }
     return {
@@ -439,7 +430,7 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
   },
 
   quebra: ({ quebra }, base) => {
-    const expedido = decimal(quebra.m2Expedido)
+    const expedido = numeroDoCampo(quebra.m2Expedido)
     if (quebra.data === '' || expedido <= 0) return { erro: 'Preencha a data e o m² expedido.' }
     return {
       registros: [{
@@ -447,7 +438,7 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
         base,
         data: quebra.data,
         m2_expedido: expedido,
-        m2_quebrado: decimal(quebra.m2Quebrado),
+        m2_quebrado: numeroDoCampo(quebra.m2Quebrado),
         observacao: quebra.observacao.trim(),
       }],
     }
@@ -534,9 +525,7 @@ const LEITORES_DE_RASCUNHO: Readonly<Record<Tipo, (linhas: readonly Registro[], 
         km: digitavel(r, 'km_odometro'),
         fornecedor: texto(r, 'fornecedor'),
         servico: texto(r, 'servico'),
-        valor: digitavel(r, 'valor'),
-        temOrcamento: null,
-        temOS: null,
+        valor: String(numero(r, 'valor')),
       },
     },
 
@@ -695,13 +684,7 @@ type Ferramentas = {
   readonly mudarParada: (indice: number, campo: keyof Parada, valor: string) => void
   readonly mudarManutencao: (campo: CampoDeManutencao, valor: string) => void
   readonly mudarTipoManutencao: (tipo: TipoDeManutencao) => void
-  readonly mudarDocumento: (campo: 'temOrcamento' | 'temOS', nome: string) => void
   readonly mudarQuebra: (campo: keyof Quebra, valor: string) => void
-}
-
-/** `arquivo` nao aceita `undefined` explicito, entao a chave so existe quando ha nome. */
-function anexo(nome: string | null): { readonly arquivo?: string } {
-  return nome === null ? {} : { arquivo: nome }
 }
 
 function celulasDeViagem(f: Ferramentas): readonly Celula[] {
@@ -895,9 +878,9 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
 
 function celulasDeAbastecimento(f: Ferramentas): readonly Celula[] {
   const a = f.rascunho.abastecimento
-  const cheias = a.paradas.filter((parada) => decimal(parada.litros) > 0)
-  const litros = cheias.reduce((soma, parada) => soma + decimal(parada.litros), 0)
-  const total = cheias.reduce((soma, parada) => soma + decimal(parada.litros) * precoDoLitro(parada.vlLitro), 0)
+  const cheias = a.paradas.filter((parada) => numeroDoCampo(parada.litros) > 0)
+  const litros = cheias.reduce((soma, parada) => soma + numeroDoCampo(parada.litros), 0)
+  const total = cheias.reduce((soma, parada) => soma + numeroDoCampo(parada.litros) * numeroDoCampo(parada.vlLitro), 0)
   const kms = a.paradas.map((parada) => inteiro(parada.km)).filter((km) => km > 0)
   const primeiro = kms[0]
   const rodados = primeiro === undefined ? 0 : Math.max(...kms) - primeiro
@@ -1036,7 +1019,6 @@ function celulasDeAbastecimento(f: Ferramentas): readonly Celula[] {
 function celulasDeManutencao(f: Ferramentas): readonly Celula[] {
   const m = f.rascunho.manutencao
   const dias = diasEntre(m.dataEntrada, m.dataSaida)
-  const completo = m.temOrcamento !== null && m.temOS !== null
   return [
     {
       col: [1, 9],
@@ -1130,27 +1112,10 @@ function celulasDeManutencao(f: Ferramentas): readonly Celula[] {
       linha: 1,
       conteudo: (
         <>
-          <TituloDeSecao titulo="Documentos" subtitulo="PDF de até 6 MB" />
-          <GradeDeCampos>
-            <CampoDeArquivo
-              rotulo="Orçamento (PDF)"
-              span={12}
-              aceita="application/pdf,image/*"
-              aoEscolher={(arquivo) => f.mudarDocumento('temOrcamento', arquivo.name)}
-              {...anexo(m.temOrcamento)}
-            />
-            <CampoDeArquivo
-              rotulo="Ordem de serviço assinada (PDF)"
-              span={12}
-              aceita="application/pdf,image/*"
-              aoEscolher={(arquivo) => f.mudarDocumento('temOS', arquivo.name)}
-              {...anexo(m.temOS)}
-            />
-          </GradeDeCampos>
-          <div className="g-secao">
-            <Badge cor={completo ? 'verde' : 'ambar'} rotulo={completo ? 'Concluído' : 'Pendente de documento'} />
+          <TituloDeSecao titulo="Documentos da manutenção" />
+          <div className="g-l13 g-fraco">
+            Este formulário salva os dados da manutenção. Orçamento e ordem de serviço ainda não podem ser anexados aqui.
           </div>
-          <div className="g-l13 g-fraco">Sem os dois documentos o registro fica pendente.</div>
         </>
       ),
     },
@@ -1197,7 +1162,7 @@ function celulasDeQuebra(f: Ferramentas): readonly Celula[] {
               rotulo="% de quebra"
               span={6}
               mono
-              valor={pct(decimal(q.m2Quebrado), decimal(q.m2Expedido))}
+              valor={pct(numeroDoCampo(q.m2Quebrado), numeroDoCampo(q.m2Expedido))}
             />
             <AreaDeTexto
               rotulo="Observação"
@@ -1370,9 +1335,6 @@ export default function Registrar(): JSX.Element {
   const mudarTipoManutencao = (tipoManutencao: TipoDeManutencao): void => {
     setRascunho((r) => ({ ...r, manutencao: { ...r.manutencao, tipoManutencao } }))
   }
-  const mudarDocumento = (campo: 'temOrcamento' | 'temOS', nome: string): void => {
-    setRascunho((r) => ({ ...r, manutencao: { ...r.manutencao, [campo]: nome } }))
-  }
   const mudarQuebra = (campo: keyof Quebra, valor: string): void => {
     setRascunho((r) => ({ ...r, quebra: { ...r.quebra, [campo]: valor } }))
   }
@@ -1488,7 +1450,6 @@ export default function Registrar(): JSX.Element {
     mudarParada,
     mudarManutencao,
     mudarTipoManutencao,
-    mudarDocumento,
     mudarQuebra,
   }
 

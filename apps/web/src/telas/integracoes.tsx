@@ -1,3 +1,4 @@
+import { hojeISO } from '../app/data.ts'
 /**
  * A ficha de integracao de 45 dias: quem entrou, o que ele ja cumpriu semana a semana, a
  * matriz de avaliacao do programa, as assinaturas e o historico das fichas salvas.
@@ -98,10 +99,6 @@ const SEMANAS_POR_ABA = 3
 const DIAS_DE_EXPERIENCIA = 45
 
 const COLUNAS_DO_HISTORICO = ['Colaborador', 'Função', 'Início', 'Coordenador', 'Progresso']
-
-function hojeISO(): string {
-  return new Date().toISOString().slice(0, 10)
-}
 
 function diaMes(iso: string | null): string {
   if (iso === null || iso === '') return ''

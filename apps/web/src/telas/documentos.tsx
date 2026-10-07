@@ -61,7 +61,7 @@ import {
 import type { DocumentoSalvo, EntradaDocumento } from '../js/documentos-api.ts'
 
 /** O teto do upload, o mesmo da tela velha e o mesmo que o servidor recusa. */
-const LIMITE_DO_PDF = 6 * 1024 * 1024
+const LIMITE_DO_PDF = 4 * 1024 * 1024
 
 type TipoDeVeiculo = 'apolice' | 'crlv' | 'tacografo'
 
@@ -456,7 +456,7 @@ export default function Documentos(): JSX.Element {
 
   const enviarDoVeiculo = async (veiculo: VeiculoCadastro, chave: TipoDeVeiculo, arquivo: File): Promise<void> => {
     if (arquivo.size > LIMITE_DO_PDF) {
-      avisar('O arquivo passa de 6 MB.', 'erro')
+      avisar('O arquivo passa de 4 MB.', 'erro')
       return
     }
     const docs = indice.veiculos.get(veiculo.id) ?? VEICULO_SEM_DOCUMENTO
@@ -480,7 +480,7 @@ export default function Documentos(): JSX.Element {
 
   const enviarCnh = async (pessoa: ColaboradorCadastro, arquivo: File): Promise<void> => {
     if (arquivo.size > LIMITE_DO_PDF) {
-      avisar('O arquivo passa de 6 MB.', 'erro')
+      avisar('O arquivo passa de 4 MB.', 'erro')
       return
     }
     const cnh = indice.cnhs.get(pessoa.id)

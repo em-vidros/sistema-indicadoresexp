@@ -484,7 +484,7 @@ body {
    dois lados, entao um nome de rota comprido a faz passar da celula do grid. Sem esta
    caixa a coluna da direita sai por cima da borda do painel e some; com ela, a tabela
    rola dentro do bloco e a moldura fica onde o canvas a desenhou. */
-.g-rolagem { @apply [overflow-x:auto]; }
+.g-rolagem { @apply relative; @apply [overflow-x:auto]; }
 
 .g-tabela { @apply [width:100%]; @apply [border-collapse:collapse]; }
 
@@ -1518,6 +1518,18 @@ body {
  * de uma linha. No desktop nada muda, e a paridade fotografa a 1440 px, entao ela passa
  * por esta regra sem ver nada. */
 @media (max-width: 767px) {
+  .g-app { @apply flex-col; }
+  .g-trilho { @apply [width:100%]; @apply [flex:0_0_auto]; @apply [height:auto]; @apply static; @apply grid; @apply [grid-template-columns:repeat(2,_minmax(0,_1fr))]; }
+  .g-trilho > * { @apply [min-width:0]; }
+  .g-nav { @apply [grid-column:1_/_-1]; @apply [grid-row:2]; @apply flex-row; @apply [overflow-x:auto]; @apply [gap:8px]; }
+  .g-grupo { @apply flex-row; @apply [flex:0_0_auto]; }
+  .g-grupo-rotulo { @apply hidden; }
+  .g-item { @apply whitespace-nowrap; @apply [height:40px]; }
+  .g-painel { @apply [margin:0_8px_8px]; }
+  .g-painel-corpo { @apply [padding:20px_16px]; }
+  .g-abas { @apply [overflow-x:auto]; @apply [max-width:100%]; }
+  .g-aba { @apply [flex:0_0_auto]; @apply whitespace-nowrap; }
+  .g-rodape, .g-rodape-acoes { @apply flex-wrap; }
   .g-cruz { @apply hidden; }
   .g-trio { @apply [grid-template-columns:minmax(0,_1fr)]; }
   .g-arqs { @apply [grid-template-columns:minmax(0,_1fr)]; }

@@ -23,7 +23,7 @@ import { and, eq, isNotNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db } from './index.ts'
 import { criarConvite } from './consultas/convites.ts'
-import { apagarUsuariosForaDe, emailDe, idDeUsuario } from './consultas/usuarios.ts'
+import { emailDe, idDeUsuario } from './consultas/usuarios.ts'
 import {
   account,
   base,
@@ -671,10 +671,6 @@ export async function semearEm(
     })
 
   // --- usuarios ----------------------------------------------------------
-  // Os quatro logins antigos vinham do objeto USUARIOS do HTML, com as senhas em
-  // base64 ao lado: elas ja vazaram para quem abriu a pagina. Ninguem nasce com
-  // senha agora, entao nao ha o que vazar: o seed grava a pessoa, apaga quem saiu
-  // da lista e gera um link de primeiro acesso para quem ainda nao tem conta.
   const chaves = Object.keys(USUARIOS_INICIAIS) as (keyof typeof USUARIOS_INICIAIS)[]
   const usuarios = chaves.map((chave) => {
     const u = USUARIOS_INICIAIS[chave]
@@ -690,9 +686,7 @@ export async function semearEm(
     }
   })
 
-  // Apagar antes de inserir, e nao depois: se alguem que sai da lista tiver o mesmo
-  // e-mail de alguem que entra, o UNIQUE de `user.email` recusaria o INSERT.
-  const apagados = await apagarUsuariosForaDe(db, [...chaves])
+  const apagados = 0
 
   await db
     .insert(user)

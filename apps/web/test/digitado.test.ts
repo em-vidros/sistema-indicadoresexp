@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { lerNumero } from '../src/dashboard/digitado.ts'
+import { lerDinheiro, lerNumero } from '../src/dashboard/digitado.ts'
 
 describe('lerNumero', () => {
   test('ponto de milhar não vira decimal', () => {
@@ -32,5 +32,20 @@ describe('lerNumero', () => {
     expect(lerNumero('')).toBe(0)
     expect(lerNumero('abc')).toBe(0)
     expect(lerNumero('1,2,3')).toBe(0)
+  })
+})
+
+describe('lerDinheiro', () => {
+  test('zero é um valor e texto inválido não vira manutenção gratuita', () => {
+    expect(lerDinheiro('0')).toBe(0)
+    expect(lerDinheiro('R$ 0,00')).toBe(0)
+    expect(lerDinheiro('abc')).toBeNull()
+    expect(lerDinheiro('R$')).toBeNull()
+    expect(lerDinheiro('abc3')).toBeNull()
+    expect(lerDinheiro('1,2,3')).toBeNull()
+  })
+  test('aceita dinheiro brasileiro e valor decimal da edição', () => {
+    expect(lerDinheiro('R$ 1.234,56')).toBe(1234.56)
+    expect(lerDinheiro('2480.50')).toBe(2480.5)
   })
 })

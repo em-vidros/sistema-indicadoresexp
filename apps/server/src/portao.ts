@@ -36,6 +36,7 @@ export const PAGINA_PADRAO = '/registrar'
 const PUBLICOS = new Set([
   ROTA_LOGIN,
   '/api/entrar',
+  '/api/convite',
   '/saude',
   '/docs/logo-emvidros.svg',
   '/assets/entrar.js',

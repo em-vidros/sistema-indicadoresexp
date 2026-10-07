@@ -319,6 +319,18 @@ describe('o que o documento aceita e devolve', () => {
     expect(resposta.status).toBe(413)
   })
 
+  test('PDF acima de 4 MB é recusado com uma mensagem que a tela mostra', async () => {
+    const conteudo = new Uint8Array(4 * 1024 * 1024 + 1)
+    conteudo.set(new TextEncoder().encode('%PDF-1.7'))
+    const resposta = await enviar(
+      cookie,
+      { tipo: 'crlv', titulo: 'PDF grande', veiculoId: veiculoImperatriz.id },
+      new File([conteudo], 'grande.pdf', { type: 'application/pdf' }),
+    )
+    expect(resposta.status).toBe(413)
+    expect(await resposta.json()).toEqual({ erro: 'arquivo maior que 4 MB' })
+  })
+
   test('arquivo que não é PDF é recusado mesmo declarando application/pdf', async () => {
     const resposta = await enviar(
       cookie,
@@ -509,10 +521,6 @@ describe('o cache do download', () => {
   })
 
   test('o 304 sai sem tocar no armazenamento', async () => {
-    // Os outros tres testes deste describe passam com a checagem do `if-none-match`
-    // DEPOIS da leitura, e a ordem e o ponto do ETag: 6 MB de PDF buscados de novo so
-    // para o cliente descobrir que ja tinha o arquivo. Um armazenamento que estoura ao
-    // ler prende a ordem pela porta da frente. Se o 304 sai, a leitura nao aconteceu.
     const semLeitura: ArmazenamentoArquivo = {
       async guardar() {
         throw new Error('este duble nao guarda')

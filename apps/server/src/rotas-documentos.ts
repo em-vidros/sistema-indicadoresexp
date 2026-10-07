@@ -89,8 +89,7 @@ const Dados = z
     proibir('contatoEmergencia', ['apolice'])
   })
 
-/** 6 MB de PDF. */
-const LIMITE = 6 * 1024 * 1024
+const LIMITE = 4 * 1024 * 1024
 /** Fronteiras, cabecalhos de parte e o campo `dados` do multipart. */
 const ENVELOPE = 64 * 1024
 /** '%PDF-', que e como todo PDF comeca. */
@@ -141,7 +140,7 @@ export function rotasDocumentos(db: Db, arquivos: ArmazenamentoArquivo): Hono<Am
     // 500 MB era lido por completo so para ser recusado depois com 400.
     const anunciado = Number(c.req.header('content-length') ?? Number.NaN)
     if (Number.isFinite(anunciado) && anunciado > LIMITE + ENVELOPE) {
-      return c.json({ erro: 'arquivo maior que 6 MB' }, 413)
+      return c.json({ erro: 'arquivo maior que 4 MB' }, 413)
     }
     const formulario = await c.req.formData().catch(() => null)
     const bruto = formulario?.get('dados')
@@ -157,7 +156,7 @@ export function rotasDocumentos(db: Db, arquivos: ArmazenamentoArquivo): Hono<Am
     const entrada = Dados.safeParse(decodificado)
     if (!entrada.success || !(arquivo instanceof File)) return c.json({ erro: 'entrada inválida' }, 400)
     // Quem nao anunciou o tamanho ainda para aqui, so que depois de ler.
-    if (arquivo.size > LIMITE) return c.json({ erro: 'arquivo maior que 6 MB' }, 413)
+    if (arquivo.size > LIMITE) return c.json({ erro: 'arquivo maior que 4 MB' }, 413)
     if (!(await ehPdf(arquivo))) return c.json({ erro: 'arquivo não é PDF' }, 400)
 
     const id = criarId(ArquivoId, crypto.randomUUID())

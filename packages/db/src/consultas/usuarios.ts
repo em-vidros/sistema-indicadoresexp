@@ -19,7 +19,7 @@ import { CAPACIDADES, type Papel, baseFixaCoerente } from '@ind/core'
 import { and, count, eq, gt, inArray, isNotNull, isNull, notInArray, sql } from 'drizzle-orm'
 import type { Db } from '../index.ts'
 import { base } from '../schema/cadastro.ts'
-import { account, conviteSenha, user, usuarioBase, usuarioTipo } from '../schema/auth.ts'
+import { account, conviteSenha, session, user, usuarioBase, usuarioTipo } from '../schema/auth.ts'
 import type { tipoRegistro } from '../schema/auth.ts'
 
 export type TipoRegistro = (typeof tipoRegistro.enumValues)[number]
@@ -203,6 +203,10 @@ export function criarUsuario(db: Db, novo: NovoUsuario): Promise<{ id: string }>
       throw new EntradaInvalida(desacordo(novo.papel))
     }
 
+    if (novo.baseFixa !== null && !novo.bases.includes(novo.baseFixa)) {
+      throw new EntradaInvalida(`base '${novo.baseFixa}' precisa estar nas bases liberadas`)
+    }
+
     const id = idDeUsuario(novo.usuario)
     const email = emailDe(novo.usuario)
 
@@ -248,6 +252,10 @@ export function atualizarUsuarios(
   deps: DepsConta,
 ): Promise<number> {
   return db.transaction(async (tx) => {
+    await tx.select({ id: user.id }).from(user).orderBy(user.id).for('update')
+    const vinculos = await tx.select({ usuarioId: usuarioBase.usuarioId, nome: base.nome })
+      .from(usuarioBase).innerJoin(base, eq(base.id, usuarioBase.baseId))
+    const basesPor = agrupar(vinculos, (v) => v.nome)
     const alvos = await tx
       .select({ id: user.id, email: user.email, papel: user.papel, baseFixa: base.nome })
       .from(user)
@@ -274,7 +282,7 @@ export function atualizarUsuarios(
       // as que ele pode escolher. Tirar a fixa da lista deixa a pessoa presa numa
       // base cujo botao some da tela, e cuja escrita a fase 2 vai recusar. Nao e um
       // estado que alguem queira, entao nao pode ser gravado.
-      if (baseFixa !== null && m.bases && !m.bases.includes(baseFixa)) {
+      if (baseFixa !== null && !(m.bases ?? basesPor.get(alvo.id) ?? []).includes(baseFixa)) {
         throw new EntradaInvalida(
           `'${m.usuario}' e da base '${baseFixa}', que nao pode sair das bases liberadas`,
         )
@@ -320,6 +328,7 @@ export function atualizarUsuarios(
           )
           .returning({ id: account.id })
         if (trocadas.length === 0) throw new Error(`'${m.usuario}' nao tem conta de senha`)
+        await tx.delete(session).where(eq(session.userId, alvo.id))
       }
 
       // Quem ve todas as bases tem tudo, e por isso a tela desenha as caixas dele
@@ -354,6 +363,7 @@ export function atualizarUsuarios(
  */
 export function apagarUsuario(db: Db, login: string, pedidoPor: string): Promise<void> {
   return db.transaction(async (tx) => {
+    await tx.select({ id: user.id }).from(user).orderBy(user.id).for('update')
     const [alvo] = await tx
       .select({ id: user.id })
       .from(user)

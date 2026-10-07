@@ -38,6 +38,7 @@ rodar() {
   conferir 'saude' '200' "$(codigo "$BASE/saude")"
   conferir 'login' '200' "$(codigo "$BASE/entrar.html")"
   conferir 'css do sistema visual' '200' "$(codigo "$BASE/assets/geist.css")"
+  conferir 'primeiro acesso sem sessao' '404' "$(codigo "$BASE/api/convite")"
   conferir 'api sem sessao barra' '401' "$(codigo "$BASE/api/sessao")"
   conferir 'raiz manda para o login' '302' "$(codigo -H 'Accept: text/html' "$BASE/")"
 }
