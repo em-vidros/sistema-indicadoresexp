@@ -32,6 +32,7 @@
 import { useState } from 'react'
 import type { JSX } from 'react'
 import { useRegistros } from '../dashboard/carregar.ts'
+import { EstadoDosRegistros } from '../dashboard/estado-dos-registros.tsx'
 import { PONTUALIDADES, brl, calcularKPIs, diaMes, filtrarDados, porcento } from '../dashboard/dominio.ts'
 import type { Item, Pontualidade } from '../dashboard/dominio.ts'
 import {
@@ -152,7 +153,8 @@ function Linha({ viagem }: { readonly viagem: Viagem }): JSX.Element {
 
 export default function Viagens(): JSX.Element {
   const [filtros, definirFiltros] = useFiltros()
-  const { itens } = useRegistros()
+  const registros = useRegistros()
+  const { itens } = registros
   const [vista, setVista] = useState<Vista>(VISTA_INICIAL)
 
   const todas = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo)).viagens
@@ -208,7 +210,7 @@ export default function Viagens(): JSX.Element {
   )
 
   return (
-    <>
+    <EstadoDosRegistros registros={registros} titulo="Viagens">
       <CabecalhoDePagina
         titulo="Viagens"
         subtitulo={`${todas.length} ${todas.length === 1 ? 'viagem' : 'viagens'} · ${PERIODOS[filtros.periodo].rotulo} · ${BASES[filtros.base].naCasca}`}
@@ -250,6 +252,6 @@ export default function Viagens(): JSX.Element {
       </div>
 
       <Grade celulas={[{ col: [1, 13], linha: 1, rente: true, conteudo: tabela }]} />
-    </>
+    </EstadoDosRegistros>
   )
 }

@@ -28,10 +28,18 @@ function hora(em: number): string {
   return new Date(em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
-export function useRegistros(): { readonly itens: readonly Item[]; readonly sincronia: Sincronia } {
+export type RegistrosDoPainel = {
+  readonly itens: readonly Item[]
+  readonly sincronia: Sincronia
+  readonly temDados: boolean
+  readonly recarregar: () => void
+}
+
+export function useRegistros(): RegistrosDoPainel {
   const recurso = useRecurso('registros', listarRegistros)
   const itens = recurso.dados === null ? [] : recurso.dados.map(lerItem)
-  if (recurso.estado === 'erro') return { itens, sincronia: { estado: 'offline' } }
-  if (recurso.estado === 'carregando') return { itens, sincronia: { estado: 'carregando' } }
-  return { itens, sincronia: { estado: 'ok', quando: hora(recurso.em) } }
+  const comum = { itens, temDados: recurso.dados !== null, recarregar: recurso.recarregar }
+  if (recurso.estado === 'erro') return { ...comum, sincronia: { estado: 'offline' } }
+  if (recurso.estado === 'carregando') return { ...comum, sincronia: { estado: 'carregando' } }
+  return { ...comum, sincronia: { estado: 'ok', quando: hora(recurso.em) } }
 }

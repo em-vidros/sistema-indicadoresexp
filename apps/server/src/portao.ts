@@ -42,6 +42,7 @@ const PUBLICOS = new Set([
   '/assets/entrar.js',
   '/assets/vendor-react.js',
   '/assets/geist.js',
+  '/assets/icones.js',
   '/assets/geist.css',
   '/assets/rolldown-runtime.js',
   '/assets/geist-sans-400.woff2',

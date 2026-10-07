@@ -15,7 +15,7 @@
  * teria duas verdades sobre o mesmo dado, e a que aparece na tela seria a errada sempre
  * que o formulario recalculasse alguma coisa.
  */
-import { createContext, useContext, useEffect, useId, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from 'react'
 import type { CSSProperties, JSX, ReactNode, RefObject } from 'react'
 import {
   ArrowRight,
@@ -152,6 +152,8 @@ export function Campo(props: CampoProps): JSX.Element {
         ref={campo}
         className={classes('g-campo-entrada', mono && 'g-l14m')}
         type={ENTRADA_DO_TIPO[props.tipo ?? 'texto']}
+        step={props.tipo === 'numero' ? 'any' : undefined}
+        inputMode={props.tipo === 'dinheiro' || props.tipo === 'numero' ? 'decimal' : undefined}
         value={valor}
         placeholder={dica}
         required={obrigatorio}
@@ -365,8 +367,8 @@ export function LinhaDeCheck({ texto, feito, data, aoMudar }: {
             {feito ? <Icone de={Check} tamanho={12} /> : null}
           </span>
         )
-        : <Caixa marcado={feito} aoMudar={aoMudar} />}
-      <span className={classes('g-check-texto', !feito && 'g-fraco')}>{texto}</span>
+        : <Caixa marcado={feito} aoMudar={aoMudar} rotulo={texto} />}
+      {aoMudar === undefined ? <span className={classes('g-check-texto', !feito && 'g-fraco')}>{texto}</span> : null}
       <span className="g-check-data g-l12m">{data ?? '·'}</span>
     </div>
   )
@@ -432,10 +434,22 @@ export type TomDeAviso = 'ok' | 'erro'
 
 type Nota = { readonly id: number; readonly texto: string; readonly tom: TomDeAviso }
 
-/** Quanto tempo o aviso fica na tela antes de sair sozinho. */
+/** A confirmação de sucesso sai após quatro segundos. Erros exigem dispensa. */
 const DURACAO = 4000
 
 const Contexto = createContext<((texto: string, tom?: TomDeAviso) => void) | null>(null)
+const ContextoDasNotas = createContext<{ notas: readonly Nota[]; dispensar: (id: number) => void; dialogos: readonly string[]; registrarDialogo: (id: string, aberto: boolean) => void }>({ notas: [], dispensar: () => {}, dialogos: [], registrarDialogo: () => {} })
+
+function ListaDeAvisos({ dialogo }: { readonly dialogo?: string }): JSX.Element {
+  const { notas, dispensar, dialogos } = useContext(ContextoDasNotas)
+  if (dialogo !== undefined && dialogos.at(-1) !== dialogo) return <></>
+  return <>{notas.map((nota) => (
+    <div className={`g-aviso g-aviso-${nota.tom}`} role={nota.tom === 'erro' ? 'alert' : 'status'} key={nota.id}>
+      <span>{nota.texto}</span>
+      <button type="button" className="g-botao g-botao-terciario g-botao-quadrado" aria-label="Dispensar aviso" onClick={() => dispensar(nota.id)}><Icone de={Cross} /></button>
+    </div>
+  ))}</>
+}
 
 /**
  * Sem provedor, `avisar` cai no console em vez de estourar. Um formulario que salvou
@@ -453,6 +467,10 @@ export function useAvisos(): { readonly avisar: (texto: string, tom?: TomDeAviso
 export function Avisos({ children }: { readonly children: ReactNode }): JSX.Element {
   const [notas, setNotas] = useState<readonly Nota[]>([])
   const proximo = useRef(0)
+  const [dialogos, setDialogos] = useState<readonly string[]>([])
+  const registrarDialogo = useCallback((id: string, aberto: boolean): void => {
+    setDialogos((atuais) => aberto ? [...atuais.filter((atual) => atual !== id), id] : atuais.filter((atual) => atual !== id))
+  }, [])
 
   // O relogio e marcado no proprio `avisar`, e nao num efeito dentro do aviso: com efeito,
   // qualquer render do pai reiniciaria a contagem e o aviso ficaria na tela sem sair.
@@ -460,19 +478,15 @@ export function Avisos({ children }: { readonly children: ReactNode }): JSX.Elem
     proximo.current += 1
     const id = proximo.current
     setNotas((atuais) => [...atuais, { id, texto, tom }])
-    setTimeout(() => setNotas((atuais) => atuais.filter((n) => n.id !== id)), DURACAO)
+    if (tom === 'ok') setTimeout(() => setNotas((atuais) => atuais.filter((n) => n.id !== id)), DURACAO)
   }
 
   return (
     <Contexto.Provider value={avisar}>
-      {children}
-      <div className="g-avisos">
-        {notas.map((nota) => (
-          <div className={`g-aviso g-aviso-${nota.tom}`} role="status" key={nota.id}>
-            {nota.texto}
-          </div>
-        ))}
-      </div>
+      <ContextoDasNotas.Provider value={{ notas, dialogos, registrarDialogo, dispensar: (id) => setNotas((atuais) => atuais.filter((n) => n.id !== id)) }}>
+        {children}
+        <div className="g-avisos"><ListaDeAvisos /></div>
+      </ContextoDasNotas.Provider>
     </Contexto.Provider>
   )
 }
@@ -495,6 +509,14 @@ export function Dialogo({ aberto, titulo, subtitulo, aoFechar, largura = 560, ch
   readonly acoes?: ReactNode
 }): JSX.Element {
   const ref = useRef<HTMLDialogElement>(null)
+  const tituloId = useId()
+  const subtituloId = useId()
+  const { registrarDialogo } = useContext(ContextoDasNotas)
+
+  useEffect(() => {
+    registrarDialogo(tituloId, aberto)
+    return () => registrarDialogo(tituloId, false)
+  }, [aberto, tituloId, registrarDialogo])
 
   useEffect(() => {
     const el = ref.current
@@ -506,6 +528,8 @@ export function Dialogo({ aberto, titulo, subtitulo, aoFechar, largura = 560, ch
   return (
     <dialog
       ref={ref}
+      aria-labelledby={tituloId}
+      aria-describedby={subtitulo === undefined ? undefined : subtituloId}
       className="g-dialogo [width:var(--dialogo-largura)]!"
       style={{ '--dialogo-largura': `min(${largura}px, calc(100vw - 32px))` } as CSSProperties}
       onClose={aoFechar}
@@ -517,14 +541,15 @@ export function Dialogo({ aberto, titulo, subtitulo, aoFechar, largura = 560, ch
       <div className="g-dialogo-caixa">
         <div className="g-dialogo-cabecalho">
           <div>
-            <div className="g-h16">{titulo}</div>
-            {subtitulo === undefined ? null : <div className="g-l13 g-fraco g-dialogo-sub">{subtitulo}</div>}
+            <div className="g-h16" id={tituloId}>{titulo}</div>
+            {subtitulo === undefined ? null : <div id={subtituloId} className="g-l13 g-fraco g-dialogo-sub">{subtitulo}</div>}
           </div>
           <button type="button" className="g-botao g-botao-terciario g-botao-quadrado" aria-label="Fechar" onClick={aoFechar}>
             <Icone de={Cross} />
           </button>
         </div>
         <div className="g-dialogo-corpo">{children}</div>
+        {aberto ? <div className="g-dialogo-avisos"><ListaDeAvisos dialogo={tituloId} /></div> : null}
         {acoes === undefined ? null : <div className="g-dialogo-acoes">{acoes}</div>}
       </div>
     </dialog>

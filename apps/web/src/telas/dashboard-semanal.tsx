@@ -1,3 +1,4 @@
+import { EstadoDosRegistros } from '../dashboard/estado-dos-registros.tsx'
 /**
  * A Visao geral, a primeira das quatro telas do painel redesenhado. O artboard e o `Main`
  * de `var/design-dashboard/build.mjs`, e ele manda no desenho.
@@ -255,7 +256,8 @@ function celulasDe({ kpis, anteriores, semanas, rotas, filtros, consulta, grafic
 export default function VisaoGeral(): JSX.Element {
   const [filtros, definirFiltros] = useFiltros()
   const consulta = consultaDe(filtros)
-  const { itens, sincronia } = useRegistros()
+  const registros = useRegistros()
+  const { itens, sincronia } = registros
   const [janela, setJanela] = useState(0)
   const [copiado, setCopiado] = useState(false)
 
@@ -306,7 +308,7 @@ export default function VisaoGeral(): JSX.Element {
   )
 
   return (
-    <>
+    <EstadoDosRegistros registros={registros} titulo="Visão geral">
       <CabecalhoDePagina
         titulo="Visão geral"
         subtitulo={`${PERIODOS[filtros.periodo].rotulo} · ${BASES[filtros.base].naCasca} · ${comoSincronizou(sincronia)}`}
@@ -333,6 +335,6 @@ export default function VisaoGeral(): JSX.Element {
         }
       />
       <Grade celulas={celulasDe({ kpis, anteriores, semanas, rotas, filtros, consulta, grafico })} />
-    </>
+    </EstadoDosRegistros>
   )
 }

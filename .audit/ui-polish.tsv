@@ -1,0 +1,9 @@
+verificacao	resultado
+e2e-menu	End foca Raposa; Escape restaura gatilho; Tab segue para Visão geral
+e2e-abas	ArrowRight seleciona e foca Abastecimento
+e2e-decimais	input number step any e inputMode decimal
+e2e-modal	falha simulada visível no diálogo a 390 px, persiste além de 4 s e permite dispensa
+e2e-consulta	falha inicial mostra erro, nova tentativa recupera resultado vazio real
+e2e-chunk	arquivo ausente mostra recuperação e preserva casca; reload após restaurar recupera Frota
+layout-mobile	largura do documento 390 px para viewport 390 px
+verificar	453 pass, 0 fail, 1190 expect calls

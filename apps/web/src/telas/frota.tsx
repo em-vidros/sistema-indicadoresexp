@@ -20,6 +20,7 @@
  */
 import type { JSX } from 'react'
 import { useRegistros } from '../dashboard/carregar.ts'
+import { EstadoDosRegistros } from '../dashboard/estado-dos-registros.tsx'
 import { brl, calcularKPIs, diaMes, filtrarDados } from '../dashboard/dominio.ts'
 import type { Item } from '../dashboard/dominio.ts'
 import {
@@ -165,7 +166,8 @@ function celulasDe(manuts: readonly Manutencao[], abasts: readonly Abastecimento
 
 export default function Frota(): JSX.Element {
   const [filtros, definirFiltros] = useFiltros()
-  const { itens } = useRegistros()
+  const registros = useRegistros()
+  const { itens } = registros
 
   const kpis = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo))
   const veiculos = veiculosDe([...kpis.manuts, ...kpis.abasts])
@@ -175,7 +177,7 @@ export default function Frota(): JSX.Element {
   }
 
   return (
-    <>
+    <EstadoDosRegistros registros={registros} titulo="Frota">
       <CabecalhoDePagina
         titulo="Frota"
         subtitulo={`${veiculos} ${veiculos === 1 ? 'veículo' : 'veículos'} · ${PERIODOS[filtros.periodo].rotulo} · ${BASES[filtros.base].naCasca}`}
@@ -189,6 +191,6 @@ export default function Frota(): JSX.Element {
         }
       />
       <Grade celulas={celulasDe(kpis.manuts, kpis.abasts)} />
-    </>
+    </EstadoDosRegistros>
   )
 }

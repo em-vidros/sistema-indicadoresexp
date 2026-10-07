@@ -13,7 +13,6 @@
  */
 import { useSyncExternalStore } from 'react'
 import type { AnchorHTMLAttributes, JSX, MouseEvent, ReactNode } from 'react'
-import { flushSync } from 'react-dom'
 import { ROTAS } from './rotas.ts'
 
 export type Localizacao = { readonly caminho: string; readonly busca: string }
@@ -45,42 +44,13 @@ export function useLocalizacao(): Localizacao {
   )
 }
 
-/** O que o navegador expoe quando ele sabe animar a troca. Nem todos sabem. */
-type ComTransicao = Document & {
-  readonly startViewTransition?: (acao: () => void) => { readonly finished: Promise<void> }
-}
-
-function animada(): boolean {
-  const documento = document as ComTransicao
-  if (typeof documento.startViewTransition !== 'function') return false
-  return !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-/**
- * A troca do painel, dentro de uma transicao de view quando da. O `flushSync` esta aqui
- * porque a transicao fotografa o DOM antes e depois do retorno do callback: sem ele o
- * React agendaria o render para depois, e as duas fotos sairiam iguais.
- */
-function trocar(acao: () => void): void {
-  const documento = document as ComTransicao
-  if (!animada() || documento.startViewTransition === undefined) {
-    acao()
-    return
-  }
-  documento.startViewTransition(() => {
-    flushSync(acao)
-  })
-}
-
 export function navegar(url: string, { substituir = false }: { substituir?: boolean } = {}): void {
   const alvo = new URL(url, window.location.href)
   const destino = alvo.pathname + alvo.search
   if (alvo.pathname === atual.caminho && alvo.search === atual.busca) return
-  trocar(() => {
-    if (substituir) window.history.replaceState(null, '', destino)
-    else window.history.pushState(null, '', destino)
-    publicar()
-  })
+  if (substituir) window.history.replaceState(null, '', destino)
+  else window.history.pushState(null, '', destino)
+  publicar()
   // Tela nova comeca do topo. Sem isto, sair do fim de uma tabela longa abre a proxima
   // tela no meio dela, que e a diferenca mais visivel entre navegar e recarregar.
   if (!substituir) window.scrollTo(0, 0)

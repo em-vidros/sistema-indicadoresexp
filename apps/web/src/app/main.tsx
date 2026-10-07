@@ -15,8 +15,8 @@
  * `NuqsAdapter` envolve o app porque base e periodo sao estado da query pelo nuqs, e
  * todo `useFiltros` precisa dele acima.
  */
-import { Suspense, lazy, useEffect } from 'react'
-import type { ComponentType, JSX } from 'react'
+import { Component, Suspense, lazy, useEffect } from 'react'
+import type { ComponentType, JSX, ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { NuqsAdapter, enableHistorySync } from 'nuqs/adapters/react'
 import { Ligacao, useLocalizacao } from './navegacao.tsx'
@@ -25,7 +25,7 @@ import type { Rota } from './rotas.ts'
 import { Casca } from '../geist/casca.tsx'
 import { Avisos } from '../geist/formulario.tsx'
 import { MagnifyingGlass } from '../geist/icones.tsx'
-import { CabecalhoDePagina, Esqueleto, Vazio } from '../geist/primitivos.tsx'
+import { Botao, CabecalhoDePagina, Esqueleto, Vazio } from '../geist/primitivos.tsx'
 
 const LENTAS = new Map<string, ComponentType>()
 
@@ -35,6 +35,27 @@ function telaDe(rota: Rota): ComponentType {
   const lenta = lazy(rota.carregar)
   LENTAS.set(rota.id, lenta)
   return lenta
+}
+
+class TelaProtegida extends Component<{ readonly children: ReactNode }, { readonly falhou: boolean }> {
+  override state = { falhou: false }
+
+  static getDerivedStateFromError(): { readonly falhou: boolean } {
+    return { falhou: true }
+  }
+
+  override render(): ReactNode {
+    if (!this.state.falhou) return this.props.children
+    return (
+      <div role="alert">
+        <CabecalhoDePagina
+          titulo="Não foi possível abrir esta tela"
+          subtitulo="Recarregue o aplicativo para tentar novamente."
+          acoes={<Botao rotulo="Recarregar aplicativo" aoClicar={() => window.location.reload()} />}
+        />
+      </div>
+    )
+  }
 }
 
 function NaoEncontrada(): JSX.Element {
@@ -67,9 +88,11 @@ function App(): JSX.Element {
         {Tela === null || rota === null
           ? <NaoEncontrada />
           : (
-            <Suspense key={rota.id} fallback={<Esqueleto />}>
-              <Tela />
-            </Suspense>
+            <TelaProtegida key={rota.id}>
+              <Suspense fallback={<Esqueleto />}>
+                <Tela />
+              </Suspense>
+            </TelaProtegida>
           )}
       </Casca>
     </Avisos>

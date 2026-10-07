@@ -16,6 +16,7 @@
  */
 import type { JSX } from 'react'
 import { useRegistros } from '../dashboard/carregar.ts'
+import { EstadoDosRegistros } from '../dashboard/estado-dos-registros.tsx'
 import {
   ROTULO_DA_FAIXA,
   brl,
@@ -166,7 +167,8 @@ function celulasDe(rotas: readonly Rota[], viagens: number): readonly Celula[] {
 
 export default function Rotas(): JSX.Element {
   const [filtros, definirFiltros] = useFiltros()
-  const { itens } = useRegistros()
+  const registros = useRegistros()
+  const { itens } = registros
 
   const viagens = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo)).viagens
   const rotas = porRota(viagens)
@@ -180,7 +182,7 @@ export default function Rotas(): JSX.Element {
   }
 
   return (
-    <>
+    <EstadoDosRegistros registros={registros} titulo="Rotas">
       <CabecalhoDePagina
         titulo="Rotas"
         subtitulo={`${rotas.length} ${rotas.length === 1 ? 'rota' : 'rotas'} · ${PERIODOS[filtros.periodo].rotulo} · ${BASES[filtros.base].naCasca}`}
@@ -197,6 +199,6 @@ export default function Rotas(): JSX.Element {
         }
       />
       <Grade celulas={celulasDe(rotas, viagens.length)} />
-    </>
+    </EstadoDosRegistros>
   )
 }

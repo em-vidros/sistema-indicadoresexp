@@ -13,6 +13,7 @@
 @font-face { font-family: 'Geist Mono'; font-weight: 500; font-display: swap; src: url('./fontes/geist-mono-500.woff2') format('woff2'); }
 
 :root {
+  --g-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   /* Cor: a escala do Geist (100-300 fundo, 400-600 borda, 700 solido, 900-1000 texto)
      com os hex do brandbook EM Vidros. */
   --g-bg-100: #FFFFFF;
@@ -292,10 +293,10 @@ body {
   @apply whitespace-nowrap;
   @apply [text-decoration:none];
   @apply cursor-pointer;
-  @apply [transition:background-color_var(--g-transicao),_box-shadow_var(--g-transicao),_transform_100ms];
+  @apply [transition:background-color_var(--g-transicao),_box-shadow_var(--g-transicao),_transform_160ms_var(--g-ease-out)];
 }
 
-.g-botao:active { @apply [transform:scale(.97)]; }
+.g-botao:active { @apply [transform:scale(.97)]; transition-duration: 0ms; }
 
 .g-botao-primario { @apply [background:var(--g-teal-700)]; @apply [color:#FFFFFF]; }
 .g-botao-primario .g-icone { @apply [color:#FFFFFF]; }
@@ -829,26 +830,6 @@ body {
 .g-grafico { @apply [margin-top:20px]; }
 .g-sparkline { @apply block; @apply [overflow:visible]; @apply [flex:0_0_auto]; }
 
-/* ---------- troca de tela ---------- */
-
-/* So o corpo do painel troca; o trilho da sidebar e o mesmo elemento antes e depois da
-   navegacao, e anima-lo faria piscar o que nao mudou. O `root` fica de fora por isso. */
-.g-painel-corpo { @apply [view-transition-name:g-painel]; }
-
-::view-transition-old(root),
-::view-transition-new(root) { @apply [animation:none]; }
-
-::view-transition-old(g-painel) { @apply [animation:g-painel-sai_150ms_ease_both]; }
-::view-transition-new(g-painel) { @apply [animation:g-painel-entra_150ms_ease_both]; }
-
-@keyframes g-painel-sai {
-  to { opacity: 0; transform: translateY(-4px); }
-}
-
-@keyframes g-painel-entra {
-  from { opacity: 0; transform: translateY(4px); }
-}
-
 /* ---------- esqueleto e estado vazio ---------- */
 
 .g-falso {
@@ -874,8 +855,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .g-falso::after { @apply [animation:none]; }
-  ::view-transition-old(g-painel),
-  ::view-transition-new(g-painel) { @apply [animation:none]; }
 }
 
 .g-falso-cabecalho {
@@ -1274,7 +1253,7 @@ body {
   @apply [font-size:var(--g-b14-size)];
   @apply [line-height:var(--g-b14-lh)];
   @apply [font-weight:var(--g-b14-weight)];
-  @apply [animation:g-aviso-entra_150ms_ease_both];
+  @apply [animation:g-aviso-entra_150ms_var(--g-ease-out)_backwards];
 }
 
 .g-aviso-ok { @apply [background:var(--g-green-200)]; @apply [color:var(--g-green-700)]; }
@@ -1305,7 +1284,7 @@ body {
    contencao de descendente `position: fixed` e o `overflow: hidden` daqui de cima
    recorta, o que deslocava e cortava a previa que o portal monta aqui dentro. Os dois
    terminam no mesmo estado, entao a animacao nao muda de aparencia. */
-.g-dialogo[open] { @apply [animation:g-dialogo-entra_150ms_ease_backwards]; }
+.g-dialogo[open] { @apply [animation:g-dialogo-entra_200ms_var(--g-ease-out)_backwards]; }
 @keyframes g-dialogo-entra {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
@@ -1561,7 +1540,7 @@ body {
   @apply [box-shadow:var(--g-sombra-menu)];
   @apply [color:var(--g-gray-1000)];
   @apply overflow-hidden;
-  @apply [animation:g-previa-entra_120ms_ease_backwards];
+  @apply [animation:g-previa-entra_150ms_var(--g-ease-out)_backwards];
 }
 
 @keyframes g-previa-entra {
@@ -1646,3 +1625,38 @@ body {
 }
 
 .g-previa-gatilho .g-icone { @apply [color:var(--g-gray-900)]; @apply [flex:0_0_auto]; }
+
+/* Feedback e toque dos controles compartilhados. */
+.g-botao:focus-visible, .g-menu-item:focus-visible, .g-aba:focus-visible, .g-chip:focus-visible, .g-switcher:focus-visible {
+  outline: 2px solid var(--g-teal-700);
+  outline-offset: 3px;
+}
+.g-botao:disabled:active { transform: none; }
+.g-menu-item:hover, .g-item:hover { transition-duration: 0ms; }
+.g-menu-item:focus { background: var(--g-gray-100); }
+.g-aviso { gap: 12px; max-width: min(440px, calc(100vw - 32px)); overflow-wrap: anywhere; }
+.g-aviso > span { flex: 1; min-width: 0; }
+.g-aviso > button { flex-shrink: 0; }
+body:has(dialog[open]) .g-avisos { display: none; }
+.g-dialogo-avisos { display: flex; flex-direction: column; gap: 8px; }
+.g-dialogo-avisos:not(:empty) { padding: 12px 24px; max-height: 30dvh; overflow-y: auto; flex-shrink: 0; }
+.g-dialogo-avisos .g-aviso { max-width: 100%; }
+.g-dialogo-acoes { flex-wrap: wrap; }
+.g-dialogo-corpo { min-height: 0; }
+.g-caixinha { min-height: 32px; }
+.g-check > .g-caixinha { flex: 1; }
+@media (pointer: coarse), (max-width: 767px) {
+  .g-botao, .g-chip, .g-menu-item, .g-aba, .g-caixinha, .g-item { min-height: 44px; }
+  .g-abas { height: auto; min-height: 44px; padding: 4px; margin: -4px; }
+  .g-botao-quadrado, .g-aba, .g-caixinha { min-width: 44px; }
+  .g-campo-entrada, .g-area { font-size: 16px; }
+  .g-caixa-gatilho { min-width: 40px; align-self: stretch; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .g-botao:active { transform: none; }
+  .g-aviso, .g-dialogo[open], .g-previa { animation: g-fade-simples 150ms ease-out; }
+}
+@keyframes g-fade-simples { from { opacity: 0; } to { opacity: 1; } }
+
+.g-menu-painel-largo { min-width: 0; }
+.g-avisos { max-height: calc(100dvh - 32px); overflow-y: auto; }

@@ -32,6 +32,7 @@ const SEM_HASH = new Set([
   // duas entradas os importam; aqui esse pedaco so ganha nome fixo, junto das cinco
   // fontes que a folha pede.
   'geist',
+  'icones',
   'geist-sans-400.woff2',
   'geist-sans-500.woff2',
   'geist-sans-600.woff2',

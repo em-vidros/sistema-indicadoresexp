@@ -12,7 +12,7 @@
  * seria preciso ler `grid-column` de volta do JSX, e o tipo `Coluna` deixa de conseguir
  * recusar o `"1/14"` que estoura o grid em silencio.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { CSSProperties, JSX, ReactNode } from 'react'
 import { Ligacao } from '../app/navegacao.tsx'
 import { ArrowRight, CheckCircle, ChevronDown, Icone, Information, MagnifyingGlass, Warning } from './icones.tsx'
@@ -171,6 +171,19 @@ export function Menu({ gatilho, itens, nome, aparencia = 'botao', direcao = 'aba
 }): JSX.Element {
   const [aberto, setAberto] = useState(false)
   const caixa = useRef<HTMLDivElement>(null)
+  const gatilhoRef = useRef<HTMLButtonElement>(null)
+  const painelRef = useRef<HTMLDivElement>(null)
+  const id = useId()
+  const primeiroFoco = useRef(0)
+
+  const focar = (indice: number): void => {
+    const botoes = painelRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')
+    if (botoes?.length) botoes[(indice + botoes.length) % botoes.length]?.focus()
+  }
+
+  useEffect(() => {
+    if (aberto) focar(primeiroFoco.current)
+  }, [aberto])
 
   useEffect(() => {
     if (!aberto) return
@@ -180,7 +193,11 @@ export function Menu({ gatilho, itens, nome, aparencia = 'botao', direcao = 'aba
       setAberto(false)
     }
     const noEscape = (evento: KeyboardEvent): void => {
-      if (evento.key === 'Escape') setAberto(false)
+      if (evento.key === 'Escape') {
+        evento.preventDefault()
+        setAberto(false)
+        gatilhoRef.current?.focus()
+      }
     }
     document.addEventListener('mousedown', foraDaqui, true)
     document.addEventListener('keydown', noEscape)
@@ -199,9 +216,22 @@ export function Menu({ gatilho, itens, nome, aparencia = 'botao', direcao = 'aba
           ? 'g-switcher'
           : classes('g-botao', 'g-botao-secundario', aparencia === 'quadrado' && 'g-botao-quadrado')}
         aria-label={aparencia === 'quadrado' ? nome : undefined}
+        ref={gatilhoRef}
+        aria-controls={aberto ? id : undefined}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault()
+            primeiroFoco.current = e.key === 'ArrowUp' ? itens.length - 1 : 0
+            setAberto(true)
+            if (aberto) focar(e.key === 'ArrowUp' ? itens.length - 1 : 0)
+          }
+        }}
         aria-expanded={aberto}
         aria-haspopup="menu"
-        onClick={() => setAberto((estava) => !estava)}
+        onClick={() => {
+          primeiroFoco.current = 0
+          setAberto((estava) => !estava)
+        }}
       >
         {gatilho}
       </button>
@@ -213,6 +243,18 @@ export function Menu({ gatilho, itens, nome, aparencia = 'botao', direcao = 'aba
               naSidebar && 'g-menu-painel-largo',
               direcao === 'acima' && 'g-menu-painel-acima',
             )}
+            id={id}
+            ref={painelRef}
+            aria-label={nome}
+            onKeyDown={(e) => {
+              const botoes = Array.from(painelRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])
+              const indice = botoes.indexOf(document.activeElement as HTMLButtonElement)
+              if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) {
+                e.preventDefault()
+                focar(e.key === 'Home' ? 0 : e.key === 'End' ? botoes.length - 1 : indice + (e.key === 'ArrowDown' ? 1 : -1))
+              }
+              if (e.key === 'Tab') setAberto(false)
+            }}
             role="menu"
           >
             {itens.map((item) => (
@@ -220,9 +262,11 @@ export function Menu({ gatilho, itens, nome, aparencia = 'botao', direcao = 'aba
                 key={item.rotulo}
                 type="button"
                 role="menuitem"
+                tabIndex={-1}
                 className="g-menu-item"
                 onClick={() => {
                   setAberto(false)
+                  gatilhoRef.current?.focus()
                   item.aoEscolher()
                 }}
               >
@@ -274,6 +318,15 @@ export function Abas({ itens, ativa, aoTrocar }: {
           role="tab"
           className="g-aba"
           aria-selected={i === ativa}
+          tabIndex={i === ativa ? 0 : -1}
+          onKeyDown={(e) => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return
+            e.preventDefault()
+            const proxima = e.key === 'Home' ? 0 : e.key === 'End' ? itens.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + itens.length) % itens.length
+            aoTrocar(proxima)
+            const abas = e.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+            abas?.[proxima]?.focus()
+          }}
           onClick={() => aoTrocar(i)}
         >
           {item}
@@ -297,6 +350,7 @@ export function Entrada({ marcador, valor, aoDigitar, largura }: {
       <input
         className="g-entrada-campo"
         type="search"
+        aria-label={marcador}
         placeholder={marcador}
         value={valor}
         onChange={(e) => aoDigitar(e.currentTarget.value)}
