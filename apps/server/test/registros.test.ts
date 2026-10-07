@@ -527,3 +527,98 @@ describe('editar um lançamento já gravado', () => {
     expect(Number(linha!.combustivel)).toBe(500)
   })
 })
+
+describe('fechamento mensal', () => {
+  const fecharMesId: string[] = []
+
+  afterAll(async () => {
+    if (fecharMesId.length) {
+      await sql`delete from fechamento_mensal where id = any(${sql.array(fecharMesId)}::uuid[])`
+    }
+  })
+
+  const fechar = (cookie: string, base: string, mes: string) =>
+    pedir('/api/fechamentos', {
+      method: 'POST',
+      headers: { cookie, 'content-type': 'application/json' },
+      body: JSON.stringify({ base, mes }),
+    })
+
+  const reabrir = (cookie: string, id: string) =>
+    pedir(`/api/fechamentos/${id}`, { method: 'DELETE', headers: { cookie } })
+
+  test('mês fechado trava lançamento novo e edição; reabrir libera de novo', async () => {
+    const dia = '2026-07-05'
+    const [quebra1] = await lancar(andreina, [quebraEm('Raposa', dia)])
+
+    const fechamento = await fechar(livia, 'Raposa', '2026-07')
+    expect(fechamento.status).toBe(201)
+    const { id: idFechamento } = (await fechamento.json()) as { id: string }
+    fecharMesId.push(idFechamento)
+
+    const novoNoMesFechado = await pedir('/api/registros', {
+      method: 'POST',
+      headers: { cookie: andreina, 'content-type': 'application/json' },
+      body: JSON.stringify({ registros: [quebraEm('Raposa', '2026-07-10')] }),
+    })
+    expect(novoNoMesFechado.status).toBe(403)
+    expect(((await novoNoMesFechado.json()) as { erro: string }).erro).toMatch(/fechado/i)
+
+    const edicaoNoMesFechado = await pedir(`/api/registros/${quebra1!.id}`, {
+      method: 'PUT',
+      headers: { cookie: andreina, 'content-type': 'application/json' },
+      body: JSON.stringify({ registros: [{ ...quebraEm('Raposa', dia), m2_quebrado: 9 }] }),
+    })
+    expect(edicaoNoMesFechado.status).toBe(403)
+    const [linhaAntes] = await sql<Array<{ m2_quebrado: string }>>`
+      select m2_quebrado from quebra where id = ${quebra1!.id}::uuid`
+    expect(Number(linhaAntes!.m2_quebrado)).toBe(1)
+
+    expect((await reabrir(livia, idFechamento)).status).toBe(204)
+
+    const depoisDeReabrir = await pedir('/api/registros', {
+      method: 'POST',
+      headers: { cookie: andreina, 'content-type': 'application/json' },
+      body: JSON.stringify({ registros: [quebraEm('Raposa', '2026-07-10')] }),
+    })
+    expect(depoisDeReabrir.status).toBe(201)
+    const [quebra2] = (await depoisDeReabrir.json()) as Array<{ id: string }>
+    quebras.push(quebra1!.id, quebra2!.id)
+  })
+
+  test('só quem vê todas as bases fecha e reabre o mês', async () => {
+    const tentativaDeFechar = await fechar(andreina, 'Raposa', '2026-06')
+    expect(tentativaDeFechar.status).toBe(403)
+
+    const tentativaDeReabrir = await reabrir(andreina, crypto.randomUUID())
+    expect(tentativaDeReabrir.status).toBe(403)
+  })
+
+  test('o fechamento é por base: fechar a Raposa não trava Imperatriz', async () => {
+    const fechamento = await fechar(livia, 'Raposa', '2026-05')
+    expect(fechamento.status).toBe(201)
+    const { id: idFechamento } = (await fechamento.json()) as { id: string }
+    fecharMesId.push(idFechamento)
+
+    // A viagem de prova e de Imperatriz: passa mesmo com a Raposa fechada no mesmo mes.
+    await lancar(livia, [{ ...viagem, data_saida: '2026-05-10', data_chegada: '2026-05-10' }])
+
+    const naRaposaFechada = await pedir('/api/registros', {
+      method: 'POST',
+      headers: { cookie: livia, 'content-type': 'application/json' },
+      body: JSON.stringify({ registros: [quebraEm('Raposa', '2026-05-10')] }),
+    })
+    expect(naRaposaFechada.status).toBe(403)
+  })
+
+  test('fechar o mesmo mês da mesma base duas vezes é recusado', async () => {
+    const primeira = await fechar(livia, 'Raposa', '2026-04')
+    expect(primeira.status).toBe(201)
+    const { id: idFechamento } = (await primeira.json()) as { id: string }
+    fecharMesId.push(idFechamento)
+
+    const segunda = await fechar(livia, 'Raposa', '2026-04')
+    expect(segunda.status).toBe(400)
+    expect(((await segunda.json()) as { erro: string }).erro).toMatch(/já está fechada/i)
+  })
+})

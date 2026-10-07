@@ -3,6 +3,7 @@ import type { Db } from '../index.ts'
 import { usuarioTipo } from '../schema/auth.ts'
 import { base, colaborador, rota, veiculo } from '../schema/cadastro.ts'
 import { abastecimento, abastecimentoParada, manutencao, quebra, viagem } from '../schema/registro.ts'
+import { mesEstaFechado } from './fechamento.ts'
 import { lerPermissao } from './permissao.ts'
 
 export class RegistroInvalido extends Error {
@@ -87,7 +88,7 @@ export async function salvarViagem(db: Db, usuarioId: string, entrada: EntradaVi
 type Escritor = Parameters<Parameters<Db['transaction']>[0]>[0]
 
 async function valoresDaViagem(tx: Escritor, usuarioId: string, entrada: EntradaViagem) {
-    const contexto = await contextoPermitido(tx, usuarioId, entrada.base, 'viagem')
+    const contexto = await contextoPermitido(tx, usuarioId, entrada.base, 'viagem', entrada.data_saida)
     const [veiculos, motoristas, rotas] = await Promise.all([
       tx
         .select({ id: veiculo.id })
@@ -314,7 +315,12 @@ export async function listarRegistros(db: Db, usuarioId: string, nomeBase?: stri
 
 type Leitor = Pick<Db, 'select'>
 
-async function contextoPermitido(db: Leitor, usuarioId: string, nomeBase: string, tipo: string) {
+/**
+ * `data` e a data do proprio lancamento (nao a de hoje), porque o fechamento trava pelo
+ * mes do registro: lancar ou corrigir um dia de marco so e barrado se marco estiver
+ * fechado, mesmo lancado em abril.
+ */
+async function contextoPermitido(db: Leitor, usuarioId: string, nomeBase: string, tipo: string, data: string) {
   const bases = await basesDoUsuario(db, usuarioId)
   const basePermitida = bases.find((item) => item.nome === nomeBase)
   const [permissao] = await db
@@ -322,13 +328,16 @@ async function contextoPermitido(db: Leitor, usuarioId: string, nomeBase: string
     .from(usuarioTipo)
     .where(and(eq(usuarioTipo.usuarioId, usuarioId), eq(usuarioTipo.tipo, tipo as EntradaRegistro['tipo'])))
   if (!basePermitida || !permissao) throw new RegistroInvalido('operação não permitida', true)
+  if (await mesEstaFechado(db, basePermitida.id, data)) {
+    throw new RegistroInvalido(`${nomeBase} está com o mês de ${data.slice(0, 7)} fechado para lançamentos`, true)
+  }
   return { baseId: basePermitida.id }
 }
 
 async function valoresDoAbastecimento(tx: Escritor, usuarioId: string, entradas: EntradaAbastecimento[]) {
   const primeira = entradas[0]
   if (!primeira) throw new RegistroInvalido('abastecimento vazio')
-  const contexto = await contextoPermitido(tx, usuarioId, primeira.base, 'abastecimento')
+  const contexto = await contextoPermitido(tx, usuarioId, primeira.base, 'abastecimento', primeira.data)
   const [[veiculoAtual], rotas] = await Promise.all([
     tx.select({ id: veiculo.id }).from(veiculo).where(and(eq(veiculo.placa, primeira.placa), eq(veiculo.baseId, contexto.baseId))),
     primeira.rota
@@ -370,7 +379,7 @@ async function salvarAbastecimentoEm(
 }
 
 async function valoresDaManutencao(tx: Escritor, usuarioId: string, entrada: EntradaManutencao) {
-  const contexto = await contextoPermitido(tx, usuarioId, entrada.base, 'manutencao')
+  const contexto = await contextoPermitido(tx, usuarioId, entrada.base, 'manutencao', entrada.data_entrada)
   const [veiculoAtual] = await tx.select({ id: veiculo.id }).from(veiculo).where(and(eq(veiculo.placa, entrada.placa), eq(veiculo.baseId, contexto.baseId)))
   if (!veiculoAtual) throw new RegistroInvalido('veículo inexistente')
   return {
@@ -401,7 +410,7 @@ async function salvarManutencaoEm(tx: Escritor, usuarioId: string, entrada: Entr
 }
 
 async function valoresDaQuebra(tx: Escritor, usuarioId: string, entrada: EntradaQuebra) {
-  const contexto = await contextoPermitido(tx, usuarioId, entrada.base, 'quebra')
+  const contexto = await contextoPermitido(tx, usuarioId, entrada.base, 'quebra', entrada.data)
   return {
     baseId: contexto.baseId,
     data: entrada.data,
@@ -445,30 +454,47 @@ export async function atualizarRegistro(
   const marca = { atualizadoPor: usuarioId, atualizadoEm: agora }
 
   return await db.transaction(async (tx) => {
-    const permitirEdicaoDe = async (tabela: typeof viagem | typeof abastecimento | typeof manutencao | typeof quebra) => {
-      const [atual] = await tx
-        .select({ nome: base.nome })
-        .from(tabela)
-        .innerJoin(base, eq(base.id, tabela.baseId))
-        .where(and(eq(tabela.id, id), isNull(tabela.apagadoEm)))
-      if (!atual) throw new RegistroAusente()
-      await contextoPermitido(tx, usuarioId, atual.nome, primeira.tipo)
-    }
-
+    // O mes fechado e cobrado duas vezes: aqui, sobre a data onde o registro esta hoje (quem
+    // nao pode editar um marco fechado nao pode so porque mudou a data para abril), e de novo
+    // dentro de `valoresDaX`, sobre a data nova que a tela mandou (contextoPermitido la dentro).
     if (primeira.tipo === 'viagem') {
-      await permitirEdicaoDe(viagem)
+      const [atual] = await tx
+        .select({ nome: base.nome, data: viagem.dataSaida })
+        .from(viagem)
+        .innerJoin(base, eq(base.id, viagem.baseId))
+        .where(and(eq(viagem.id, id), isNull(viagem.apagadoEm)))
+      if (!atual) throw new RegistroAusente()
+      await contextoPermitido(tx, usuarioId, atual.nome, 'viagem', atual.data)
       const valores = await valoresDaViagem(tx, usuarioId, primeira)
       await tx.update(viagem).set({ ...valores, ...marca }).where(eq(viagem.id, id))
     } else if (primeira.tipo === 'manutencao') {
-      await permitirEdicaoDe(manutencao)
+      const [atual] = await tx
+        .select({ nome: base.nome, data: manutencao.dataEntrada })
+        .from(manutencao)
+        .innerJoin(base, eq(base.id, manutencao.baseId))
+        .where(and(eq(manutencao.id, id), isNull(manutencao.apagadoEm)))
+      if (!atual) throw new RegistroAusente()
+      await contextoPermitido(tx, usuarioId, atual.nome, 'manutencao', atual.data)
       const valores = await valoresDaManutencao(tx, usuarioId, primeira)
       await tx.update(manutencao).set({ ...valores, ...marca }).where(eq(manutencao.id, id))
     } else if (primeira.tipo === 'quebra') {
-      await permitirEdicaoDe(quebra)
+      const [atual] = await tx
+        .select({ nome: base.nome, data: quebra.data })
+        .from(quebra)
+        .innerJoin(base, eq(base.id, quebra.baseId))
+        .where(and(eq(quebra.id, id), isNull(quebra.apagadoEm)))
+      if (!atual) throw new RegistroAusente()
+      await contextoPermitido(tx, usuarioId, atual.nome, 'quebra', atual.data)
       const valores = await valoresDaQuebra(tx, usuarioId, primeira)
       await tx.update(quebra).set({ ...valores, ...marca }).where(eq(quebra.id, id))
     } else {
-      await permitirEdicaoDe(abastecimento)
+      const [atual] = await tx
+        .select({ nome: base.nome, data: abastecimento.data })
+        .from(abastecimento)
+        .innerJoin(base, eq(base.id, abastecimento.baseId))
+        .where(and(eq(abastecimento.id, id), isNull(abastecimento.apagadoEm)))
+      if (!atual) throw new RegistroAusente()
+      await contextoPermitido(tx, usuarioId, atual.nome, 'abastecimento', atual.data)
       const paradasNovas = entradas.filter((e): e is EntradaAbastecimento => e.tipo === 'abastecimento')
       const { cabecalho, paradas } = await valoresDoAbastecimento(tx, usuarioId, paradasNovas)
       await tx.update(abastecimento).set({ ...cabecalho, ...marca }).where(eq(abastecimento.id, id))
@@ -508,7 +534,7 @@ export async function apagarRegistrosDoDia(
   return await db.transaction(async (tx) => {
     let baseId = ''
     for (const tipo of TIPOS) {
-      const contexto = await contextoPermitido(tx, usuarioId, nomeBase, tipo)
+      const contexto = await contextoPermitido(tx, usuarioId, nomeBase, tipo, data)
       baseId = contexto.baseId
     }
 

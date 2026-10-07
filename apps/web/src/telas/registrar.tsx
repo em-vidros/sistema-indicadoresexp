@@ -46,6 +46,7 @@ import {
 import type { Celula, CorDeBadge, Opcao } from '../geist/primitivos.tsx'
 import { obterCadastro } from '../js/cadastro-api.ts'
 import type { CatalogoCadastro } from '../js/cadastro-api.ts'
+import { fecharMes, listarFechamentos, reabrirMes } from '../js/fechamentos-api.ts'
 import { apagarRegistrosDoDia, atualizarRegistro, listarRegistros, salvarRegistros } from '../js/registros-api.ts'
 import type { Registro } from '../js/registros-api.ts'
 
@@ -191,6 +192,15 @@ function duasCasas(valor: number): string {
 
 function pct(parte: number, todo: number): string {
   return todo > 0 ? `${duasCasas(parte / todo * 100)}%` : '·'
+}
+
+/**
+ * O primeiro dia do mes anterior a uma data ISO. E o mes que "fechar" mira: o mes
+ * corrente ainda esta em andamento, quem fecha e o que ja terminou.
+ */
+function mesAnteriorISO(dataISO: string): string {
+  const [ano = 0, mes = 1] = dataISO.split('-').map(Number)
+  return new Date(Date.UTC(ano, mes - 2, 1)).toISOString().slice(0, 10)
 }
 
 function dataBr(iso: string): string {
@@ -1210,6 +1220,7 @@ export default function Registrar(): JSX.Element {
   const { avisar } = useAvisos()
   const cadastro = useRecurso('cadastro', () => obterCadastro())
   const registros = useRecurso('registros', listarRegistros)
+  const fechamentos = useRecurso('fechamentos', listarFechamentos)
 
   const [base, setBase] = useState<string | null>(null)
   const [tipoEscolhido, setTipoEscolhido] = useState<Tipo>('viagem')
@@ -1219,6 +1230,7 @@ export default function Registrar(): JSX.Element {
   const [limpezaAberta, setLimpezaAberta] = useState(false)
   /** O lancamento carregado no formulario para edicao. Sem ele, salvar cria um novo. */
   const [editando, setEditando] = useState<{ readonly id: string; readonly tipo: Tipo } | null>(null)
+  const [fechando, setFechando] = useState(false)
 
   // O admin comeca na base do ultimo lancamento desta maquina, e nao numa tela vazia
   // pedindo um clique; quem lanca todo dia lanca quase sempre na mesma base.
@@ -1437,6 +1449,32 @@ export default function Registrar(): JSX.Element {
     }
   }
 
+  /**
+   * Fecha ou reabre o mes anterior da base ativa. So o admin ve este botao
+   * (`sessao.capacidades.todasAsBases`), e a rota recusa de novo do lado do
+   * servidor -- o botao some e a recusa continua ali, cinto e suspensorio.
+   */
+  async function alternarFechamento(): Promise<void> {
+    if (base === null || fechando) return
+    const mesAlvo = mesAnteriorISO(hoje)
+    const aberto = (fechamentos.dados?.[base] ?? []).find((f) => f.mes === mesAlvo)
+    setFechando(true)
+    try {
+      if (aberto) {
+        await reabrirMes(aberto.id)
+        avisar(`${base}: ${mesAlvo.slice(0, 7)} reaberto.`, 'ok')
+      } else {
+        await fecharMes(base, mesAlvo)
+        avisar(`${base}: ${mesAlvo.slice(0, 7)} fechado.`, 'ok')
+      }
+      invalidar('fechamentos')
+    } catch (falha) {
+      avisar(falha instanceof Error ? falha.message : 'Não foi possível mudar o fechamento.', 'erro')
+    } finally {
+      setFechando(false)
+    }
+  }
+
   const ferramentas: Ferramentas = {
     rascunho,
     motoristas,
@@ -1495,9 +1533,18 @@ export default function Registrar(): JSX.Element {
     },
   ]
 
+  const mesAnterior = mesAnteriorISO(hoje)
+  const mesAnteriorFechado = base !== null && (fechamentos.dados?.[base] ?? []).some((f) => f.mes === mesAnterior)
+
   const itensDoMenu = [
     { rotulo: 'Exportar JSON', aoEscolher: exportar },
     { rotulo: 'Limpar registros de hoje', aoEscolher: () => setLimpezaAberta(true) },
+    ...(sessao.capacidades.todasAsBases && base !== null
+      ? [{
+        rotulo: `${mesAnteriorFechado ? 'Reabrir' : 'Fechar'} ${mesAnterior.slice(0, 7)} desta base`,
+        aoEscolher: () => void alternarFechamento(),
+      }]
+      : []),
   ]
 
   return (

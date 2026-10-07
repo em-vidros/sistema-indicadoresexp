@@ -1,10 +1,14 @@
 import {
+  type Db,
+  FechamentoInvalido,
   RegistroAusente,
   RegistroInvalido,
   apagarRegistrosDoDia,
   atualizarRegistro,
-  type Db,
+  fecharMes,
+  listarFechamentos,
   listarRegistros,
+  reabrirMes,
   salvarRegistros,
 } from '@ind/db'
 import { Hono } from 'hono'
@@ -153,6 +157,13 @@ const Limpeza = z.object({
   data: Data,
 })
 
+/** `mes` aceita `YYYY-MM` ou `YYYY-MM-DD`; `fecharMes` reduz os dois ao primeiro dia. */
+const Fechamento = z.object({
+  base: z.string().trim().min(1),
+  mes: z.string().regex(/^\d{4}-\d{2}(-\d{2})?$/, 'mês inválido'),
+})
+const IdDoFechamento = z.string().uuid()
+
 /**
  * A rede embaixo do espelhamento.
  *
@@ -255,5 +266,43 @@ export function rotasRegistros(db: Db): Hono<Ambiente> {
       throw falha
     }
   })
+
+  /**
+   * O fechamento mensal: quem ve todas as bases fecha e reabre um mes por base,
+   * travando lancamento novo e edicao naquele mes. `GET` lista os meses fechados
+   * das bases que a sessao alcanca, pra tela desenhar o cadeado sem perguntar
+   * mes a mes.
+   */
+  rotas.get('/fechamentos', async (c) => {
+    try {
+      return c.json(await listarFechamentos(db, c.get('usuarioId')))
+    } catch (falha) {
+      if (falha instanceof FechamentoInvalido) return c.json({ erro: falha.message }, falha.status)
+      throw falha
+    }
+  })
+  rotas.post('/fechamentos', async (c) => {
+    const entrada = Fechamento.safeParse(await c.req.json().catch(() => null))
+    if (!entrada.success) return c.json({ erro: mensagemDaEntrada(entrada.error, 'entrada inválida') }, 400)
+    try {
+      const fechamento = await fecharMes(db, c.get('usuarioId'), entrada.data.base, entrada.data.mes)
+      return c.json(fechamento, 201)
+    } catch (falha) {
+      if (falha instanceof FechamentoInvalido) return c.json({ erro: falha.message }, falha.status)
+      throw falha
+    }
+  })
+  rotas.delete('/fechamentos/:id', async (c) => {
+    const id = IdDoFechamento.safeParse(c.req.param('id'))
+    if (!id.success) return c.json({ erro: 'identificador inválido' }, 400)
+    try {
+      await reabrirMes(db, c.get('usuarioId'), id.data)
+      return c.body(null, 204)
+    } catch (falha) {
+      if (falha instanceof FechamentoInvalido) return c.json({ erro: falha.message }, falha.status)
+      throw falha
+    }
+  })
+
   return rotas
 }
