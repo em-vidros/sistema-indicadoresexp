@@ -1,6 +1,8 @@
 import {
+  RegistroAusente,
   RegistroInvalido,
   apagarRegistrosDoDia,
+  atualizarRegistro,
   type Db,
   listarRegistros,
   salvarRegistros,
@@ -131,6 +133,21 @@ const Corpo = z.object({ registros: z.array(Registro).min(1).max(100) })
       }
     }
   })
+/**
+ * A edicao troca um lancamento so, pelo id que a leitura devolveu. Para o abastecimento
+ * o id e o do abastecimento e o corpo traz o grupo inteiro de paradas, no maximo tres.
+ */
+const Edicao = z.object({ registros: z.array(Registro).min(1).max(3) }).superRefine((entrada, contexto) => {
+  const tipos = new Set(entrada.registros.map((r) => r.tipo))
+  if (tipos.size > 1) {
+    contexto.addIssue({ code: 'custom', message: 'a edição troca um registro de um tipo só', path: ['registros'] })
+  }
+  if (entrada.registros.length > 1 && !tipos.has('abastecimento')) {
+    contexto.addIssue({ code: 'custom', message: 'só o abastecimento tem mais de uma linha', path: ['registros'] })
+  }
+})
+const IdDoRegistro = z.string().uuid()
+
 const Limpeza = z.object({
   base: z.string().trim().min(1),
   data: Data,
@@ -182,6 +199,26 @@ export function rotasRegistros(db: Db): Hono<Ambiente> {
       const salvas = await salvarRegistros(db, c.get('usuarioId'), entrada.data.registros)
       return c.json(salvas, 201)
     } catch (falha) {
+      if (falha instanceof RegistroInvalido) {
+        return c.json({ erro: falha.message }, falha.proibido ? 403 : 400)
+      }
+      const constraint = checkViolado(falha)
+      if (constraint) {
+        return c.json({ erro: `o banco recusou o lançamento pela regra ${constraint}; revise os valores enviados` }, 400)
+      }
+      throw falha
+    }
+  })
+
+  rotas.put('/registros/:id', async (c) => {
+    const id = IdDoRegistro.safeParse(c.req.param('id'))
+    if (!id.success) return c.json({ erro: 'identificador inválido' }, 400)
+    const entrada = Edicao.safeParse(await c.req.json().catch(() => null))
+    if (!entrada.success) return c.json({ erro: mensagemDaEntrada(entrada.error, 'entrada inválida') }, 400)
+    try {
+      return c.json(await atualizarRegistro(db, c.get('usuarioId'), id.data, entrada.data.registros))
+    } catch (falha) {
+      if (falha instanceof RegistroAusente) return c.json({ erro: falha.message }, 404)
       if (falha instanceof RegistroInvalido) {
         return c.json({ erro: falha.message }, falha.proibido ? 403 : 400)
       }

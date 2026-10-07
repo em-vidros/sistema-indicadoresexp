@@ -418,3 +418,112 @@ describe('data e hora que não existem no calendário viram 400', () => {
     expect(((await resposta.json()) as { erro: string }).erro).toMatch(/data inválida/i)
   })
 })
+
+describe('editar um lançamento já gravado', () => {
+  const editar = (cookie: string, id: string, registros: unknown[]) =>
+    pedir(`/api/registros/${id}`, {
+      method: 'PUT',
+      headers: { cookie, 'content-type': 'application/json' },
+      body: JSON.stringify({ registros }),
+    })
+
+  const ler = async (cookie: string, base: string) =>
+    (await (await pedir(`/api/registros?base=${encodeURIComponent(base)}`, { headers: { cookie } })).json()) as Array<
+      Record<string, unknown>
+    >
+
+  test('a viagem editada muda no banco e na leitura, sem criar outra linha', async () => {
+    const [salva] = await lancar(livia, [{ ...viagem, data_saida: '2026-09-10', data_chegada: '2026-09-10' }])
+    const antes = (await ler(livia, 'Imperatriz')).filter((r) => r['tipo'] === 'viagem').length
+
+    const resposta = await editar(livia, salva!.id, [{
+      ...viagem,
+      data_saida: '2026-09-10',
+      data_chegada: '2026-09-10',
+      valor_carga: 12500.5,
+      combustivel: 1500,
+      observacao: 'corrigida',
+    }])
+    expect(resposta.status).toBe(200)
+
+    const lista = await ler(livia, 'Imperatriz')
+    expect(lista.filter((r) => r['tipo'] === 'viagem')).toHaveLength(antes)
+    expect(lista).toContainEqual(expect.objectContaining({
+      id: salva!.id,
+      valor_carga: 12500.5,
+      combustivel: 1500,
+      custo_viagem: 1700,
+      observacao: 'corrigida',
+    }))
+    const [linha] = await sql<Array<{ atualizado_por: string }>>`
+      select atualizado_por from viagem where id = ${salva!.id}::uuid`
+    expect(linha!.atualizado_por).toBe('usr_livia')
+  })
+
+  test('o abastecimento editado troca as paradas pelas que a tela mandou', async () => {
+    const parada = (ordem: number, litros: number) => ({
+      tipo: 'abastecimento', base: 'Raposa', data: '2026-09-11', placa: 'PTV0006', rota: 'PINHEIRO',
+      litros, vl_litro: 6.1, km: 2000 + ordem * 100, posto: `Posto ${ordem}`,
+      slot: ['Saída', 'Interior', 'Chegada'][ordem - 1], viagem_longa: true,
+    })
+    const [salvo] = await lancar(livia, [parada(1, 40), parada(2, 41), parada(3, 42)])
+
+    const resposta = await editar(livia, salvo!.id, [parada(1, 55), parada(2, 56)])
+    expect(resposta.status).toBe(200)
+
+    const paradas = (await ler(livia, 'Raposa')).filter((r) => r['abastecimento_id'] === salvo!.id)
+    expect(paradas.map((p) => p['litros']).sort()).toEqual([55, 56])
+  })
+
+  test('manutenção e quebra editadas também mudam', async () => {
+    const [m, q] = await lancar(livia, [
+      {
+        tipo: 'manutencao', base: 'Raposa', tipo_manutencao: 'corretiva', data_programada: null,
+        data_entrada: '2026-09-12', hora_entrada: null, data_saida: null, hora_saida: null,
+        placa: 'PTV0006', servico: 'Freio', valor: 300, km_odometro: null, fornecedor: 'Oficina',
+      },
+      quebraEm('Raposa', '2026-09-12'),
+    ])
+    expect((await editar(livia, m!.id, [{
+      tipo: 'manutencao', base: 'Raposa', tipo_manutencao: 'corretiva', data_programada: null,
+      data_entrada: '2026-09-12', hora_entrada: null, data_saida: null, hora_saida: null,
+      placa: 'PTV0006', servico: 'Freio e pastilha', valor: 1300.75, km_odometro: null, fornecedor: 'Oficina',
+    }])).status).toBe(200)
+    expect((await editar(livia, q!.id, [{ ...quebraEm('Raposa', '2026-09-12'), m2_quebrado: 4 }])).status).toBe(200)
+
+    const lista = await ler(livia, 'Raposa')
+    expect(lista).toContainEqual(expect.objectContaining({ id: m!.id, servico: 'Freio e pastilha', valor: 1300.75 }))
+    expect(lista).toContainEqual(expect.objectContaining({ id: q!.id, m2_quebrado: 4, pct_quebra: 5 }))
+  })
+
+  test('quem não tem a base do registro leva 403, e o registro fica como estava', async () => {
+    const [salva] = await lancar(livia, [{ ...viagem, data_saida: '2026-09-13', data_chegada: '2026-09-13' }])
+    const resposta = await editar(andreina, salva!.id, [{ ...viagem, data_saida: '2026-09-13', data_chegada: '2026-09-13', observacao: 'invasao' }])
+    expect(resposta.status).toBe(403)
+    const [linha] = await sql<Array<{ observacao: string }>>`select observacao from viagem where id = ${salva!.id}::uuid`
+    expect(linha!.observacao).toBe('Prova da fase 2')
+  })
+
+  test('id inexistente e id de registro apagado são 404', async () => {
+    expect((await editar(livia, crypto.randomUUID(), [quebraEm('Raposa', '2026-09-14')])).status).toBe(404)
+    const [apagada] = await lancar(livia, [quebraEm('Raposa', '2026-09-15')])
+    expect((await limpar(livia, 'Raposa', '2026-09-15')).status).toBe(200)
+    expect((await editar(livia, apagada!.id, [quebraEm('Raposa', '2026-09-15')])).status).toBe(404)
+  })
+
+  test('corpo com tipos misturados ou id que não é uuid é 400', async () => {
+    const [salva] = await lancar(livia, [quebraEm('Raposa', '2026-09-16')])
+    expect((await editar(livia, salva!.id, [quebraEm('Raposa', '2026-09-16'), { ...viagem }])).status).toBe(400)
+    expect((await editar(livia, 'nao-e-uuid', [quebraEm('Raposa', '2026-09-16')])).status).toBe(400)
+  })
+
+  test('regra do banco violada na edição é 400, e o registro não muda', async () => {
+    const [salva] = await lancar(livia, [{ ...viagem, data_saida: '2026-09-17', data_chegada: '2026-09-17' }])
+    const resposta = await editar(livia, salva!.id, [{
+      ...viagem, data_saida: '2026-09-17', data_chegada: '2026-09-17', combustivel: 0, diarias: 0,
+    }])
+    expect(resposta.status).toBe(400)
+    const [linha] = await sql<Array<{ combustivel: string }>>`select combustivel from viagem where id = ${salva!.id}::uuid`
+    expect(Number(linha!.combustivel)).toBe(500)
+  })
+})

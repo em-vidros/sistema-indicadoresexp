@@ -15,6 +15,7 @@ import type { JSX, ReactNode } from 'react'
 import { invalidar, useRecurso, useSessao } from '../app/dados.ts'
 import { useLocalizacao } from '../app/navegacao.tsx'
 import { brl, numero, texto } from '../dashboard/dominio.ts'
+import { lerNumero } from '../dashboard/digitado.ts'
 import {
   AreaDeTexto,
   Caixa,
@@ -27,7 +28,7 @@ import {
   TituloDeSecao,
   useAvisos,
 } from '../geist/formulario.tsx'
-import { Buildings, Check, Icone, MoreHorizontal, Plus } from '../geist/icones.tsx'
+import { Buildings, Check, Icone, MoreHorizontal, PencilEdit, Plus } from '../geist/icones.tsx'
 import {
   Abas,
   Badge,
@@ -45,7 +46,7 @@ import {
 import type { Celula, CorDeBadge, Opcao } from '../geist/primitivos.tsx'
 import { obterCadastro } from '../js/cadastro-api.ts'
 import type { CatalogoCadastro } from '../js/cadastro-api.ts'
-import { apagarRegistrosDoDia, listarRegistros, salvarRegistros } from '../js/registros-api.ts'
+import { apagarRegistrosDoDia, atualizarRegistro, listarRegistros, salvarRegistros } from '../js/registros-api.ts'
 import type { Registro } from '../js/registros-api.ts'
 
 // ---------- forma dos dados ----------
@@ -179,13 +180,16 @@ function hojeISO(): string {
 }
 
 function decimal(valor: string): number {
-  const lido = Number(valor.replace(',', '.'))
-  return Number.isFinite(lido) ? lido : 0
+  return lerNumero(valor)
+}
+
+/** O preco do litro tem tres casas e nunca passa de mil: o ponto dele e sempre decimal. */
+function precoDoLitro(valor: string): number {
+  return lerNumero(valor, { milhar: false })
 }
 
 function inteiro(valor: string): number {
-  const lido = Number.parseInt(valor, 10)
-  return Number.isFinite(lido) ? lido : 0
+  return Math.trunc(lerNumero(valor))
 }
 
 function duasCasas(valor: number): string {
@@ -375,7 +379,7 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
     if (!abastecimento.longa) {
       const parada = abastecimento.paradas[0]
       const litros = decimal(parada.litros)
-      const vlLitro = decimal(parada.vlLitro)
+      const vlLitro = precoDoLitro(parada.vlLitro)
       if (litros <= 0 || vlLitro <= 0) return { erro: 'Preencha os litros e o valor por litro.' }
       return {
         registros: [{
@@ -397,7 +401,7 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
       registros.push({
         ...comum,
         litros,
-        vl_litro: decimal(parada.vlLitro),
+        vl_litro: precoDoLitro(parada.vlLitro),
         km: inteiro(parada.km) || null,
         posto: parada.posto.trim(),
         slot: ROTULOS_DE_PARADA[i] ?? null,
@@ -450,6 +454,109 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
   },
 }
 
+// ---------- do registro de volta para o rascunho ----------
+
+/** Numero do banco no campo de digitar: ponto decimal, e zero ou nulo viram campo vazio. */
+function digitavel(registro: Registro, chave: string): string {
+  const valor = numero(registro, chave)
+  return valor === 0 ? '' : String(valor)
+}
+
+/** O banco devolve `HH:MM:SS`; o campo de hora e a validacao do servidor querem `HH:MM`. */
+function horaCurta(registro: Registro, chave: string): string {
+  return texto(registro, chave).slice(0, 5)
+}
+
+/**
+ * O que a tela escreve ao editar: o registro vira o rascunho da aba dele, campo a campo, ao
+ * contrario de `MONTADORES`. O abastecimento recebe todas as linhas do grupo, porque a
+ * leitura devolve uma por parada e a edicao troca o grupo inteiro.
+ */
+const LEITORES_DE_RASCUNHO: Readonly<Record<Tipo, (linhas: readonly Registro[], atual: Rascunho) => Rascunho>> = {
+  viagem: ([r], atual) =>
+    r === undefined ? atual : {
+      ...atual,
+      viagem: {
+        dataSaida: texto(r, 'data_saida'),
+        horaSaida: horaCurta(r, 'hora_saida'),
+        dataChegada: texto(r, 'data_chegada'),
+        horaPrevista: horaCurta(r, 'hora_prevista'),
+        horaChegada: horaCurta(r, 'hora_chegada'),
+        motorista: texto(r, 'motorista'),
+        veiculo: texto(r, 'veiculo'),
+        rota: texto(r, 'rota'),
+        kmSaida: digitavel(r, 'km_saida'),
+        kmChegada: digitavel(r, 'km_chegada'),
+        valorCarga: digitavel(r, 'valor_carga'),
+        combustivel: digitavel(r, 'combustivel'),
+        diarias: digitavel(r, 'diarias'),
+        m2: digitavel(r, 'm2'),
+        peso: digitavel(r, 'peso_kg'),
+        observacao: texto(r, 'observacao'),
+      },
+    },
+
+  abastecimento: (linhas, atual) => {
+    const [primeira] = linhas
+    if (primeira === undefined) return atual
+    const ordenadas = [...linhas].sort((a, b) => numero(a, 'ordem') - numero(b, 'ordem'))
+    const parada = (i: number): Parada => {
+      const r = ordenadas[i]
+      return r === undefined
+        ? paradaVazia()
+        : { litros: digitavel(r, 'litros'), vlLitro: digitavel(r, 'vl_litro'), km: digitavel(r, 'km'), posto: texto(r, 'posto') }
+    }
+    const ativas = Math.min(3, Math.max(1, ordenadas.length)) as 1 | 2 | 3
+    return {
+      ...atual,
+      abastecimento: {
+        data: texto(primeira, 'data'),
+        placa: texto(primeira, 'placa'),
+        rota: texto(primeira, 'rota'),
+        longa: ordenadas.length > 1,
+        ativas,
+        paradas: [parada(0), parada(1), parada(2)],
+      },
+    }
+  },
+
+  manutencao: ([r], atual) =>
+    r === undefined ? atual : {
+      ...atual,
+      manutencao: {
+        tipoManutencao: texto(r, 'tipo_manutencao') === 'corretiva' ? 'corretiva' : 'preventiva',
+        dataProgramada: texto(r, 'data_programada'),
+        placa: texto(r, 'placa'),
+        dataEntrada: texto(r, 'data_entrada'),
+        horaEntrada: horaCurta(r, 'hora_entrada'),
+        dataSaida: texto(r, 'data_saida'),
+        horaSaida: horaCurta(r, 'hora_saida'),
+        km: digitavel(r, 'km_odometro'),
+        fornecedor: texto(r, 'fornecedor'),
+        servico: texto(r, 'servico'),
+        valor: digitavel(r, 'valor'),
+        temOrcamento: null,
+        temOS: null,
+      },
+    },
+
+  quebra: ([r], atual) =>
+    r === undefined ? atual : {
+      ...atual,
+      quebra: {
+        data: texto(r, 'data'),
+        m2Expedido: digitavel(r, 'm2_expedido'),
+        m2Quebrado: digitavel(r, 'm2_quebrado'),
+        observacao: texto(r, 'observacao'),
+      },
+    },
+}
+
+/** O id que a API de edicao espera: o do abastecimento inteiro, e nao o da parada clicada. */
+function idParaEditar(registro: Registro): string {
+  return texto(registro, registro.tipo === 'abastecimento' ? 'abastecimento_id' : 'id')
+}
+
 // ---------- historico ----------
 
 type LinhaDoHistorico = { readonly quem: string; readonly descricao: string; readonly valor: string }
@@ -477,7 +584,7 @@ const LEITORES: Readonly<Record<Tipo, (registro: Registro) => LinhaDoHistorico>>
   }),
 }
 
-const COLUNAS_DO_HISTORICO = ['Quando', 'Tipo', 'Quem / veículo', 'Descrição', 'Valor'] as const
+const COLUNAS_DO_HISTORICO = ['Quando', 'Tipo', 'Quem / veículo', 'Descrição', 'Valor', ''] as const
 
 /** Quantas linhas do historico cabem embaixo do formulario sem virar segunda tela. */
 const LINHAS_DO_HISTORICO = 12
@@ -504,10 +611,13 @@ function LinhaVazia({ children }: { readonly children: ReactNode }): JSX.Element
   return <tr><Td colunas={COLUNAS_DO_HISTORICO.length} vazio>{children}</Td></tr>
 }
 
-function Historico({ registros, estado, deHoje }: {
+function Historico({ registros, estado, deHoje, editando, aoEditar }: {
   readonly registros: readonly Registro[]
   readonly estado: 'carregando' | 'ok' | 'erro'
   readonly deHoje: number
+  /** O id do registro que esta no formulario agora, para a linha dele sair destacada. */
+  readonly editando: string | null
+  readonly aoEditar: (registro: Registro) => void
 }): JSX.Element {
   const linhas = registros.slice(0, LINHAS_DO_HISTORICO)
   return (
@@ -519,7 +629,9 @@ function Historico({ registros, estado, deHoje }: {
       />
       <Tabela
         cabecalho={COLUNAS_DO_HISTORICO.map((coluna) => (
-          <Th key={coluna} direita={coluna === 'Valor'}>{coluna}</Th>
+          <Th key={coluna || 'acoes'} direita={coluna === 'Valor' || coluna === ''}>
+            {coluna === '' ? <span className="g-escondido">Ações</span> : coluna}
+          </Th>
         ))}
       >
         {estado === 'carregando' && linhas.length === 0
@@ -546,6 +658,19 @@ function Historico({ registros, estado, deHoje }: {
                 <Td><span className="g-forte">{linha.quem}</span></Td>
                 <Td>{linha.descricao}</Td>
                 <Td direita>{linha.valor}</Td>
+                <Td direita>
+                  {tipo === null
+                    ? null
+                    : (
+                      <Botao
+                        tipo="terciario"
+                        antes={PencilEdit}
+                        rotulo={editando === idParaEditar(registro) ? 'Editando' : 'Editar'}
+                        desabilitado={editando === idParaEditar(registro)}
+                        aoClicar={() => aoEditar(registro)}
+                      />
+                    )}
+                </Td>
               </tr>
             )
           })}
@@ -772,7 +897,7 @@ function celulasDeAbastecimento(f: Ferramentas): readonly Celula[] {
   const a = f.rascunho.abastecimento
   const cheias = a.paradas.filter((parada) => decimal(parada.litros) > 0)
   const litros = cheias.reduce((soma, parada) => soma + decimal(parada.litros), 0)
-  const total = cheias.reduce((soma, parada) => soma + decimal(parada.litros) * decimal(parada.vlLitro), 0)
+  const total = cheias.reduce((soma, parada) => soma + decimal(parada.litros) * precoDoLitro(parada.vlLitro), 0)
   const kms = a.paradas.map((parada) => inteiro(parada.km)).filter((km) => km > 0)
   const primeiro = kms[0]
   const rodados = primeiro === undefined ? 0 : Math.max(...kms) - primeiro
@@ -1127,6 +1252,8 @@ export default function Registrar(): JSX.Element {
   const [salvando, setSalvando] = useState(false)
   const [limpando, setLimpando] = useState(false)
   const [limpezaAberta, setLimpezaAberta] = useState(false)
+  /** O lancamento carregado no formulario para edicao. Sem ele, salvar cria um novo. */
+  const [editando, setEditando] = useState<{ readonly id: string; readonly tipo: Tipo } | null>(null)
 
   // O admin comeca na base do ultimo lancamento desta maquina, e nao numa tela vazia
   // pedindo um clique; quem lanca todo dia lanca quase sempre na mesma base.
@@ -1254,6 +1381,27 @@ export default function Registrar(): JSX.Element {
     setRascunho((r) => LIMPADORES[tipo](r, rascunhoVazio()))
   }
 
+  // Sair da edicao devolve a aba ao vazio: o que ficou no formulario era o registro, e deixa-lo
+  // la faria o proximo "Salvar" parecer uma copia nova do registro editado.
+  const cancelarEdicao = (): void => {
+    if (editando === null) return
+    setRascunho((r) => LIMPADORES[editando.tipo](r, rascunhoVazio()))
+    setEditando(null)
+  }
+
+  const editar = (registro: Registro): void => {
+    const doRegistro = tipoDe(registro.tipo)
+    if (doRegistro === null) return
+    const id = idParaEditar(registro)
+    const grupo = doRegistro === 'abastecimento'
+      ? daBase.filter((r) => r.tipo === 'abastecimento' && idParaEditar(r) === id)
+      : [registro]
+    setRascunho((r) => LEITORES_DE_RASCUNHO[doRegistro](grupo, r))
+    setTipoEscolhido(doRegistro)
+    setEditando({ id, tipo: doRegistro })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   async function salvar(): Promise<void> {
     if (base === null) {
       avisar('Escolha uma base antes de gravar.', 'erro')
@@ -1266,11 +1414,23 @@ export default function Registrar(): JSX.Element {
     }
     setSalvando(true)
     try {
-      await salvarRegistros(montagem.registros)
+      if (editando === null) {
+        await salvarRegistros(montagem.registros)
+      } else {
+        await atualizarRegistro(editando.id, montagem.registros)
+      }
       invalidar('registros')
       limparAba()
+      setEditando(null)
       const quantos = montagem.registros.length
-      avisar(quantos > 1 ? `${quantos} abastecimentos registrados.` : 'Registro gravado.', 'ok')
+      avisar(
+        editando !== null
+          ? 'Alterações gravadas.'
+          : quantos > 1
+          ? `${quantos} abastecimentos registrados.`
+          : 'Registro gravado.',
+        'ok',
+      )
     } catch (falha) {
       // O formulario continua preenchido: quem perdeu a conexao tenta de novo sem redigitar.
       avisar(
@@ -1342,17 +1502,27 @@ export default function Registrar(): JSX.Element {
       rente: true,
       conteudo: (
         <>
-          <Historico registros={daBase} estado={registros.estado} deHoje={deHoje} />
+          <Historico
+            registros={daBase}
+            estado={registros.estado}
+            deHoje={deHoje}
+            editando={editando?.id ?? null}
+            aoEditar={editar}
+          />
           <RodapeDeFormulario
             apoio="Os campos em cinza são calculados a partir dos outros."
             acoes={
               <>
-                <Botao tipo="terciario" rotulo="Limpar formulário" aoClicar={limparAba} />
+                <Botao
+                  tipo="terciario"
+                  rotulo={editando === null ? 'Limpar formulário' : 'Cancelar edição'}
+                  aoClicar={editando === null ? limparAba : cancelarEdicao}
+                />
                 <Botao
                   tipo="primario"
                   tamanho="medio"
                   antes={Check}
-                  rotulo={ROTULO_DE_SALVAR[tipo]}
+                  rotulo={editando === null ? ROTULO_DE_SALVAR[tipo] : 'Salvar alterações'}
                   carregando={salvando}
                   aoClicar={() => void salvar()}
                 />
@@ -1381,7 +1551,7 @@ export default function Registrar(): JSX.Element {
               tipo="primario"
               tamanho="medio"
               antes={Check}
-              rotulo="Salvar registro"
+              rotulo={editando === null ? 'Salvar registro' : 'Salvar alterações'}
               carregando={salvando}
               aoClicar={() => void salvar()}
             />
@@ -1395,12 +1565,25 @@ export default function Registrar(): JSX.Element {
             <Chips
               valor={base ?? ''}
               opcoes={bases.map((nome) => ({ valor: nome, rotulo: nome }))}
-              aoEscolher={setBase}
+              aoEscolher={(nome) => {
+                cancelarEdicao()
+                setBase(nome)
+              }}
             />
             <span className="g-l12 g-fraco">O registro entra na base marcada.</span>
           </div>
         )
         : null}
+
+      {editando === null
+        ? null
+        : (
+          <div className="g-secao" role="status">
+            <span className="g-l14 g-forte">Editando um lançamento já gravado: {ROTULO_DO_TIPO[editando.tipo].toLowerCase()}.</span>
+            <span className="g-l12 g-fraco">Mexa no que precisa e salve. Trocar de aba ou de base cancela a edição.</span>
+            <Botao tipo="terciario" rotulo="Cancelar edição" aoClicar={cancelarEdicao} />
+          </div>
+        )}
 
       <div className="g-secao">
         <Abas
@@ -1408,7 +1591,9 @@ export default function Registrar(): JSX.Element {
           ativa={permitidos.indexOf(tipo)}
           aoTrocar={(indice) => {
             const escolhido = permitidos[indice]
-            if (escolhido !== undefined) setTipoEscolhido(escolhido)
+            if (escolhido === undefined) return
+            if (escolhido !== editando?.tipo) cancelarEdicao()
+            setTipoEscolhido(escolhido)
           }}
         />
         <span className="g-l12 g-fraco">Cada aba grava numa tabela própria; o rodapé é o mesmo.</span>

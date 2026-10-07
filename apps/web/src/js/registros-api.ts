@@ -36,3 +36,15 @@ export async function salvarRegistros(registros: Registro[], chamar: Chamar = fe
     body: JSON.stringify({ registros }),
   }, chamar)
 }
+
+/**
+ * A edicao de um lancamento ja gravado. O `id` e o que a leitura devolveu; no abastecimento
+ * e o `abastecimento_id`, e o corpo leva o grupo de paradas inteiro.
+ */
+export async function atualizarRegistro(id: string, registros: Registro[], chamar: Chamar = fetch): Promise<void> {
+  await pedirJson(`/api/registros/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ registros }),
+  }, chamar)
+}

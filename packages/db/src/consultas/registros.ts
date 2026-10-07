@@ -11,6 +11,13 @@ export class RegistroInvalido extends Error {
   }
 }
 
+/** O registro que a tela quer editar nao existe mais, ou ja foi apagado. */
+export class RegistroAusente extends RegistroInvalido {
+  constructor() {
+    super('registro não encontrado')
+  }
+}
+
 export type EntradaViagem = {
   tipo: 'viagem'
   base: string
@@ -79,55 +86,55 @@ export async function salvarViagem(db: Db, usuarioId: string, entrada: EntradaVi
 
 type Escritor = Parameters<Parameters<Db['transaction']>[0]>[0]
 
-async function salvarViagemEm(tx: Escritor, usuarioId: string, entrada: EntradaViagem) {
+async function valoresDaViagem(tx: Escritor, usuarioId: string, entrada: EntradaViagem) {
     const contexto = await contextoPermitido(tx, usuarioId, entrada.base, 'viagem')
-    const [cadastros] = await Promise.all([
-      Promise.all([
-        tx
-          .select({ id: veiculo.id })
-          .from(veiculo)
-          .where(and(eq(veiculo.placa, entrada.veiculo), eq(veiculo.baseId, contexto.baseId))),
-        tx
-          .select({ id: colaborador.id })
-          .from(colaborador)
-          .where(and(eq(colaborador.nome, entrada.motorista), eq(colaborador.baseId, contexto.baseId))),
-        tx
-          .select({ id: rota.id })
-          .from(rota)
-          .where(and(eq(rota.nome, entrada.rota), eq(rota.baseId, contexto.baseId))),
-      ]),
+    const [veiculos, motoristas, rotas] = await Promise.all([
+      tx
+        .select({ id: veiculo.id })
+        .from(veiculo)
+        .where(and(eq(veiculo.placa, entrada.veiculo), eq(veiculo.baseId, contexto.baseId))),
+      tx
+        .select({ id: colaborador.id })
+        .from(colaborador)
+        .where(and(eq(colaborador.nome, entrada.motorista), eq(colaborador.baseId, contexto.baseId))),
+      tx
+        .select({ id: rota.id })
+        .from(rota)
+        .where(and(eq(rota.nome, entrada.rota), eq(rota.baseId, contexto.baseId))),
     ])
-    const [veiculos, motoristas, rotas] = cadastros
     const veiculoId = veiculos[0]?.id
     const motoristaId = motoristas[0]?.id
     const rotaId = rotas[0]?.id
     if (!veiculoId || !motoristaId || !rotaId) throw new RegistroInvalido('cadastro inexistente')
 
     const chegadaCompleta = Boolean(entrada.data_chegada && entrada.hora_chegada && entrada.km_chegada !== null)
+    return {
+      baseId: contexto.baseId,
+      veiculoId,
+      motoristaId,
+      rotaId,
+      dataSaida: entrada.data_saida,
+      horaSaida: entrada.hora_saida,
+      dataPrevista: entrada.hora_prevista ? entrada.data_chegada : null,
+      horaPrevista: entrada.hora_prevista,
+      dataChegada: chegadaCompleta ? entrada.data_chegada : null,
+      horaChegada: chegadaCompleta ? entrada.hora_chegada : null,
+      kmSaida: entrada.km_saida,
+      kmChegada: chegadaCompleta ? entrada.km_chegada : null,
+      valorCarga: String(entrada.valor_carga),
+      combustivel: String(entrada.combustivel),
+      diarias: String(entrada.diarias),
+      m2: String(entrada.m2),
+      pesoKg: String(entrada.peso_kg),
+      observacao: entrada.observacao,
+    }
+}
+
+async function salvarViagemEm(tx: Escritor, usuarioId: string, entrada: EntradaViagem) {
+    const valores = await valoresDaViagem(tx, usuarioId, entrada)
     const [salva] = await tx
       .insert(viagem)
-      .values({
-        baseId: contexto.baseId,
-        veiculoId,
-        motoristaId,
-        rotaId,
-        dataSaida: entrada.data_saida,
-        horaSaida: entrada.hora_saida,
-        dataPrevista: entrada.hora_prevista ? entrada.data_chegada : null,
-        horaPrevista: entrada.hora_prevista,
-        dataChegada: chegadaCompleta ? entrada.data_chegada : null,
-        horaChegada: chegadaCompleta ? entrada.hora_chegada : null,
-        kmSaida: entrada.km_saida,
-        kmChegada: chegadaCompleta ? entrada.km_chegada : null,
-        valorCarga: String(entrada.valor_carga),
-        combustivel: String(entrada.combustivel),
-        diarias: String(entrada.diarias),
-        m2: String(entrada.m2),
-        pesoKg: String(entrada.peso_kg),
-        observacao: entrada.observacao,
-        criadoPor: usuarioId,
-        atualizadoPor: usuarioId,
-      })
+      .values({ ...valores, criadoPor: usuarioId, atualizadoPor: usuarioId })
       .returning({ id: viagem.id })
     if (!salva) throw new RegistroInvalido('viagem não foi salva')
     return { ...salva, tipo: 'viagem' as const }
@@ -318,11 +325,7 @@ async function contextoPermitido(db: Leitor, usuarioId: string, nomeBase: string
   return { baseId: basePermitida.id }
 }
 
-async function salvarAbastecimentoEm(
-  tx: Escritor,
-  usuarioId: string,
-  entradas: EntradaAbastecimento[],
-) {
+async function valoresDoAbastecimento(tx: Escritor, usuarioId: string, entradas: EntradaAbastecimento[]) {
   const primeira = entradas[0]
   if (!primeira) throw new RegistroInvalido('abastecimento vazio')
   const contexto = await contextoPermitido(tx, usuarioId, primeira.base, 'abastecimento')
@@ -333,31 +336,44 @@ async function salvarAbastecimentoEm(
       : Promise.resolve([]),
   ])
   if (!veiculoAtual || (primeira.rota && !rotas[0])) throw new RegistroInvalido('cadastro inexistente')
+  return {
+    cabecalho: {
+      baseId: contexto.baseId,
+      veiculoId: veiculoAtual.id,
+      rotaId: rotas[0]?.id ?? null,
+      data: primeira.data,
+    },
+    paradas: entradas.map((item, indice) => ({
+      ordem: indice + 1,
+      litros: String(item.litros),
+      vlLitro: String(item.vl_litro),
+      km: item.km,
+      posto: item.posto,
+    })),
+  }
+}
+
+async function salvarAbastecimentoEm(
+  tx: Escritor,
+  usuarioId: string,
+  entradas: EntradaAbastecimento[],
+) {
+  const { cabecalho, paradas } = await valoresDoAbastecimento(tx, usuarioId, entradas)
   const [salvo] = await tx.insert(abastecimento).values({
-    baseId: contexto.baseId,
-    veiculoId: veiculoAtual.id,
-    rotaId: rotas[0]?.id ?? null,
-    data: primeira.data,
+    ...cabecalho,
     criadoPor: usuarioId,
     atualizadoPor: usuarioId,
   }).returning({ id: abastecimento.id })
   if (!salvo) throw new RegistroInvalido('abastecimento não foi salvo')
-  await tx.insert(abastecimentoParada).values(entradas.map((item, indice) => ({
-    abastecimentoId: salvo.id,
-    ordem: indice + 1,
-    litros: String(item.litros),
-    vlLitro: String(item.vl_litro),
-    km: item.km,
-    posto: item.posto,
-  })))
+  await tx.insert(abastecimentoParada).values(paradas.map((parada) => ({ ...parada, abastecimentoId: salvo.id })))
   return { id: salvo.id, tipo: 'abastecimento' as const }
 }
 
-async function salvarManutencaoEm(tx: Escritor, usuarioId: string, entrada: EntradaManutencao) {
+async function valoresDaManutencao(tx: Escritor, usuarioId: string, entrada: EntradaManutencao) {
   const contexto = await contextoPermitido(tx, usuarioId, entrada.base, 'manutencao')
   const [veiculoAtual] = await tx.select({ id: veiculo.id }).from(veiculo).where(and(eq(veiculo.placa, entrada.placa), eq(veiculo.baseId, contexto.baseId)))
   if (!veiculoAtual) throw new RegistroInvalido('veículo inexistente')
-  const [salva] = await tx.insert(manutencao).values({
+  return {
     baseId: contexto.baseId,
     veiculoId: veiculoAtual.id,
     tipoManutencao: entrada.tipo_manutencao,
@@ -370,6 +386,13 @@ async function salvarManutencaoEm(tx: Escritor, usuarioId: string, entrada: Entr
     valor: String(entrada.valor),
     kmOdometro: entrada.km_odometro,
     fornecedor: entrada.fornecedor,
+  }
+}
+
+async function salvarManutencaoEm(tx: Escritor, usuarioId: string, entrada: EntradaManutencao) {
+  const valores = await valoresDaManutencao(tx, usuarioId, entrada)
+  const [salva] = await tx.insert(manutencao).values({
+    ...valores,
     criadoPor: usuarioId,
     atualizadoPor: usuarioId,
   }).returning({ id: manutencao.id })
@@ -377,19 +400,83 @@ async function salvarManutencaoEm(tx: Escritor, usuarioId: string, entrada: Entr
   return { ...salva, tipo: 'manutencao' as const }
 }
 
-async function salvarQuebraEm(tx: Escritor, usuarioId: string, entrada: EntradaQuebra) {
+async function valoresDaQuebra(tx: Escritor, usuarioId: string, entrada: EntradaQuebra) {
   const contexto = await contextoPermitido(tx, usuarioId, entrada.base, 'quebra')
-  const [salva] = await tx.insert(quebra).values({
+  return {
     baseId: contexto.baseId,
     data: entrada.data,
     m2Expedido: String(entrada.m2_expedido),
     m2Quebrado: String(entrada.m2_quebrado),
     observacao: entrada.observacao,
+  }
+}
+
+async function salvarQuebraEm(tx: Escritor, usuarioId: string, entrada: EntradaQuebra) {
+  const valores = await valoresDaQuebra(tx, usuarioId, entrada)
+  const [salva] = await tx.insert(quebra).values({
+    ...valores,
     criadoPor: usuarioId,
     atualizadoPor: usuarioId,
   }).returning({ id: quebra.id })
   if (!salva) throw new RegistroInvalido('quebra não foi salva')
   return { ...salva, tipo: 'quebra' as const }
+}
+
+/**
+ * A edicao de um lancamento ja gravado, pela tela de registro.
+ *
+ * Reescreve o registro inteiro com o que a tela mandou, pela mesma montagem do POST, e
+ * marca quem mexeu e quando. O abastecimento troca o cabecalho e refaz as paradas: a tela
+ * edita o grupo todo, e a ordem das paradas e a posicao dentro dele.
+ *
+ * A permissao e cobrada duas vezes. Sobre a base onde o registro esta hoje, para quem nao
+ * enxerga a base nao conseguir mexer so por saber o id; e sobre a base que chega, porque
+ * mudar a base e lancar na nova. Registro apagado e registro inexistente saem iguais.
+ */
+export async function atualizarRegistro(
+  db: Db,
+  usuarioId: string,
+  id: string,
+  entradas: EntradaRegistro[],
+): Promise<{ id: string; tipo: EntradaRegistro['tipo'] }> {
+  const primeira = entradas[0]
+  if (!primeira) throw new RegistroInvalido('registro vazio')
+  const agora = new Date()
+  const marca = { atualizadoPor: usuarioId, atualizadoEm: agora }
+
+  return await db.transaction(async (tx) => {
+    const permitirEdicaoDe = async (tabela: typeof viagem | typeof abastecimento | typeof manutencao | typeof quebra) => {
+      const [atual] = await tx
+        .select({ nome: base.nome })
+        .from(tabela)
+        .innerJoin(base, eq(base.id, tabela.baseId))
+        .where(and(eq(tabela.id, id), isNull(tabela.apagadoEm)))
+      if (!atual) throw new RegistroAusente()
+      await contextoPermitido(tx, usuarioId, atual.nome, primeira.tipo)
+    }
+
+    if (primeira.tipo === 'viagem') {
+      await permitirEdicaoDe(viagem)
+      const valores = await valoresDaViagem(tx, usuarioId, primeira)
+      await tx.update(viagem).set({ ...valores, ...marca }).where(eq(viagem.id, id))
+    } else if (primeira.tipo === 'manutencao') {
+      await permitirEdicaoDe(manutencao)
+      const valores = await valoresDaManutencao(tx, usuarioId, primeira)
+      await tx.update(manutencao).set({ ...valores, ...marca }).where(eq(manutencao.id, id))
+    } else if (primeira.tipo === 'quebra') {
+      await permitirEdicaoDe(quebra)
+      const valores = await valoresDaQuebra(tx, usuarioId, primeira)
+      await tx.update(quebra).set({ ...valores, ...marca }).where(eq(quebra.id, id))
+    } else {
+      await permitirEdicaoDe(abastecimento)
+      const paradasNovas = entradas.filter((e): e is EntradaAbastecimento => e.tipo === 'abastecimento')
+      const { cabecalho, paradas } = await valoresDoAbastecimento(tx, usuarioId, paradasNovas)
+      await tx.update(abastecimento).set({ ...cabecalho, ...marca }).where(eq(abastecimento.id, id))
+      await tx.delete(abastecimentoParada).where(eq(abastecimentoParada.abastecimentoId, id))
+      await tx.insert(abastecimentoParada).values(paradas.map((parada) => ({ ...parada, abastecimentoId: id })))
+    }
+    return { id, tipo: primeira.tipo }
+  })
 }
 
 /** Os quatro tipos, na ordem em que a tela os mostra. */
