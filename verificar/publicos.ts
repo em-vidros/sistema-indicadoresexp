@@ -24,9 +24,10 @@
  * que a carrega ja mudou de nome uma vez, e um nome escrito aqui viraria um `dist/` que
  * a prova le pela metade sem reclamar.
  */
+import { fileURLToPath } from 'node:url'
 import { PUBLICOS_DE_ASSET } from '../apps/server/src/portao.ts'
 
-const RAIZ = new URL('../', import.meta.url).pathname
+const RAIZ = fileURLToPath(new URL('../', import.meta.url))
 const DIST = `${RAIZ}apps/web/dist/`
 const CASCA = `${DIST}entrar.html`
 

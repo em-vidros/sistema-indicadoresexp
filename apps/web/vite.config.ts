@@ -1,9 +1,10 @@
 import { readdirSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite-plus'
 
-const RAIZ = new URL('src/', import.meta.url).pathname
+const RAIZ = fileURLToPath(new URL('src/', import.meta.url))
 
 /**
  * As entradas sao descobertas, nao listadas. Uma lista aqui e uma tela nova em
