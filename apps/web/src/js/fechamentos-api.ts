@@ -5,13 +5,17 @@ export type Fechamentos = Record<string, FechamentoDaBase[]>
 
 type Chamar = typeof fetch
 
-async function pedirJson<T>(caminho: string, init: RequestInit, chamar: Chamar): Promise<T> {
+async function pedir(caminho: string, init: RequestInit, chamar: Chamar): Promise<Response> {
   const resposta = await chamar(caminho, init)
   if (!resposta.ok) {
     const falha = (await resposta.json().catch(() => null)) as { erro?: string } | null
     throw new Error(falha?.erro ?? `pedido recusado com ${resposta.status}`)
   }
-  return (await resposta.json()) as T
+  return resposta
+}
+
+async function pedirJson<T>(caminho: string, init: RequestInit, chamar: Chamar): Promise<T> {
+  return (await (await pedir(caminho, init, chamar)).json()) as T
 }
 
 export async function listarFechamentos(chamar: Chamar = fetch): Promise<Fechamentos> {
@@ -28,5 +32,6 @@ export async function fecharMes(base: string, mes: string, chamar: Chamar = fetc
 }
 
 export async function reabrirMes(id: string, chamar: Chamar = fetch): Promise<void> {
-  await pedirJson(`/api/fechamentos/${encodeURIComponent(id)}`, { method: 'DELETE' }, chamar)
+  // A rota responde 204, sem corpo.
+  await pedir(`/api/fechamentos/${encodeURIComponent(id)}`, { method: 'DELETE' }, chamar)
 }

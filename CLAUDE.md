@@ -46,11 +46,40 @@ desliga a publicação automática, então push novo para de ir ao ar até algu�
 `acao=religar` apontando o deploy corrigido. Rollback não desfaz migração de banco: se a
 quebra veio de migração, o conserto é outra migração.
 
+## Migrações de banco
+
+O mesmo workflow aplica as migrações na Neon de produção antes de publicar, a cada push na
+`main`. Ninguém precisa rodar `db:migrate` contra produção, nem pedir isso ao Henrique.
+Se a migração falhar, o deploy não acontece e a produção fica na versão anterior.
+
+Para mudar o banco: altere o schema em `packages/db/src/schema`, rode `bun run db:generate`,
+aplique no banco local com `bun run db:migrate` e commite a migração junto com o código
+que a usa.
+
+Como a migração entra no banco alguns minutos antes do código novo, ela precisa funcionar
+com o código que ainda está no ar. Criar tabela, criar coluna que aceita nulo ou tem padrão
+e criar índice são seguros. Apagar ou renomear coluna e tabela vai em duas etapas: primeiro
+um push que para de usar, depois outro que apaga.
+
+Não escreva código que engole erro de tabela inexistente para contornar migração pendente.
+As consultas de gravação rodam dentro de transação, e no Postgres uma consulta que falha
+aborta a transação inteira mesmo com o erro tratado no JavaScript.
+
 ## Variáveis de ambiente
 
 As variáveis de produção (`DATABASE_URL` e companhia) estão cadastradas na Vercel e o build
 as recebe de lá. Nenhum `.env` de produção existe neste repositório, e nenhum deve ser criado.
 Para rodar local, copie `.env.example` para `.env.local` e preencha.
+
+Os testes de `bun run verificar` precisam de um Postgres 17 local, porque truncam tabelas.
+Uma trava recusa rodar a suíte contra host remoto. Sem banco local, os testes que usam o
+banco falham por conexão recusada, e isso não é motivo para subir sem eles. Para criar o
+banco local, rode `bun run banco` (Podman) ou o equivalente com Docker:
+`docker run -d --name indicadores-pg -e POSTGRES_USER=indicadores -e POSTGRES_PASSWORD=indicadores_dev -e POSTGRES_DB=indicadores -p 127.0.0.1:5433:5432 postgres:17-alpine`.
+Depois aponte `DATABASE_URL` do `.env.local` e do `.env.test.local` para ele, copie as
+`SENHA_*` do `.env.example` para os dois e rode
+`bun run db:migrate` e `bun run db:seed`. O `bun test` lê o `.env.test.local`, não o
+`.env.local`.
 
 ## Comandos
 

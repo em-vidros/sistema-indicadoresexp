@@ -328,9 +328,7 @@ async function contextoPermitido(db: Leitor, usuarioId: string, nomeBase: string
     .from(usuarioTipo)
     .where(and(eq(usuarioTipo.usuarioId, usuarioId), eq(usuarioTipo.tipo, tipo as EntradaRegistro['tipo'])))
   if (!basePermitida || !permissao) throw new RegistroInvalido('operação não permitida', true)
-  // Se a tabela ainda não existe (migração pendente), assume mês aberto.
-  const fechado = await mesEstaFechado(db, basePermitida.id, data).catch(() => false)
-  if (fechado) {
+  if (await mesEstaFechado(db, basePermitida.id, data)) {
     throw new RegistroInvalido(`${nomeBase} está com o mês de ${data.slice(0, 7)} fechado para lançamentos`, true)
   }
   return { baseId: basePermitida.id }

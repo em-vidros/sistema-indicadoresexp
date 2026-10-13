@@ -11,6 +11,8 @@
 #   VERCEL_TOKEN      token criado em https://vercel.com/account/tokens
 #   VERCEL_ORG_ID     team_U6fkatk4zMrCO5gucUbRNW2b (esta em .vercel/project.json, fora do git)
 #   VERCEL_PROJECT_ID prj_3sMvKmLT0zfPXqyjoA7KQlKp22kE (idem)
+#   DATABASE_URL_UNPOOLED string direta (sem -pooler) da Neon de producao, para
+#                     o passo que aplica as migracoes
 #
 # O build roda na Vercel, com as variaveis ja cadastradas la (DATABASE_URL e as
 # demais). Nada de `.env` de producao passa por aqui.
@@ -36,6 +38,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      # A migracao roda antes do deploy, so na main. Codigo novo que le tabela nova
+      # nunca chega ao ar antes da tabela. Se a migracao falhar, o deploy nao
+      # acontece e a producao continua na versao anterior.
+      - uses: oven-sh/setup-bun@v2
+        if: github.event_name == 'push'
+
+      - name: aplica as migracoes no banco de producao
+        if: github.event_name == 'push'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+        run: |
+          bun install --frozen-lockfile
+          bun run db:migrate
 
       - name: publica na Vercel
         run: |
