@@ -94,6 +94,7 @@ const Viagem = z.object({
 const Abastecimento = z.object({
   tipo: z.literal('abastecimento'), base: z.string().trim().min(1),
   data: Data, placa: z.string().trim().min(1),
+  motorista: z.string().trim().min(1),
   rota: z.string().trim().nullable().optional().default(null), litros: z.number().positive(),
   vl_litro: z.number().nonnegative(), km: z.number().int().positive().nullable().optional().default(null),
   posto: z.string().trim().max(240), slot: z.string().trim().nullable().optional().default(null),

@@ -78,6 +78,7 @@ describe('registros operacionais no banco', () => {
     const registros = [
       ...[1, 2, 3].map((ordem) => ({
         tipo: 'abastecimento', base: 'Raposa', data: '2026-09-01', placa: 'PTV0006',
+        motorista: 'Anderson Penha Dos Anjos',
         rota: 'PINHEIRO', litros: 50 + ordem, vl_litro: 6.1, km: 1000 + ordem * 100,
         posto: `Posto ${ordem}`, slot: ['Saída', 'Interior', 'Chegada'][ordem - 1], viagem_longa: true,
       })),
@@ -103,9 +104,25 @@ describe('registros operacionais no banco', () => {
     quebras.push(salvos.find((item) => item.tipo === 'quebra')!.id)
 
     const lista = (await (await pedir('/api/registros?base=Raposa', { headers: { cookie: livia } })).json()) as Array<Record<string, unknown>>
-    expect(lista.filter((item) => item['abastecimento_id'] === abastecimentos[0])).toHaveLength(3)
+    const paradasDoGrupo = lista.filter((item) => item['abastecimento_id'] === abastecimentos[0])
+    expect(paradasDoGrupo).toHaveLength(3)
+    expect(paradasDoGrupo.every((l) => l['motorista'] === 'Anderson Penha Dos Anjos')).toBe(true)
     expect(lista).toContainEqual(expect.objectContaining({ tipo: 'manutencao', id: manutencoes[0] }))
     expect(lista).toContainEqual(expect.objectContaining({ tipo: 'quebra', id: quebras[0], pct_quebra: 0.5 }))
+  })
+
+  test('abastecimento sem motorista é 400', async () => {
+    const resposta = await pedir('/api/registros', {
+      method: 'POST',
+      headers: { cookie: livia, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        registros: [{
+          tipo: 'abastecimento', base: 'Raposa', data: '2026-09-06', placa: 'PTV0006',
+          rota: null, litros: 50, vl_litro: 6, km: 500, posto: 'Posto', slot: null, viagem_longa: false,
+        }],
+      }),
+    })
+    expect(resposta.status).toBe(400)
   })
 })
 
@@ -336,6 +353,7 @@ describe('regra do banco violada vira 400 com mensagem', () => {
     const { status, erro } = await recusa(
       [1, 2, 3, 4].map((ordem) => ({
         tipo: 'abastecimento', base: 'Raposa', data: '2026-09-05', placa: 'PTV0006',
+        motorista: 'Anderson Penha Dos Anjos',
         rota: 'PINHEIRO', litros: 50 + ordem, vl_litro: 6.1, km: 1000 + ordem * 100,
         posto: `Posto ${ordem}`, slot: null, viagem_longa: true,
       })),
@@ -431,6 +449,7 @@ describe('data e hora que não existem no calendário viram 400', () => {
     expect(
       (await recusa([{
         tipo: 'abastecimento', base: 'Raposa', data: '2026-13-01', placa: 'PTV0006',
+        motorista: 'Anderson Penha Dos Anjos',
         rota: null, litros: 10, vl_litro: 6, km: 100, posto: 'Posto', slot: null, viagem_longa: false,
       }])).status,
     ).toBe(400)
@@ -507,6 +526,7 @@ describe('editar um lançamento já gravado', () => {
   test('o abastecimento editado troca as paradas pelas que a tela mandou', async () => {
     const parada = (ordem: number, litros: number) => ({
       tipo: 'abastecimento', base: 'Raposa', data: '2026-09-11', placa: 'PTV0006', rota: 'PINHEIRO',
+      motorista: 'Anderson Penha Dos Anjos',
       litros, vl_litro: 6.1, km: 2000 + ordem * 100, posto: `Posto ${ordem}`,
       slot: ['Saída', 'Interior', 'Chegada'][ordem - 1], viagem_longa: true,
     })
@@ -598,6 +618,7 @@ describe('apagar um lançamento só', () => {
   test('o abastecimento apagado leva o grupo de paradas inteiro junto', async () => {
     const parada = (ordem: number) => ({
       tipo: 'abastecimento', base: 'Raposa', data: '2026-09-19', placa: 'PTV0006', rota: 'PINHEIRO',
+      motorista: 'Anderson Penha Dos Anjos',
       litros: 40 + ordem, vl_litro: 6.1, km: 3000 + ordem * 100, posto: `Posto ${ordem}`,
       slot: ['Saída', 'Interior', 'Chegada'][ordem - 1], viagem_longa: true,
     })

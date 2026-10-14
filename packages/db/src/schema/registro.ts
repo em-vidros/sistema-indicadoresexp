@@ -159,6 +159,13 @@ export const abastecimento = pgTable('abastecimento', {
     .notNull()
     .references(() => veiculo.id),
   rotaId: uuid('rota_id').references(() => rota.id),
+  /**
+   * De quem e a media que este abastecimento fecha -- nao necessariamente quem
+   * fisicamente abasteceu. Uma rota que chega sabado a noite pode so ser
+   * abastecida na segunda, por outro motorista; a coluna e anulavel porque
+   * abastecimento gravado antes desta coluna existir nao tem como saber.
+   */
+  motoristaId: uuid('motorista_id').references(() => colaborador.id),
   data: date('data').notNull(),
   ...auditoria(),
 })

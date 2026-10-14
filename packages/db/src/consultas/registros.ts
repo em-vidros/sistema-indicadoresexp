@@ -46,6 +46,7 @@ export type EntradaAbastecimento = {
   base: string
   data: string
   placa: string
+  motorista: string
   rota: string | null
   litros: number
   vl_litro: number
@@ -220,6 +221,7 @@ export async function listarRegistros(db: Db, usuarioId: string, nomeBase?: stri
         base: base.nome,
         data: abastecimento.data,
         placa: veiculo.placa,
+        motorista: colaborador.nome,
         rota: rota.nome,
         ordem: abastecimentoParada.ordem,
         litros: abastecimentoParada.litros,
@@ -233,6 +235,8 @@ export async function listarRegistros(db: Db, usuarioId: string, nomeBase?: stri
       .innerJoin(base, eq(base.id, abastecimento.baseId))
       .innerJoin(veiculo, eq(veiculo.id, abastecimento.veiculoId))
       .leftJoin(rota, eq(rota.id, abastecimento.rotaId))
+      // Anulavel: abastecimento gravado antes da coluna existir nao tem motorista.
+      .leftJoin(colaborador, eq(colaborador.id, abastecimento.motoristaId))
       .innerJoin(abastecimentoParada, eq(abastecimentoParada.abastecimentoId, abastecimento.id))
       .where(and(inArray(abastecimento.baseId, ids), isNull(abastecimento.apagadoEm))),
     db
@@ -340,18 +344,23 @@ async function valoresDoAbastecimento(tx: Escritor, usuarioId: string, entradas:
   const primeira = entradas[0]
   if (!primeira) throw new RegistroInvalido('abastecimento vazio')
   const contexto = await contextoPermitido(tx, usuarioId, primeira.base, 'abastecimento', primeira.data)
-  const [[veiculoAtual], rotas] = await Promise.all([
+  const [[veiculoAtual], rotas, motoristas] = await Promise.all([
     tx.select({ id: veiculo.id }).from(veiculo).where(and(eq(veiculo.placa, primeira.placa), eq(veiculo.baseId, contexto.baseId))),
     primeira.rota
       ? tx.select({ id: rota.id }).from(rota).where(and(eq(rota.nome, primeira.rota), eq(rota.baseId, contexto.baseId)))
       : Promise.resolve([]),
+    tx
+      .select({ id: colaborador.id })
+      .from(colaborador)
+      .where(and(eq(colaborador.nome, primeira.motorista), eq(colaborador.baseId, contexto.baseId))),
   ])
-  if (!veiculoAtual || (primeira.rota && !rotas[0])) throw new RegistroInvalido('cadastro inexistente')
+  if (!veiculoAtual || (primeira.rota && !rotas[0]) || !motoristas[0]) throw new RegistroInvalido('cadastro inexistente')
   return {
     cabecalho: {
       baseId: contexto.baseId,
       veiculoId: veiculoAtual.id,
       rotaId: rotas[0]?.id ?? null,
+      motoristaId: motoristas[0].id,
       data: primeira.data,
     },
     paradas: entradas.map((item, indice) => ({

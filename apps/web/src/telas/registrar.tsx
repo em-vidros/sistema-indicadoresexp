@@ -130,6 +130,8 @@ type Viagem = {
 type Abastecimento = {
   readonly data: string
   readonly placa: string
+  /** De quem e a media que este abastecimento fecha, nao necessariamente quem abasteceu. */
+  readonly motorista: string
   readonly rota: string
   readonly longa: boolean
   /** Quantas paradas estao abertas. O botao de adicionar some na terceira. */
@@ -137,7 +139,7 @@ type Abastecimento = {
   readonly paradas: Paradas
 }
 
-type CampoDeAbastecimento = 'data' | 'placa' | 'rota'
+type CampoDeAbastecimento = 'data' | 'placa' | 'motorista' | 'rota'
 
 type Manutencao = {
   readonly tipoManutencao: TipoDeManutencao
@@ -333,6 +335,7 @@ function rascunhoVazio(): Rascunho {
     abastecimento: {
       data: hoje,
       placa: '',
+      motorista: '',
       rota: '',
       longa: false,
       ativas: 1,
@@ -426,12 +429,16 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
 
   abastecimento: ({ abastecimento }, base) => {
     const placa = abastecimento.placa.trim().toUpperCase()
-    if (abastecimento.data === '' || placa === '') return { erro: 'Preencha a data e a placa.' }
+    const motorista = abastecimento.motorista.trim()
+    if (abastecimento.data === '' || placa === '' || motorista === '') {
+      return { erro: 'Preencha a data, a placa e o motorista.' }
+    }
     const comum = {
       tipo: 'abastecimento',
       base,
       data: abastecimento.data,
       placa,
+      motorista,
       rota: abastecimento.rota.trim() || null,
     }
 
@@ -574,6 +581,7 @@ const LEITORES_DE_RASCUNHO: Readonly<Record<Tipo, (linhas: readonly Registro[], 
       abastecimento: {
         data: texto(primeira, 'data'),
         placa: texto(primeira, 'placa'),
+        motorista: texto(primeira, 'motorista'),
         rota: texto(primeira, 'rota'),
         longa: ordenadas.length > 1,
         ativas,
@@ -628,7 +636,7 @@ const LEITORES: Readonly<Record<Tipo, (registro: Registro) => LinhaDoHistorico>>
     valor: brl(numero(r, 'custo_viagem')),
   }),
   abastecimento: (r) => ({
-    quem: texto(r, 'placa') || '·',
+    quem: `${texto(r, 'motorista') || '·'} · ${texto(r, 'placa') || '·'}`,
     descricao: texto(r, 'posto') || '·',
     valor: brl(numero(r, 'valor_total')),
   }),
@@ -1009,7 +1017,10 @@ function celulasDeAbastecimento(f: Ferramentas): readonly Celula[] {
       linha: 1,
       conteudo: (
         <>
-          <TituloDeSecao titulo="Dados do abastecimento" subtitulo="Data, veículo e a rota que o abastecimento atende" />
+          <TituloDeSecao
+            titulo="Dados do abastecimento"
+            subtitulo="Data, veículo e de quem é a média que este abastecimento fecha"
+          />
           <GradeDeCampos>
             <Campo
               tipo="data"
@@ -1026,6 +1037,15 @@ function celulasDeAbastecimento(f: Ferramentas): readonly Celula[] {
               opcoes={f.veiculos}
               valor={a.placa}
               aoMudar={(valor) => f.mudarAbastecimento('placa', valor)}
+            />
+            <Campo
+              tipo="select"
+              rotulo="Motorista"
+              obrigatorio
+              dica="De quem é a média"
+              opcoes={f.motoristas}
+              valor={a.motorista}
+              aoMudar={(valor) => f.mudarAbastecimento('motorista', valor)}
             />
             <Campo
               tipo="select"
@@ -1301,6 +1321,166 @@ const CELULAS: Readonly<Record<Tipo, (f: Ferramentas) => readonly Celula[]>> = {
   quebra: celulasDeQuebra,
 }
 
+// ---------- importar abastecimento ----------
+//
+// So a parada simples (uma linha = um abastecimento). Viagem longa com tres paradas
+// exigiria casar linhas da planilha num grupo so, e ninguem pediu isso ainda; quem
+// precisar lanca a viagem longa pela tela, como ja fazia.
+
+const LOTE_IMPORT_ABASTECIMENTO = 100
+
+function lerCsvAbastecimento(
+  conteudo: string,
+  base: string,
+): { readonly achados: readonly Registro[]; readonly erros: readonly string[] } {
+  const linhas = conteudo.split('\n').map((l) => l.trim()).filter(Boolean)
+  const [cabecalhoBruto, ...corpo] = linhas
+  if (cabecalhoBruto === undefined || corpo.length === 0) return { achados: [], erros: [] }
+  const cabecalho = cabecalhoBruto.split(',').map((h) => h.trim().toLowerCase())
+  const achados: Registro[] = []
+  const erros: string[] = []
+  corpo.forEach((bruta, i) => {
+    const colunas = bruta.split(',')
+    const linha: Record<string, string> = {}
+    cabecalho.forEach((h, j) => {
+      linha[h] = (colunas[j] ?? '').trim()
+    })
+    const litros = decimal(linha.litros ?? '')
+    const vlLitro = valorPorLitro(linha['vl_litro'] || linha['valor_litro'] || '')
+    if (!linha.placa || !linha.data || !linha.motorista || litros <= 0 || vlLitro <= 0) {
+      erros.push(`Linha ${i + 2}: faltou placa, data, motorista, litros ou valor por litro`)
+      return
+    }
+    achados.push({
+      tipo: 'abastecimento',
+      base: linha.base || base,
+      data: linha.data,
+      placa: linha.placa.toUpperCase(),
+      motorista: linha.motorista,
+      rota: linha.rota || null,
+      litros,
+      vl_litro: vlLitro,
+      km: linha.km ? inteiro(linha.km) || null : null,
+      posto: linha.posto || '',
+      slot: null,
+      viagem_longa: false,
+    })
+  })
+  return { achados, erros }
+}
+
+type PreviewDoImport =
+  | { readonly tipo: 'invalido' }
+  | { readonly tipo: 'resumo'; readonly erros: readonly string[] }
+
+function DialogoImportarAbastecimento({ base, aoFechar }: {
+  readonly base: string
+  readonly aoFechar: () => void
+}): JSX.Element {
+  const { avisar } = useAvisos()
+  const [nomeDoArquivo, setNomeDoArquivo] = useState<string | null>(null)
+  const [preview, setPreview] = useState<PreviewDoImport | null>(null)
+  const [aImportar, setAImportar] = useState<readonly Registro[]>([])
+  const [enviando, setEnviando] = useState(false)
+
+  const escolher = (arquivo: File): void => {
+    setNomeDoArquivo(arquivo.name)
+    const leitor = new FileReader()
+    leitor.onload = () => {
+      const { achados, erros } = lerCsvAbastecimento(String(leitor.result), base)
+      if (achados.length === 0 && erros.length === 0) {
+        setAImportar([])
+        setPreview({ tipo: 'invalido' })
+        return
+      }
+      setAImportar(achados)
+      setPreview({ tipo: 'resumo', erros })
+    }
+    leitor.readAsText(arquivo, 'UTF-8')
+  }
+
+  const importar = async (): Promise<void> => {
+    const total = aImportar.length
+    if (total === 0) return
+    setEnviando(true)
+    let gravados = 0
+    try {
+      for (let i = 0; i < total; i += LOTE_IMPORT_ABASTECIMENTO) {
+        const lote = aImportar.slice(i, i + LOTE_IMPORT_ABASTECIMENTO)
+        await salvarRegistros([...lote])
+        gravados += lote.length
+      }
+    } catch (falha) {
+      // O lote que passou nao volta, entao a fila perde os gravados e o proximo clique
+      // repete so o que faltou, sem duplicar nada.
+      setAImportar(aImportar.slice(gravados))
+      const motivo = falha instanceof TypeError
+        ? 'Sem conexão. Tente de novo.'
+        : falha instanceof Error
+        ? falha.message
+        : 'Não foi possível importar.'
+      avisar(`${gravados} de ${total} registros importados. ${motivo}`, 'erro')
+      setEnviando(false)
+      return
+    }
+    invalidar('registros')
+    avisar(`${total} abastecimentos importados.`, 'ok')
+    setEnviando(false)
+    aoFechar()
+  }
+
+  return (
+    <Dialogo
+      aberto
+      titulo="Importar abastecimento"
+      subtitulo="O CSV precisa das colunas placa, data, motorista e litros, vl_litro. Rota, km e posto são opcionais."
+      largura={640}
+      aoFechar={aoFechar}
+      acoes={
+        <>
+          <Botao tipo="terciario" rotulo="Cancelar" aoClicar={aoFechar} />
+          {aImportar.length === 0
+            ? null
+            : (
+              <Botao
+                tipo="primario"
+                rotulo="Importar registros"
+                antes={CloudUpload}
+                carregando={enviando}
+                aoClicar={() => void importar()}
+              />
+            )}
+        </>
+      }
+    >
+      <GradeDeCampos>
+        <CampoDeArquivo
+          rotulo="Arquivo CSV"
+          span={12}
+          aceita=".csv,text/csv"
+          texto="Arraste o CSV ou clique"
+          aoEscolher={escolher}
+          {...(nomeDoArquivo === null ? {} : { arquivo: nomeDoArquivo })}
+        />
+      </GradeDeCampos>
+      {preview === null ? null : preview.tipo === 'invalido'
+        ? <div className="g-l13 g-tom-critico">Arquivo inválido ou vazio.</div>
+        : (
+          <>
+            <div className="g-l14">
+              <span className="g-forte">{`${aImportar.length} registros`}</span>
+              {' encontrados para importar'}
+              {preview.erros.length === 0
+                ? null
+                : <>{' · '}<span className="g-tom-critico">{`${preview.erros.length} com erro`}</span></>}
+            </div>
+            {preview.erros.map((erro) => <div className="g-l13 g-tom-critico" key={erro}>{erro}</div>)}
+          </>
+        )}
+    </Dialogo>
+  )
+}
+
 // ---------- importar pontualidade da entrega ----------
 //
 // Nao cria viagem nenhuma: so troca a data e a hora previstas de chegada de uma
@@ -1528,6 +1708,7 @@ export default function Registrar(): JSX.Element {
   const [apagando, setApagando] = useState<Registro | null>(null)
   const [apagandoEmProgresso, setApagandoEmProgresso] = useState(false)
   const [importandoPontualidade, setImportandoPontualidade] = useState(false)
+  const [importandoAbastecimento, setImportandoAbastecimento] = useState(false)
 
   // O admin comeca na base do ultimo lancamento desta maquina, e nao numa tela vazia
   // pedindo um clique; quem lanca todo dia lanca quase sempre na mesma base.
@@ -1862,6 +2043,9 @@ export default function Registrar(): JSX.Element {
     ...(sessao.tipos.includes('viagem')
       ? [{ rotulo: 'Importar pontualidade da entrega', aoEscolher: () => setImportandoPontualidade(true) }]
       : []),
+    ...(sessao.tipos.includes('abastecimento') && base !== null
+      ? [{ rotulo: 'Importar abastecimento', aoEscolher: () => setImportandoAbastecimento(true) }]
+      : []),
     ...(sessao.capacidades.todasAsBases && base !== null
       ? [{
         rotulo: `${mesAnteriorFechado ? 'Reabrir' : 'Fechar'} ${mesAnterior.slice(0, 7)} desta base`,
@@ -1989,6 +2173,10 @@ export default function Registrar(): JSX.Element {
 
       {importandoPontualidade
         ? <DialogoImportarPontualidade registros={daBase} aoFechar={() => setImportandoPontualidade(false)} />
+        : null}
+
+      {importandoAbastecimento && base !== null
+        ? <DialogoImportarAbastecimento base={base} aoFechar={() => setImportandoAbastecimento(false)} />
         : null}
     </>
   )
