@@ -505,6 +505,62 @@ export async function atualizarRegistro(
   })
 }
 
+/**
+ * Apaga um lancamento so, pela mesma dupla tipo+id que a edicao usa -- no abastecimento,
+ * o id do cabecalho, e as paradas somem junto porque `listarRegistros` so enxerga o grupo
+ * pelo `apagadoEm` do cabecalho. Soft-delete, igual ao resto da casa: quem errou um
+ * lancamento o tira do historico, mas a linha continua no banco.
+ */
+export async function apagarRegistro(
+  db: Db,
+  usuarioId: string,
+  tipo: EntradaRegistro['tipo'],
+  id: string,
+): Promise<void> {
+  const agora = new Date()
+  const marca = { apagadoEm: agora, atualizadoPor: usuarioId, atualizadoEm: agora }
+
+  await db.transaction(async (tx) => {
+    if (tipo === 'viagem') {
+      const [atual] = await tx
+        .select({ nome: base.nome, data: viagem.dataSaida })
+        .from(viagem)
+        .innerJoin(base, eq(base.id, viagem.baseId))
+        .where(and(eq(viagem.id, id), isNull(viagem.apagadoEm)))
+      if (!atual) throw new RegistroAusente()
+      await contextoPermitido(tx, usuarioId, atual.nome, 'viagem', atual.data)
+      await tx.update(viagem).set(marca).where(eq(viagem.id, id))
+    } else if (tipo === 'manutencao') {
+      const [atual] = await tx
+        .select({ nome: base.nome, data: manutencao.dataEntrada })
+        .from(manutencao)
+        .innerJoin(base, eq(base.id, manutencao.baseId))
+        .where(and(eq(manutencao.id, id), isNull(manutencao.apagadoEm)))
+      if (!atual) throw new RegistroAusente()
+      await contextoPermitido(tx, usuarioId, atual.nome, 'manutencao', atual.data)
+      await tx.update(manutencao).set(marca).where(eq(manutencao.id, id))
+    } else if (tipo === 'quebra') {
+      const [atual] = await tx
+        .select({ nome: base.nome, data: quebra.data })
+        .from(quebra)
+        .innerJoin(base, eq(base.id, quebra.baseId))
+        .where(and(eq(quebra.id, id), isNull(quebra.apagadoEm)))
+      if (!atual) throw new RegistroAusente()
+      await contextoPermitido(tx, usuarioId, atual.nome, 'quebra', atual.data)
+      await tx.update(quebra).set(marca).where(eq(quebra.id, id))
+    } else {
+      const [atual] = await tx
+        .select({ nome: base.nome, data: abastecimento.data })
+        .from(abastecimento)
+        .innerJoin(base, eq(base.id, abastecimento.baseId))
+        .where(and(eq(abastecimento.id, id), isNull(abastecimento.apagadoEm)))
+      if (!atual) throw new RegistroAusente()
+      await contextoPermitido(tx, usuarioId, atual.nome, 'abastecimento', atual.data)
+      await tx.update(abastecimento).set(marca).where(eq(abastecimento.id, id))
+    }
+  })
+}
+
 /** Os quatro tipos, na ordem em que a tela os mostra. */
 const TIPOS = ['viagem', 'abastecimento', 'manutencao', 'quebra'] as const
 

@@ -528,6 +528,66 @@ describe('editar um lançamento já gravado', () => {
   })
 })
 
+describe('apagar um lançamento só', () => {
+  const apagar = (cookie: string, tipo: string, id: string) =>
+    pedir(`/api/registros/${tipo}/${id}`, { method: 'DELETE', headers: { cookie } })
+
+  const ler = async (cookie: string, base: string) =>
+    (await (await pedir(`/api/registros?base=${encodeURIComponent(base)}`, { headers: { cookie } })).json()) as Array<
+      Record<string, unknown>
+    >
+
+  test('some da leitura, mas continua no banco com apagado_em', async () => {
+    const [salva] = await lancar(livia, [quebraEm('Raposa', '2026-09-18')])
+    const antes = await ler(livia, 'Raposa')
+    expect(antes.map((r) => r['id'])).toContain(salva!.id)
+
+    const resposta = await apagar(livia, 'quebra', salva!.id)
+    expect(resposta.status).toBe(204)
+
+    const depois = await ler(livia, 'Raposa')
+    expect(depois.map((r) => r['id'])).not.toContain(salva!.id)
+    const [linha] = await sql<Array<{ apagado_em: Date | null }>>`select apagado_em from quebra where id = ${salva!.id}::uuid`
+    expect(linha!.apagado_em).not.toBeNull()
+  })
+
+  test('o abastecimento apagado leva o grupo de paradas inteiro junto', async () => {
+    const parada = (ordem: number) => ({
+      tipo: 'abastecimento', base: 'Raposa', data: '2026-09-19', placa: 'PTV0006', rota: 'PINHEIRO',
+      litros: 40 + ordem, vl_litro: 6.1, km: 3000 + ordem * 100, posto: `Posto ${ordem}`,
+      slot: ['Saída', 'Interior', 'Chegada'][ordem - 1], viagem_longa: true,
+    })
+    const [salvo] = await lancar(livia, [parada(1), parada(2), parada(3)])
+
+    const resposta = await apagar(livia, 'abastecimento', salvo!.id)
+    expect(resposta.status).toBe(204)
+
+    const lista = await ler(livia, 'Raposa')
+    expect(lista.filter((r) => r['abastecimento_id'] === salvo!.id)).toHaveLength(0)
+  })
+
+  test('quem não tem a base do registro leva 403, e o registro continua', async () => {
+    const [salva] = await lancar(livia, [{ ...viagem, data_saida: '2026-09-20', data_chegada: '2026-09-20' }])
+    const resposta = await apagar(andreina, 'viagem', salva!.id)
+    expect(resposta.status).toBe(403)
+    const [linha] = await sql<Array<{ apagado_em: Date | null }>>`select apagado_em from viagem where id = ${salva!.id}::uuid`
+    expect(linha!.apagado_em).toBeNull()
+  })
+
+  test('id inexistente ou já apagado é 404', async () => {
+    expect((await apagar(livia, 'quebra', crypto.randomUUID())).status).toBe(404)
+    const [salva] = await lancar(livia, [quebraEm('Raposa', '2026-09-21')])
+    expect((await apagar(livia, 'quebra', salva!.id)).status).toBe(204)
+    expect((await apagar(livia, 'quebra', salva!.id)).status).toBe(404)
+  })
+
+  test('tipo ou id fora do formato é 400', async () => {
+    const [salva] = await lancar(livia, [quebraEm('Raposa', '2026-09-22')])
+    expect((await apagar(livia, 'nao-e-tipo', salva!.id)).status).toBe(400)
+    expect((await apagar(livia, 'quebra', 'nao-e-uuid')).status).toBe(400)
+  })
+})
+
 describe('fechamento mensal', () => {
   const fecharMesId: string[] = []
 

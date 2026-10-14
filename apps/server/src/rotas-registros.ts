@@ -3,6 +3,7 @@ import {
   FechamentoInvalido,
   RegistroAusente,
   RegistroInvalido,
+  apagarRegistro,
   apagarRegistrosDoDia,
   atualizarRegistro,
   fecharMes,
@@ -151,6 +152,7 @@ const Edicao = z.object({ registros: z.array(Registro).min(1).max(3) }).superRef
   }
 })
 const IdDoRegistro = z.string().uuid()
+const TipoDoRegistro = z.enum(['viagem', 'abastecimento', 'manutencao', 'quebra'])
 
 const Limpeza = z.object({
   base: z.string().trim().min(1),
@@ -236,6 +238,23 @@ export function rotasRegistros(db: Db): Hono<Ambiente> {
       const constraint = checkViolado(falha)
       if (constraint) {
         return c.json({ erro: `o banco recusou o lançamento pela regra ${constraint}; revise os valores enviados` }, 400)
+      }
+      throw falha
+    }
+  })
+
+  /** Apaga um lancamento so. No abastecimento o id e o do cabecalho do grupo de paradas. */
+  rotas.delete('/registros/:tipo/:id', async (c) => {
+    const tipo = TipoDoRegistro.safeParse(c.req.param('tipo'))
+    const id = IdDoRegistro.safeParse(c.req.param('id'))
+    if (!tipo.success || !id.success) return c.json({ erro: 'identificador inválido' }, 400)
+    try {
+      await apagarRegistro(db, c.get('usuarioId'), tipo.data, id.data)
+      return c.body(null, 204)
+    } catch (falha) {
+      if (falha instanceof RegistroAusente) return c.json({ erro: falha.message }, 404)
+      if (falha instanceof RegistroInvalido) {
+        return c.json({ erro: falha.message }, falha.proibido ? 403 : 400)
       }
       throw falha
     }

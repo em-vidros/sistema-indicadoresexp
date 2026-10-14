@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'bun:test'
-import { apagarRegistrosDoDia, atualizarRegistro, listarRegistros, salvarRegistros } from '../src/js/registros-api.ts'
+import {
+  apagarRegistro,
+  apagarRegistrosDoDia,
+  atualizarRegistro,
+  listarRegistros,
+  salvarRegistros,
+} from '../src/js/registros-api.ts'
 
 describe('as três telas de indicadores usam a mesma API', () => {
   test('lê e grava lotes no banco', async () => {
@@ -49,5 +55,21 @@ describe('as três telas de indicadores usam a mesma API', () => {
   test('registro que sumiu na edicao vira erro com o texto da API', async () => {
     const chamar = async () => Response.json({ erro: 'registro não encontrado' }, { status: 404 })
     expect(atualizarRegistro('abc', [], chamar)).rejects.toThrow('registro não encontrado')
+  })
+
+  test('apagar manda tipo e id na URL, por DELETE, sem ler corpo da resposta 204', async () => {
+    let pedido = { caminho: '', metodo: '' }
+    const chamar = async (recurso: string | URL | Request, init?: RequestInit) => {
+      pedido = { caminho: recurso.toString(), metodo: init?.method ?? 'GET' }
+      return new Response(null, { status: 204 })
+    }
+    await apagarRegistro('quebra', 'abc', chamar)
+    expect(pedido.caminho).toBe('/api/registros/quebra/abc')
+    expect(pedido.metodo).toBe('DELETE')
+  })
+
+  test('recusa ao apagar vira erro com o texto da API', async () => {
+    const chamar = async () => Response.json({ erro: 'operação não permitida' }, { status: 403 })
+    expect(apagarRegistro('quebra', 'abc', chamar)).rejects.toThrow('operação não permitida')
   })
 })

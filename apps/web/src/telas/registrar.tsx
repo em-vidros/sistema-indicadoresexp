@@ -28,7 +28,7 @@ import {
   TituloDeSecao,
   useAvisos,
 } from '../geist/formulario.tsx'
-import { Buildings, Check, Icone, MoreHorizontal, PencilEdit, Plus } from '../geist/icones.tsx'
+import { Buildings, Check, Icone, MoreHorizontal, PencilEdit, Plus, Trash } from '../geist/icones.tsx'
 import {
   Abas,
   Badge,
@@ -47,7 +47,13 @@ import type { Celula, CorDeBadge, Opcao } from '../geist/primitivos.tsx'
 import { obterCadastro } from '../js/cadastro-api.ts'
 import type { CatalogoCadastro } from '../js/cadastro-api.ts'
 import { fecharMes, listarFechamentos, reabrirMes } from '../js/fechamentos-api.ts'
-import { apagarRegistrosDoDia, atualizarRegistro, listarRegistros, salvarRegistros } from '../js/registros-api.ts'
+import {
+  apagarRegistro,
+  apagarRegistrosDoDia,
+  atualizarRegistro,
+  listarRegistros,
+  salvarRegistros,
+} from '../js/registros-api.ts'
 import type { Registro } from '../js/registros-api.ts'
 
 // ---------- forma dos dados ----------
@@ -615,13 +621,14 @@ function LinhaVazia({ children }: { readonly children: ReactNode }): JSX.Element
   return <tr><Td colunas={COLUNAS_DO_HISTORICO.length} vazio>{children}</Td></tr>
 }
 
-function Historico({ registros, estado, deHoje, editando, aoEditar }: {
+function Historico({ registros, estado, deHoje, editando, aoEditar, aoApagar }: {
   readonly registros: readonly Registro[]
   readonly estado: 'carregando' | 'ok' | 'erro'
   readonly deHoje: number
   /** O id do registro que esta no formulario agora, para a linha dele sair destacada. */
   readonly editando: string | null
   readonly aoEditar: (registro: Registro) => void
+  readonly aoApagar: (registro: Registro) => void
 }): JSX.Element {
   const linhas = registros.slice(0, LINHAS_DO_HISTORICO)
   return (
@@ -666,13 +673,21 @@ function Historico({ registros, estado, deHoje, editando, aoEditar }: {
                   {tipo === null
                     ? null
                     : (
-                      <Botao
-                        tipo="terciario"
-                        antes={PencilEdit}
-                        rotulo={editando === idParaEditar(registro) ? 'Editando' : 'Editar'}
-                        desabilitado={editando === idParaEditar(registro)}
-                        aoClicar={() => aoEditar(registro)}
-                      />
+                      <span className="g-rodape-acoes">
+                        <Botao
+                          tipo="terciario"
+                          antes={PencilEdit}
+                          rotulo={editando === idParaEditar(registro) ? 'Editando' : 'Editar'}
+                          desabilitado={editando === idParaEditar(registro)}
+                          aoClicar={() => aoEditar(registro)}
+                        />
+                        <Botao
+                          tipo="terciario"
+                          antes={Trash}
+                          nome="Apagar"
+                          aoClicar={() => aoApagar(registro)}
+                        />
+                      </span>
                     )}
                 </Td>
               </tr>
@@ -1238,6 +1253,9 @@ export default function Registrar(): JSX.Element {
   /** O lancamento carregado no formulario para edicao. Sem ele, salvar cria um novo. */
   const [editando, setEditando] = useState<{ readonly id: string; readonly tipo: Tipo } | null>(null)
   const [fechando, setFechando] = useState(false)
+  /** O lancamento esperando confirmacao para apagar, ou nulo com o dialogo fechado. */
+  const [apagando, setApagando] = useState<Registro | null>(null)
+  const [apagandoEmProgresso, setApagandoEmProgresso] = useState(false)
 
   // O admin comeca na base do ultimo lancamento desta maquina, e nao numa tela vazia
   // pedindo um clique; quem lanca todo dia lanca quase sempre na mesma base.
@@ -1456,6 +1474,28 @@ export default function Registrar(): JSX.Element {
     }
   }
 
+  /** Apaga o lancamento em `apagando`, depois da confirmacao no dialogo. */
+  async function confirmarApagar(): Promise<void> {
+    if (apagando === null) return
+    const doRegistro = tipoDe(apagando.tipo)
+    if (doRegistro === null) return
+    const id = idParaEditar(apagando)
+    setApagandoEmProgresso(true)
+    try {
+      await apagarRegistro(doRegistro, id)
+      invalidar('registros')
+      // O que estava no formulario era esse mesmo lancamento: sem isto, "Salvar" tentaria
+      // corrigir um registro que acabou de sumir.
+      if (editando !== null && editando.id === id) cancelarEdicao()
+      setApagando(null)
+      avisar('Lançamento apagado.', 'ok')
+    } catch (falha) {
+      avisar(falha instanceof Error ? falha.message : 'Não foi possível apagar.', 'erro')
+    } finally {
+      setApagandoEmProgresso(false)
+    }
+  }
+
   /**
    * Fecha ou reabre o mes anterior da base ativa. So o admin ve este botao
    * (`sessao.capacidades.todasAsBases`), e a rota recusa de novo do lado do
@@ -1514,6 +1554,7 @@ export default function Registrar(): JSX.Element {
             deHoje={deHoje}
             editando={editando?.id ?? null}
             aoEditar={editar}
+            aoApagar={setApagando}
           />
           <RodapeDeFormulario
             apoio="Os campos em cinza são calculados a partir dos outros."
@@ -1639,6 +1680,35 @@ export default function Registrar(): JSX.Element {
       >
         <div className="g-l14">
           Isto apaga todos os registros lançados hoje na base {base ?? 'sem base'}. Não tem como desfazer.
+        </div>
+      </Dialogo>
+
+      <Dialogo
+        aberto={apagando !== null}
+        titulo="Apagar lançamento"
+        subtitulo={apagando === null ? '' : ROTULO_DO_TIPO[tipoDe(apagando.tipo) ?? 'viagem']}
+        aoFechar={() => setApagando(null)}
+        acoes={
+          <>
+            <Botao tipo="terciario" rotulo="Cancelar" aoClicar={() => setApagando(null)} />
+            <Botao
+              tipo="primario"
+              rotulo="Apagar lançamento"
+              carregando={apagandoEmProgresso}
+              aoClicar={() => void confirmarApagar()}
+            />
+          </>
+        }
+      >
+        <div className="g-l14">
+          {(() => {
+            if (apagando === null) return null
+            const tipoDoApagando = tipoDe(apagando.tipo)
+            const linha = tipoDoApagando === null ? null : LEITORES[tipoDoApagando](apagando)
+            return linha === null
+              ? 'Isto apaga este lançamento do histórico. Não tem como desfazer pela tela.'
+              : `Isto apaga "${linha.quem} · ${linha.descricao}" do histórico. Não tem como desfazer pela tela.`
+          })()}
         </div>
       </Dialogo>
     </>

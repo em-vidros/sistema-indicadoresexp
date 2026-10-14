@@ -1,13 +1,17 @@
 export type Registro = Record<string, unknown> & { tipo: string; base: string }
 type Chamar = typeof fetch
 
-async function pedirJson<T>(caminho: string, init: RequestInit, chamar: Chamar): Promise<T> {
+async function pedir(caminho: string, init: RequestInit, chamar: Chamar): Promise<Response> {
   const resposta = await chamar(caminho, init)
   if (!resposta.ok) {
     const falha = (await resposta.json().catch(() => null)) as { erro?: string } | null
     throw new Error(falha?.erro ?? `pedido recusado com ${resposta.status}`)
   }
-  return (await resposta.json()) as T
+  return resposta
+}
+
+async function pedirJson<T>(caminho: string, init: RequestInit, chamar: Chamar): Promise<T> {
+  return (await (await pedir(caminho, init, chamar)).json()) as T
 }
 
 export async function listarRegistros(base?: string | null, chamar: Chamar = fetch): Promise<Registro[]> {
@@ -47,4 +51,10 @@ export async function atualizarRegistro(id: string, registros: Registro[], chama
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ registros }),
   }, chamar)
+}
+
+/** Apaga um lancamento so. No abastecimento o id e o do grupo inteiro de paradas. */
+export async function apagarRegistro(tipo: string, id: string, chamar: Chamar = fetch): Promise<void> {
+  // A rota responde 204, sem corpo.
+  await pedir(`/api/registros/${encodeURIComponent(tipo)}/${encodeURIComponent(id)}`, { method: 'DELETE' }, chamar)
 }
