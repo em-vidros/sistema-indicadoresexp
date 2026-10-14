@@ -1,0 +1,2 @@
+ALTER TABLE "abastecimento" ADD COLUMN "motorista_id" uuid;--> statement-breakpoint
+ALTER TABLE "abastecimento" ADD CONSTRAINT "abastecimento_motorista_id_colaborador_id_fk" FOREIGN KEY ("motorista_id") REFERENCES "public"."colaborador"("id") ON DELETE no action ON UPDATE no action;
