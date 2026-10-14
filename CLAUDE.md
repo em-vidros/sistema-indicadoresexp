@@ -56,6 +56,14 @@ Para mudar o banco: altere o schema em `packages/db/src/schema`, rode `bun run d
 aplique no banco local com `bun run db:migrate` e commite a migração junto com o código
 que a usa.
 
+Sem Bun na máquina, pule o `db:generate`: commite o schema alterado e dê push na `main`.
+O workflow de deploy roda o `db:generate`, commita a migração gerada na `main` em nome do
+`github-actions[bot]`, aplica no banco e só então publica. Depois do run, `git pull --rebase`
+antes do próximo commit, porque a `main` ganhou esse commit do bot. Não peça ao Henrique
+para gerar migração. Se o drizzle-kit precisar de confirmação (rename ambíguo de coluna ou
+tabela), o passo falha, o deploy para e a produção fica intacta; aí siga a regra das duas
+etapas abaixo, que evita rename.
+
 Como a migração entra no banco alguns minutos antes do código novo, ela precisa funcionar
 com o código que ainda está no ar. Criar tabela, criar coluna que aceita nulo ou tem padrão
 e criar índice são seguros. Apagar ou renomear coluna e tabela vai em duas etapas: primeiro

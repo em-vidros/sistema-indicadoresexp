@@ -28,7 +28,7 @@ jobs:
   publicar:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -45,13 +45,25 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         if: github.event_name == 'push'
 
-      - name: aplica as migracoes no banco de producao
+      - name: gera e aplica as migracoes no banco de producao
         if: github.event_name == 'push'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
           DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+        # Quem altera o schema sem ter o Bun na maquina (a Livia) nao consegue rodar
+        # `db:generate`. O CI gera a migracao que faltar, commita na main e aplica.
+        # Rename ambiguo faz o drizzle-kit pedir confirmacao; sem terminal ele falha
+        # ou estoura o timeout, e o deploy para antes de tocar no banco.
         run: |
           bun install --frozen-lockfile
+          timeout 120 bun run db:generate < /dev/null
+          if [ -n "$(git status --porcelain packages/db/src/migrations)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+            git add packages/db/src/migrations
+            git commit -m "migracao: gerada pelo CI a partir de ${GITHUB_SHA::7}"
+            git push origin HEAD:main
+          fi
           bun run db:migrate
 
       - name: publica na Vercel
