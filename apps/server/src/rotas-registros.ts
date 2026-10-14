@@ -32,6 +32,7 @@ const Viagem = z.object({
   hora_saida: HoraOuNula.optional().default(null),
   data_chegada: DataOuNula.optional().default(null),
   hora_prevista: HoraOuNula.optional().default(null),
+  data_prevista: DataOuNula.optional().default(null),
   hora_chegada: HoraOuNula.optional().default(null),
   motorista: z.string().trim().min(1),
   veiculo: z.string().trim().min(1),
@@ -53,9 +54,8 @@ const Viagem = z.object({
    * Os outros CHECK da viagem ja estao cobertos campo a campo aqui em cima: o
    * `viagem_nao_negativo_ck` pelo `positive()` do `valor_carga` mais o
    * `nonnegative()` de km, combustivel, diarias, m2 e peso; o `viagem_chegada_ck`
-   * e o `viagem_previsao_ck` pelo proprio `salvarViagem`, que so grava a chegada
-   * quando as tres partes vieram e so preenche `data_prevista` quando ha hora
-   * prevista.
+   * pelo proprio `salvarViagem`, que so grava a chegada quando as tres partes
+   * vieram.
    */
   .superRefine((entrada, contexto) => {
     // `viagem_custo_ck`. Cada parcela pode ser zero; a soma nao.
@@ -64,6 +64,15 @@ const Viagem = z.object({
         code: 'custom',
         message: 'informe combustível ou diárias: a soma dos dois tem que ser maior que zero',
         path: ['combustivel'],
+      })
+    }
+    // `viagem_previsao_ck`. Data prevista sem hora prevista nao da para comparar
+    // instante com instante -- so sobraria o dia, e `atraso_min` ficaria mudo.
+    if (entrada.data_prevista && !entrada.hora_prevista) {
+      contexto.addIssue({
+        code: 'custom',
+        message: 'informe a hora prevista de chegada junto com a data prevista',
+        path: ['data_prevista'],
       })
     }
     // `viagem_chegada_ordem_ck`. Com hora dos dois lados compara o instante,

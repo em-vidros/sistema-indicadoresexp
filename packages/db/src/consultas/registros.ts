@@ -26,6 +26,7 @@ export type EntradaViagem = {
   hora_saida: string | null
   data_chegada: string | null
   hora_prevista: string | null
+  data_prevista: string | null
   hora_chegada: string | null
   motorista: string
   veiculo: string
@@ -116,7 +117,7 @@ async function valoresDaViagem(tx: Escritor, usuarioId: string, entrada: Entrada
       rotaId,
       dataSaida: entrada.data_saida,
       horaSaida: entrada.hora_saida,
-      dataPrevista: entrada.hora_prevista ? entrada.data_chegada : null,
+      dataPrevista: entrada.data_prevista,
       horaPrevista: entrada.hora_prevista,
       dataChegada: chegadaCompleta ? entrada.data_chegada : null,
       horaChegada: chegadaCompleta ? entrada.hora_chegada : null,
@@ -186,6 +187,7 @@ export async function listarRegistros(db: Db, usuarioId: string, nomeBase?: stri
         hora_saida: viagem.horaSaida,
         data_chegada: viagem.dataChegada,
         hora_prevista: viagem.horaPrevista,
+        data_prevista: viagem.dataPrevista,
         hora_chegada: viagem.horaChegada,
         motorista: colaborador.nome,
         veiculo: veiculo.placa,

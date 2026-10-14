@@ -21,6 +21,7 @@ import {
   AreaDeTexto,
   Caixa,
   Campo,
+  CampoDeArquivo,
   Chips,
   Dialogo,
   GradeDeCampos,
@@ -28,7 +29,7 @@ import {
   TituloDeSecao,
   useAvisos,
 } from '../geist/formulario.tsx'
-import { Buildings, Check, Icone, MoreHorizontal, PencilEdit, Plus, Trash } from '../geist/icones.tsx'
+import { Buildings, Check, CloudUpload, Icone, MoreHorizontal, PencilEdit, Plus, Trash } from '../geist/icones.tsx'
 import {
   Abas,
   Badge,
@@ -111,6 +112,7 @@ type Viagem = {
   readonly horaSaida: string
   readonly dataChegada: string
   readonly horaPrevista: string
+  readonly dataPrevista: string
   readonly horaChegada: string
   readonly motorista: string
   readonly veiculo: string
@@ -236,10 +238,36 @@ function minutosDaHora(hora: string): number | null {
   return partes.length < 2 || !Number.isFinite(h) || !Number.isFinite(m) ? null : h * 60 + m
 }
 
-/** Positivo e atraso, negativo e adiantamento. Sem as duas horas nao ha o que comparar. */
+/** Minutos desde a epoca, juntando data e hora -- o unico jeito de comparar dois
+ * instantes que podem cair em dias diferentes. */
+function instanteEmMinutos(data: string, hora: string): number | null {
+  const minutosHora = minutosDaHora(hora)
+  if (data === '' || minutosHora === null) return null
+  const diaMs = Date.parse(`${data}T00:00:00Z`)
+  return Number.isNaN(diaMs) ? null : diaMs / 60000 + minutosHora
+}
+
+/**
+ * Positivo e atraso, negativo e adiantamento. So a hora, mesmo dia assumido -- e a
+ * pontualidade da ROTA (o trecho rodado), que nao muda: quem mexeu foi o calculo da
+ * pontualidade da ENTREGA, em `atrasoDaEntregaDe`, que e outra coisa.
+ */
 function atrasoDe(viagem: Viagem): number | null {
   const prevista = minutosDaHora(viagem.horaPrevista)
   const chegada = minutosDaHora(viagem.horaChegada)
+  return prevista === null || chegada === null ? null : chegada - prevista
+}
+
+/**
+ * Positivo e atraso, negativo e adiantamento. Compara o instante inteiro -- data e
+ * hora --, e nao so a hora: uma entrega planejada para 14/10 e feita em 16/10 e dois
+ * dias de atraso, nao a diferenca de hora dentro do mesmo dia. Mesma formula do
+ * `atraso_min` gerado no banco (`schema/registro.ts`), e o numero que alimenta a
+ * pontualidade do Painel/Visao geral.
+ */
+function atrasoDaEntregaDe(viagem: Viagem): number | null {
+  const prevista = instanteEmMinutos(viagem.dataPrevista, viagem.horaPrevista)
+  const chegada = instanteEmMinutos(viagem.dataChegada, viagem.horaChegada)
   return prevista === null || chegada === null ? null : chegada - prevista
 }
 
@@ -247,6 +275,20 @@ function rotuloDaPontualidade(atraso: number): string {
   if (atraso > 0) return 'Atrasado'
   if (atraso < 0) return 'Adiantado'
   return 'No prazo'
+}
+
+/** `2d 4h`, `45min` -- os minutos crus de uma entrega atrasada em dias ficam ilegiveis. */
+function duracao(totalMinutos: number): string {
+  const total = Math.abs(totalMinutos)
+  const dias = Math.floor(total / 1440)
+  const horas = Math.floor((total % 1440) / 60)
+  const minutos = Math.round(total % 60)
+  const partes = [
+    dias > 0 ? `${dias}d` : null,
+    horas > 0 ? `${horas}h` : null,
+    (minutos > 0 || (dias === 0 && horas === 0)) ? `${minutos}min` : null,
+  ]
+  return partes.filter((p): p is string => p !== null).join(' ')
 }
 
 function diasEntre(inicio: string, fim: string): number | null {
@@ -274,6 +316,7 @@ function rascunhoVazio(): Rascunho {
       horaSaida: '',
       dataChegada: hoje,
       horaPrevista: '',
+      dataPrevista: hoje,
       horaChegada: '',
       motorista: '',
       veiculo: '',
@@ -353,6 +396,9 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
       }
     }
     const kmChegada = inteiro(viagem.kmChegada)
+    // Sem hora prevista a data prevista fica sem com o que comparar -- `viagem_previsao_ck`
+    // recusa uma sem a outra, entao as duas andam juntas ou as duas somem.
+    const dataPrevista = viagem.horaPrevista && viagem.dataPrevista ? viagem.dataPrevista : null
     return {
       registros: [{
         tipo: 'viagem',
@@ -361,6 +407,7 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
         hora_saida: viagem.horaSaida,
         data_chegada: viagem.dataChegada,
         hora_prevista: viagem.horaPrevista,
+        data_prevista: dataPrevista,
         hora_chegada: viagem.horaChegada,
         motorista: viagem.motorista.trim(),
         veiculo,
@@ -493,6 +540,9 @@ const LEITORES_DE_RASCUNHO: Readonly<Record<Tipo, (linhas: readonly Registro[], 
         horaSaida: horaCurta(r, 'hora_saida'),
         dataChegada: texto(r, 'data_chegada'),
         horaPrevista: horaCurta(r, 'hora_prevista'),
+        // Registro antigo sem data prevista propria cai na data de chegada, a mesma
+        // suposicao de "mesmo dia" que a tela usava antes deste campo existir.
+        dataPrevista: texto(r, 'data_prevista') || texto(r, 'data_chegada') || hojeISO(),
         horaChegada: horaCurta(r, 'hora_chegada'),
         motorista: texto(r, 'motorista'),
         veiculo: texto(r, 'veiculo'),
@@ -721,6 +771,7 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
   const v = f.rascunho.viagem
   const custo = decimal(v.combustivel) + decimal(v.diarias)
   const atraso = atrasoDe(v)
+  const atrasoEntrega = atrasoDaEntregaDe(v)
   return [
     {
       col: [1, 13],
@@ -793,6 +844,13 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
               aoMudar={(valor) => f.mudarViagem('horaSaida', valor)}
             />
             <Campo
+              tipo="data"
+              rotulo="Data prevista de chegada"
+              span={2}
+              valor={v.dataPrevista}
+              aoMudar={(valor) => f.mudarViagem('dataPrevista', valor)}
+            />
+            <Campo
               tipo="hora"
               rotulo="Hora prevista de chegada"
               span={2}
@@ -808,7 +866,7 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
             />
             <Campo
               tipo="calculado"
-              rotulo="Status de pontualidade"
+              rotulo="Status de pontualidade da rota"
               mono
               valor={atraso === null ? '' : rotuloDaPontualidade(atraso)}
             />
@@ -887,7 +945,7 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
       linha: 2,
       conteudo: (
         <>
-          <TituloDeSecao titulo="Pontualidade" subtitulo="A diferença entre a hora prevista e a hora real de chegada" />
+          <TituloDeSecao titulo="Pontualidade da rota" subtitulo="A diferença entre a hora prevista e a hora real de chegada" />
           {atraso !== null && atraso > 0
             ? (
               <>
@@ -900,6 +958,33 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
             : (
               <div className="g-l13 g-fraco">
                 A pontualidade é calculada a partir da hora prevista e da hora real de chegada.
+              </div>
+            )}
+        </>
+      ),
+    },
+    {
+      col: [1, 13],
+      linha: 3,
+      conteudo: (
+        <>
+          <TituloDeSecao
+            titulo="Pontualidade da entrega"
+            subtitulo="A diferença entre a data e hora previstas e a data e hora reais de chegada, mesmo quando atravessa dias"
+          />
+          {atrasoEntrega !== null && atrasoEntrega > 0
+            ? (
+              <>
+                <div className="g-secao"><Badge cor="ambar" rotulo={`Atrasada em ${duracao(atrasoEntrega)}`} /></div>
+                <div className="g-l13 g-fraco">
+                  A entrega chegou depois do dia planejado. Quando a data real passa da data prevista, o
+                  atraso conta os dias, não só as horas.
+                </div>
+              </>
+            )
+            : (
+              <div className="g-l13 g-fraco">
+                A pontualidade da entrega é calculada a partir da data prevista e da data real de chegada.
               </div>
             )}
         </>
@@ -1216,6 +1301,192 @@ const CELULAS: Readonly<Record<Tipo, (f: Ferramentas) => readonly Celula[]>> = {
   quebra: celulasDeQuebra,
 }
 
+// ---------- importar pontualidade da entrega ----------
+//
+// Nao cria viagem nenhuma: so troca a data e a hora previstas de chegada de uma
+// viagem ja lancada, pela mesma rota PUT /registros/:id que o lapis da tela usa.
+// A fabrica manda a data planejada de cada entrega numa planilha; ate existir
+// integracao de verdade entre os dois sistemas (ver docs/planos/roteiro.md), o
+// CSV e a ponte.
+
+type LinhaPontualidade = {
+  readonly placa: string
+  readonly data: string
+  readonly dataPrevista: string
+  readonly horaPrevista: string
+}
+
+function lerCsvPontualidade(
+  conteudo: string,
+): { readonly achadas: readonly LinhaPontualidade[]; readonly erros: readonly string[] } {
+  const linhas = conteudo.split('\n').map((l) => l.trim()).filter(Boolean)
+  const [cabecalhoBruto, ...corpo] = linhas
+  if (cabecalhoBruto === undefined || corpo.length === 0) return { achadas: [], erros: [] }
+  const cabecalho = cabecalhoBruto.split(',').map((h) => h.trim().toLowerCase())
+  const achadas: LinhaPontualidade[] = []
+  const erros: string[] = []
+  corpo.forEach((bruta, i) => {
+    const colunas = bruta.split(',')
+    const linha: Record<string, string> = {}
+    cabecalho.forEach((h, j) => {
+      linha[h] = (colunas[j] ?? '').trim()
+    })
+    if (!linha.placa || !linha.data || !linha['data_prevista'] || !linha['hora_prevista']) {
+      erros.push(`Linha ${i + 2}: faltou placa, data, data_prevista ou hora_prevista`)
+      return
+    }
+    achadas.push({
+      placa: linha.placa.toUpperCase(),
+      data: linha.data,
+      dataPrevista: linha['data_prevista'],
+      horaPrevista: linha['hora_prevista'],
+    })
+  })
+  return { achadas, erros }
+}
+
+/** Reaproveita a viagem ja salva, trocando so a data e a hora previstas de chegada. */
+function viagemComPontualidade(r: Registro, dataPrevista: string, horaPrevista: string): Registro {
+  return {
+    tipo: 'viagem',
+    base: texto(r, 'base'),
+    data_saida: texto(r, 'data_saida'),
+    hora_saida: horaCurta(r, 'hora_saida') || null,
+    data_chegada: texto(r, 'data_chegada') || null,
+    hora_chegada: horaCurta(r, 'hora_chegada') || null,
+    data_prevista: dataPrevista,
+    hora_prevista: horaPrevista,
+    motorista: texto(r, 'motorista'),
+    veiculo: texto(r, 'veiculo'),
+    rota: texto(r, 'rota'),
+    km_saida: numero(r, 'km_saida'),
+    km_chegada: numero(r, 'km_chegada') || null,
+    valor_carga: numero(r, 'valor_carga'),
+    combustivel: numero(r, 'combustivel'),
+    diarias: numero(r, 'diarias'),
+    m2: numero(r, 'm2'),
+    peso_kg: numero(r, 'peso_kg'),
+    observacao: texto(r, 'observacao'),
+  }
+}
+
+type ResultadoLinha =
+  & { readonly linha: LinhaPontualidade }
+  & ({ readonly estado: 'ok' } | { readonly estado: 'erro'; readonly motivo: string })
+
+function DialogoImportarPontualidade({ registros, aoFechar }: {
+  readonly registros: readonly Registro[]
+  readonly aoFechar: () => void
+}): JSX.Element {
+  const { avisar } = useAvisos()
+  const [nomeDoArquivo, setNomeDoArquivo] = useState<string | null>(null)
+  const [linhas, setLinhas] = useState<readonly LinhaPontualidade[]>([])
+  const [errosDoArquivo, setErrosDoArquivo] = useState<readonly string[]>([])
+  const [enviando, setEnviando] = useState(false)
+  const [resultados, setResultados] = useState<readonly ResultadoLinha[]>([])
+
+  const escolher = (arquivo: File): void => {
+    setNomeDoArquivo(arquivo.name)
+    const leitor = new FileReader()
+    leitor.onload = () => {
+      const { achadas, erros } = lerCsvPontualidade(String(leitor.result))
+      setLinhas(achadas)
+      setErrosDoArquivo(erros)
+      setResultados([])
+    }
+    leitor.readAsText(arquivo, 'UTF-8')
+  }
+
+  async function importar(): Promise<void> {
+    setEnviando(true)
+    const saida: ResultadoLinha[] = []
+    for (const linha of linhas) {
+      const compativeis = registros.filter((r) =>
+        r.tipo === 'viagem' && texto(r, 'veiculo') === linha.placa && texto(r, 'data_saida') === linha.data
+      )
+      const [registro, ...resto] = compativeis
+      if (registro === undefined) {
+        saida.push({ linha, estado: 'erro', motivo: 'nenhuma viagem encontrada com essa placa e data' })
+        continue
+      }
+      if (resto.length > 0) {
+        saida.push({ linha, estado: 'erro', motivo: 'mais de uma viagem com essa placa e data; corrija pelo histórico' })
+        continue
+      }
+      try {
+        await atualizarRegistro(
+          texto(registro, 'id'),
+          [viagemComPontualidade(registro, linha.dataPrevista, linha.horaPrevista)],
+        )
+        saida.push({ linha, estado: 'ok' })
+      } catch (falha) {
+        saida.push({ linha, estado: 'erro', motivo: falha instanceof Error ? falha.message : 'não foi possível salvar' })
+      }
+    }
+    setResultados(saida)
+    setEnviando(false)
+    invalidar('registros')
+    const ok = saida.filter((r) => r.estado === 'ok').length
+    avisar(`${ok} de ${saida.length} viagens atualizadas.`, ok === saida.length ? 'ok' : 'erro')
+  }
+
+  return (
+    <Dialogo
+      aberto
+      titulo="Importar pontualidade da entrega"
+      subtitulo="O CSV precisa das colunas placa, data, data_prevista e hora_prevista. A data é a de saída da viagem já lançada."
+      largura={640}
+      aoFechar={aoFechar}
+      acoes={
+        <>
+          <Botao tipo="terciario" rotulo="Fechar" aoClicar={aoFechar} />
+          {linhas.length === 0
+            ? null
+            : (
+              <Botao
+                tipo="primario"
+                rotulo="Importar"
+                antes={CloudUpload}
+                carregando={enviando}
+                aoClicar={() => void importar()}
+              />
+            )}
+        </>
+      }
+    >
+      <GradeDeCampos>
+        <CampoDeArquivo
+          rotulo="Arquivo CSV"
+          span={12}
+          aceita=".csv,text/csv"
+          texto="Arraste o CSV ou clique"
+          aoEscolher={escolher}
+          {...(nomeDoArquivo === null ? {} : { arquivo: nomeDoArquivo })}
+        />
+      </GradeDeCampos>
+      {linhas.length === 0 && errosDoArquivo.length === 0
+        ? null
+        : (
+          <div className="g-secao">
+            <span className="g-l14">
+              <span className="g-forte">{`${linhas.length} linhas`}</span>
+              {' encontradas para importar'}
+              {errosDoArquivo.length === 0
+                ? null
+                : <>{' · '}<span className="g-tom-critico">{`${errosDoArquivo.length} com erro no arquivo`}</span></>}
+            </span>
+          </div>
+        )}
+      {errosDoArquivo.map((erro) => <div className="g-l13 g-tom-critico" key={erro}>{erro}</div>)}
+      {resultados.map((r, i) => (
+        <div className={`g-l13 ${r.estado === 'erro' ? 'g-tom-critico' : 'g-tom-ok'}`} key={i}>
+          {`${r.linha.placa} · ${dataBr(r.linha.data)}: ${r.estado === 'ok' ? 'atualizada' : r.motivo}`}
+        </div>
+      ))}
+    </Dialogo>
+  )
+}
+
 // ---------- tela ----------
 
 const CHAVE_DA_BASE = 'registrar.base'
@@ -1256,6 +1527,7 @@ export default function Registrar(): JSX.Element {
   /** O lancamento esperando confirmacao para apagar, ou nulo com o dialogo fechado. */
   const [apagando, setApagando] = useState<Registro | null>(null)
   const [apagandoEmProgresso, setApagandoEmProgresso] = useState(false)
+  const [importandoPontualidade, setImportandoPontualidade] = useState(false)
 
   // O admin comeca na base do ultimo lancamento desta maquina, e nao numa tela vazia
   // pedindo um clique; quem lanca todo dia lanca quase sempre na mesma base.
@@ -1587,6 +1859,9 @@ export default function Registrar(): JSX.Element {
   const itensDoMenu = [
     { rotulo: 'Exportar JSON', aoEscolher: exportar },
     { rotulo: 'Limpar registros de hoje', aoEscolher: () => setLimpezaAberta(true) },
+    ...(sessao.tipos.includes('viagem')
+      ? [{ rotulo: 'Importar pontualidade da entrega', aoEscolher: () => setImportandoPontualidade(true) }]
+      : []),
     ...(sessao.capacidades.todasAsBases && base !== null
       ? [{
         rotulo: `${mesAnteriorFechado ? 'Reabrir' : 'Fechar'} ${mesAnterior.slice(0, 7)} desta base`,
@@ -1711,6 +1986,10 @@ export default function Registrar(): JSX.Element {
           })()}
         </div>
       </Dialogo>
+
+      {importandoPontualidade
+        ? <DialogoImportarPontualidade registros={daBase} aoFechar={() => setImportandoPontualidade(false)} />
+        : null}
     </>
   )
 }

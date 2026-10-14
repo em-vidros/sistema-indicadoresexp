@@ -109,6 +109,50 @@ describe('registros operacionais no banco', () => {
   })
 })
 
+describe('pontualidade da entrega atravessa dias', () => {
+  const ler = async (base: string) =>
+    (await (await pedir(`/api/registros?base=${encodeURIComponent(base)}`, { headers: { cookie: livia } })).json()) as Array<
+      Record<string, unknown>
+    >
+
+  test('entrega planejada pra um dia e feita dois dias depois conta em minutos, nao so a hora', async () => {
+    const resposta = await pedir('/api/registros', {
+      method: 'POST',
+      headers: { cookie: livia, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        registros: [{
+          ...viagem,
+          data_saida: '2026-09-12',
+          data_prevista: '2026-09-12',
+          hora_prevista: '18:00',
+          data_chegada: '2026-09-14',
+          hora_chegada: '08:00',
+        }],
+      }),
+    })
+    expect(resposta.status).toBe(201)
+    const [salva] = (await resposta.json()) as Array<{ id: string }>
+    viagens.push(salva!.id)
+
+    const lista = await ler('Imperatriz')
+    // De 12/09 18:00 (previsto) a 14/09 08:00 (real): 38 horas = 2280 min.
+    expect(lista).toContainEqual(expect.objectContaining({ id: salva!.id, atraso_min: 2280 }))
+  })
+
+  test('data prevista sem hora prevista é 400, porque não dá pra comparar instante com instante', async () => {
+    const resposta = await pedir('/api/registros', {
+      method: 'POST',
+      headers: { cookie: livia, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        registros: [{ ...viagem, data_saida: '2026-09-13', hora_prevista: null, data_prevista: '2026-09-13' }],
+      }),
+    })
+    expect(resposta.status).toBe(400)
+    const corpo = (await resposta.json()) as { erro: string }
+    expect(corpo.erro).toMatch(/hora prevista/i)
+  })
+})
+
 const DIA = '2026-09-03'
 const OUTRO_DIA = '2026-09-04'
 
