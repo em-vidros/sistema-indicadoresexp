@@ -40,6 +40,7 @@ export const BASES = {
   todas: { rotulo: 'Todas', naCasca: 'Todas as bases', noRelatorio: 'Todas as Bases' },
   Raposa: { rotulo: 'Raposa', naCasca: 'Raposa', noRelatorio: 'Raposa' },
   Imperatriz: { rotulo: 'Imperatriz', naCasca: 'Imperatriz', noRelatorio: 'Imperatriz' },
+  Belém: { rotulo: 'Belém', naCasca: 'Belém', noRelatorio: 'Belém' },
 } as const
 
 export type Base = keyof typeof BASES
