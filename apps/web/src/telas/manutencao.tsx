@@ -29,6 +29,7 @@ import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import { invalidar, useRecurso, useSessao } from '../app/dados.ts'
 import { navegar } from '../app/navegacao.tsx'
+import { lerNumero } from '../dashboard/digitado.ts'
 import {
   Campo,
   CampoDeArquivo,
@@ -489,7 +490,7 @@ function DialogoDoPlano({ veiculo, tipos, aoFechar }: {
 
   const adicionar = async (): Promise<void> => {
     const nome = formulario.tipo === OUTRO ? formulario.descricao.trim() : formulario.tipo
-    const intervalo = Number.parseInt(formulario.intervalo, 10) || 0
+    const intervalo = Math.trunc(lerNumero(formulario.intervalo)) || 0
     const achados: Erros = {
       tipo: formulario.tipo === '' ? 'Escolha o tipo de manutenção.' : null,
       descricao: formulario.tipo === OUTRO && nome === '' ? 'Escreva a descrição do item.' : null,
@@ -500,8 +501,8 @@ function DialogoDoPlano({ veiculo, tipos, aoFechar }: {
     const novo: EntradaItemPreventivo = {
       tipo: nome,
       intervalo_km: intervalo,
-      alerta_km: Number.parseInt(formulario.alerta, 10) || 500,
-      ultimo_km: Number.parseInt(formulario.ultimo, 10) || null,
+      alerta_km: Math.trunc(lerNumero(formulario.alerta)) || 500,
+      ultimo_km: Math.trunc(lerNumero(formulario.ultimo)) || null,
       obs: null,
     }
     if (await gravar([...veiculo.itens.map(paraEntrada), novo], 'Item adicionado')) {

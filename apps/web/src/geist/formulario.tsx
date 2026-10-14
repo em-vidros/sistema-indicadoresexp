@@ -62,9 +62,15 @@ export type CampoProps =
   | (Editavel & { readonly tipo: 'select'; readonly opcoes: readonly Opcao[] })
   | (Comum & { readonly tipo: 'calculado' })
 
+/**
+ * `numero` e texto, e nao o `<input type="number">` nativo: o navegador so aceita ponto
+ * como decimal nesse tipo, entao "1.000" vira 1 em vez de mil. Como texto livre, quem
+ * digita no padrao brasileiro (ponto de milhar, virgula decimal) e lido do jeito que
+ * escreveu -- a leitura fica por conta de `lerNumero`, em quem le o campo.
+ */
 const ENTRADA_DO_TIPO: Readonly<Record<'texto' | 'numero' | 'data' | 'hora' | 'dinheiro', string>> = {
   texto: 'text',
-  numero: 'number',
+  numero: 'text',
   data: 'date',
   hora: 'time',
   dinheiro: 'text',
@@ -152,7 +158,6 @@ export function Campo(props: CampoProps): JSX.Element {
         ref={campo}
         className={classes('g-campo-entrada', mono && 'g-l14m')}
         type={ENTRADA_DO_TIPO[props.tipo ?? 'texto']}
-        step={props.tipo === 'numero' ? 'any' : undefined}
         inputMode={props.tipo === 'dinheiro' || props.tipo === 'numero' ? 'decimal' : undefined}
         value={valor}
         placeholder={dica}

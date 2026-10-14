@@ -177,13 +177,16 @@ function decimal(valor: string): number {
   return lerNumero(valor)
 }
 
-/** Campos numéricos nativos devolvem ponto decimal, sem separador de milhar. */
-function numeroDoCampo(valor: string): number {
+/**
+ * O valor por litro tem tres casas (`5.899`) e nunca chega a mil: sem `milhar: false`
+ * aqui, o ponto desse preco seria lido como separador de milhar e 5,899 viraria 5899.
+ */
+function valorPorLitro(valor: string): number {
   return lerNumero(valor, { milhar: false })
 }
 
 function inteiro(valor: string): number {
-  return Math.trunc(lerNumero(valor, { milhar: false }))
+  return Math.trunc(lerNumero(valor))
 }
 
 function duasCasas(valor: number): string {
@@ -332,13 +335,15 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
     const valorCarga = decimal(viagem.valorCarga)
     const combustivel = decimal(viagem.combustivel)
     const diarias = decimal(viagem.diarias)
+    const m2 = decimal(viagem.m2)
+    const peso = decimal(viagem.peso)
     if (
       viagem.dataSaida === '' || viagem.motorista.trim() === '' || veiculo === ''
-      || viagem.rota.trim() === '' || valorCarga <= 0 || combustivel + diarias <= 0
+      || viagem.rota.trim() === '' || valorCarga <= 0 || combustivel + diarias <= 0 || m2 <= 0 || peso <= 0
     ) {
       return {
         erro:
-          'Preencha os campos obrigatórios: data de saída, motorista, veículo, rota, valor da carga, combustível e diárias.',
+          'Preencha os campos obrigatórios: data de saída, motorista, veículo, rota, m² total, peso da carga, valor da carga, combustível e diárias.',
       }
     }
     const kmChegada = inteiro(viagem.kmChegada)
@@ -359,8 +364,8 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
         valor_carga: valorCarga,
         combustivel,
         diarias,
-        m2: numeroDoCampo(viagem.m2),
-        peso_kg: numeroDoCampo(viagem.peso),
+        m2,
+        peso_kg: peso,
         observacao: viagem.observacao.trim(),
       }],
     }
@@ -379,8 +384,8 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
 
     if (!abastecimento.longa) {
       const parada = abastecimento.paradas[0]
-      const litros = numeroDoCampo(parada.litros)
-      const vlLitro = numeroDoCampo(parada.vlLitro)
+      const litros = decimal(parada.litros)
+      const vlLitro = valorPorLitro(parada.vlLitro)
       if (litros <= 0 || vlLitro <= 0) return { erro: 'Preencha os litros e o valor por litro.' }
       return {
         registros: [{
@@ -397,12 +402,12 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
 
     const registros: Registro[] = []
     abastecimento.paradas.forEach((parada, i) => {
-      const litros = numeroDoCampo(parada.litros)
+      const litros = decimal(parada.litros)
       if (litros <= 0) return
       registros.push({
         ...comum,
         litros,
-        vl_litro: numeroDoCampo(parada.vlLitro),
+        vl_litro: valorPorLitro(parada.vlLitro),
         km: inteiro(parada.km) || null,
         posto: parada.posto.trim(),
         slot: ROTULOS_DE_PARADA[i] ?? null,
@@ -440,7 +445,7 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
   },
 
   quebra: ({ quebra }, base) => {
-    const expedido = numeroDoCampo(quebra.m2Expedido)
+    const expedido = decimal(quebra.m2Expedido)
     if (quebra.data === '' || expedido <= 0) return { erro: 'Preencha a data e o m² expedido.' }
     return {
       registros: [{
@@ -448,7 +453,7 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
         base,
         data: quebra.data,
         m2_expedido: expedido,
-        m2_quebrado: numeroDoCampo(quebra.m2Quebrado),
+        m2_quebrado: decimal(quebra.m2Quebrado),
         observacao: quebra.observacao.trim(),
       }],
     }
@@ -796,6 +801,7 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
               tipo="numero"
               rotulo="m² total da carga"
               span={2}
+              obrigatorio
               mono
               valor={v.m2}
               aoMudar={(valor) => f.mudarViagem('m2', valor)}
@@ -804,6 +810,7 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
               tipo="numero"
               rotulo="Peso da carga em kg"
               span={2}
+              obrigatorio
               mono
               valor={v.peso}
               aoMudar={(valor) => f.mudarViagem('peso', valor)}
@@ -888,9 +895,9 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
 
 function celulasDeAbastecimento(f: Ferramentas): readonly Celula[] {
   const a = f.rascunho.abastecimento
-  const cheias = a.paradas.filter((parada) => numeroDoCampo(parada.litros) > 0)
-  const litros = cheias.reduce((soma, parada) => soma + numeroDoCampo(parada.litros), 0)
-  const total = cheias.reduce((soma, parada) => soma + numeroDoCampo(parada.litros) * numeroDoCampo(parada.vlLitro), 0)
+  const cheias = a.paradas.filter((parada) => decimal(parada.litros) > 0)
+  const litros = cheias.reduce((soma, parada) => soma + decimal(parada.litros), 0)
+  const total = cheias.reduce((soma, parada) => soma + decimal(parada.litros) * valorPorLitro(parada.vlLitro), 0)
   const kms = a.paradas.map((parada) => inteiro(parada.km)).filter((km) => km > 0)
   const primeiro = kms[0]
   const rodados = primeiro === undefined ? 0 : Math.max(...kms) - primeiro
@@ -1172,7 +1179,7 @@ function celulasDeQuebra(f: Ferramentas): readonly Celula[] {
               rotulo="% de quebra"
               span={6}
               mono
-              valor={pct(numeroDoCampo(q.m2Quebrado), numeroDoCampo(q.m2Expedido))}
+              valor={pct(decimal(q.m2Quebrado), decimal(q.m2Expedido))}
             />
             <AreaDeTexto
               rotulo="Observação"
