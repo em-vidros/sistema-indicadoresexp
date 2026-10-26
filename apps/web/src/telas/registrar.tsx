@@ -48,6 +48,7 @@ import type { Celula, CorDeBadge, Opcao } from '../geist/primitivos.tsx'
 import { obterCadastro } from '../js/cadastro-api.ts'
 import type { CatalogoCadastro } from '../js/cadastro-api.ts'
 import { fecharMes, listarFechamentos, reabrirMes } from '../js/fechamentos-api.ts'
+import { obterPreventiva } from '../js/preventiva-api.ts'
 import {
   apagarRegistro,
   apagarRegistrosDoDia,
@@ -102,6 +103,9 @@ const OPCOES_DE_MANUTENCAO: readonly Opcao<TipoDeManutencao>[] = [
   { valor: 'preventiva', rotulo: 'Preventiva' },
   { valor: 'corretiva', rotulo: 'Corretiva' },
 ]
+
+/** O sentinela de "nao esta no catalogo", o mesmo padrao que a Frota ja usa no plano preventivo. */
+const OUTRO_SERVICO = '__outro__'
 
 type Parada = { readonly litros: string; readonly vlLitro: string; readonly km: string; readonly posto: string }
 
@@ -763,6 +767,8 @@ type Ferramentas = {
   readonly motoristas: readonly Opcao[]
   readonly veiculos: readonly Opcao[]
   readonly rotas: readonly Opcao[]
+  /** O catalogo de tipos de preventiva, o mesmo que a Frota usa pra configurar o plano. */
+  readonly servicos: readonly Opcao[]
   /** A rota curta esconde o toggle de viagem longa e o desliga. */
   readonly rotaCurta: boolean
   readonly mudarViagem: (campo: keyof Viagem, valor: string) => void
@@ -1156,6 +1162,11 @@ function celulasDeAbastecimento(f: Ferramentas): readonly Celula[] {
 function celulasDeManutencao(f: Ferramentas): readonly Celula[] {
   const m = f.rascunho.manutencao
   const dias = diasEntre(m.dataEntrada, m.dataSaida)
+  // So a preventiva usa o catalogo: a corretiva e sempre um servico avulso, e forcar
+  // a escolha de um tipo preventivo ali so atrapalharia. "Outro" e o escape tanto para
+  // um servico que ainda nao esta no catalogo quanto para o historico anterior a ele.
+  const servicoNoCatalogo = f.servicos.some((o) => o.valor === m.servico)
+  const servicoSelecionado = m.servico === '' ? '' : (servicoNoCatalogo ? m.servico : OUTRO_SERVICO)
   return [
     {
       col: [1, 9],
@@ -1225,13 +1236,41 @@ function celulasDeManutencao(f: Ferramentas): readonly Celula[] {
               valor={m.fornecedor}
               aoMudar={(valor) => f.mudarManutencao('fornecedor', valor)}
             />
-            <Campo
-              rotulo="Serviço / descrição"
-              span={8}
-              obrigatorio
-              valor={m.servico}
-              aoMudar={(valor) => f.mudarManutencao('servico', valor)}
-            />
+            {m.tipoManutencao === 'preventiva'
+              ? (
+                <>
+                  <Campo
+                    tipo="select"
+                    rotulo="Serviço"
+                    span={servicoSelecionado === OUTRO_SERVICO ? 4 : 8}
+                    obrigatorio
+                    dica="Selecione o serviço"
+                    opcoes={[...f.servicos, { valor: OUTRO_SERVICO, rotulo: 'Outro (digitar abaixo)' }]}
+                    valor={servicoSelecionado}
+                    aoMudar={(valor) => f.mudarManutencao('servico', valor === OUTRO_SERVICO ? '' : valor)}
+                  />
+                  {servicoSelecionado === OUTRO_SERVICO
+                    ? (
+                      <Campo
+                        rotulo="Descrição do serviço"
+                        span={4}
+                        obrigatorio
+                        valor={m.servico}
+                        aoMudar={(valor) => f.mudarManutencao('servico', valor)}
+                      />
+                    )
+                    : null}
+                </>
+              )
+              : (
+                <Campo
+                  rotulo="Serviço / descrição"
+                  span={8}
+                  obrigatorio
+                  valor={m.servico}
+                  aoMudar={(valor) => f.mudarManutencao('servico', valor)}
+                />
+              )}
             <Campo
               tipo="dinheiro"
               rotulo="Valor"
@@ -1694,6 +1733,7 @@ export default function Registrar(): JSX.Element {
   const cadastro = useRecurso('cadastro', () => obterCadastro())
   const registros = useRecurso('registros', listarRegistros)
   const fechamentos = useRecurso('fechamentos', listarFechamentos)
+  const preventiva = useRecurso('preventiva', obterPreventiva)
 
   const [base, setBase] = useState<string | null>(null)
   const [tipoEscolhido, setTipoEscolhido] = useState<Tipo>('viagem')
@@ -1780,6 +1820,9 @@ export default function Registrar(): JSX.Element {
     .sort((a, b) => a.nome.localeCompare(b.nome))
   const rotas: readonly Opcao[] = rotasDaBase.map((r) => ({ valor: r.nome, rotulo: r.nome }))
   const rotaCurta = rotasDaBase.some((r) => r.nome === rascunho.abastecimento.rota && r.local)
+  const servicos: readonly Opcao[] = (preventiva.dados?.tipos ?? [])
+    .map((t) => ({ valor: t.tipo, rotulo: t.tipo }))
+    .sort((a, b) => a.rotulo.localeCompare(b.rotulo))
 
   const daBase = (registros.dados ?? []).filter((r) => r.base === base)
   const hoje = hojeISO()
@@ -1980,6 +2023,7 @@ export default function Registrar(): JSX.Element {
     motoristas,
     veiculos,
     rotas,
+    servicos,
     rotaCurta,
     mudarViagem,
     mudarAbastecimento,
