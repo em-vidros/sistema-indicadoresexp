@@ -15,7 +15,7 @@
  */
 import { and, eq, inArray, type SQL } from 'drizzle-orm'
 import type { Db } from '../index.ts'
-import { base, colaborador, rota, veiculo } from '../schema/cadastro.ts'
+import { base, colaborador, pneu, rota, veiculo } from '../schema/cadastro.ts'
 import { type BasePermitida, lerPermissao } from './permissao.ts'
 
 /**
@@ -89,12 +89,36 @@ async function exigirAlvo(
   if (!alvo || !alcance.ids.includes(alvo.baseId)) throw new CadastroInvalido(palavra, 404)
 }
 
+/** Como `exigirAlvo`, mas o pneu nao tem `baseId` proprio -- a base dele e a do veiculo. */
+async function exigirAlvoPneu(db: Leitor, id: string, alcance: Alcance): Promise<void> {
+  const [alvo] = await db
+    .select({ baseId: veiculo.baseId })
+    .from(pneu)
+    .innerJoin(veiculo, eq(veiculo.id, pneu.veiculoId))
+    .where(eq(pneu.id, id))
+  if (!alvo || !alcance.ids.includes(alvo.baseId)) throw new CadastroInvalido('pneu inexistente', 404)
+}
+
+/**
+ * Confirma que o veiculo do pneu esta no alcance e devolve a placa, pro
+ * `PneuCadastro` nao exigir uma segunda consulta so pra isso.
+ */
+async function veiculoDoAlcance(db: Leitor, alcance: Alcance, veiculoId: string): Promise<string> {
+  const [achado] = await db
+    .select({ baseId: veiculo.baseId, placa: veiculo.placa })
+    .from(veiculo)
+    .where(eq(veiculo.id, veiculoId))
+  if (!achado || !alcance.ids.includes(achado.baseId)) throw new CadastroInvalido('veículo fora das suas bases')
+  return achado.placa
+}
+
 // Um Map, e nao um literal de objeto: `constraint_name` vem do banco, e uma
 // constraint chamada `constructor` acharia o membro herdado do prototipo.
 const CONFLITOS = new Map([
   ['veiculo_placa_unique', 'já existe um veículo com essa placa'],
   ['rota_nome_base_uk', 'já existe uma rota com esse nome nessa base'],
   ['base_nome_unique', 'já existe uma base com esse nome'],
+  ['pneu_veiculo_posicao_uk', 'já existe um pneu ativo nessa posição desse veículo'],
 ])
 
 /**
@@ -130,8 +154,26 @@ export type VeiculoCadastro = {
   modelo: string | null
   marca: string | null
   ano: string | null
+  eixos: number | null
   baseId: string
   base: string
+  ativo: boolean
+}
+
+export type StatusPneu = (typeof pneu.$inferSelect)['status']
+
+export type PneuCadastro = {
+  id: string
+  veiculoId: string
+  placa: string
+  posicao: string
+  numeroFogo: string | null
+  marca: string | null
+  status: StatusPneu
+  recapagens: number
+  kmInstalado: number | null
+  dataInstalado: string | null
+  observacao: string | null
   ativo: boolean
 }
 
@@ -163,6 +205,7 @@ export type CatalogoCadastro = {
   veiculos: VeiculoCadastro[]
   colaboradores: ColaboradorCadastro[]
   rotas: RotaCadastro[]
+  pneus: PneuCadastro[]
 }
 
 export type EntradaBase = {
@@ -175,7 +218,21 @@ export type EntradaVeiculo = {
   marca: string | null
   modelo: string | null
   ano: string | null
+  eixos: number | null
   baseId: string
+  ativo: boolean
+}
+
+export type EntradaPneu = {
+  veiculoId: string
+  posicao: string
+  numeroFogo: string | null
+  marca: string | null
+  status: StatusPneu
+  recapagens: number
+  kmInstalado: number | null
+  dataInstalado: string | null
+  observacao: string | null
   ativo: boolean
 }
 
@@ -207,8 +264,23 @@ const CAMPOS_VEICULO = {
   modelo: veiculo.modelo,
   marca: veiculo.marca,
   ano: veiculo.ano,
+  eixos: veiculo.eixos,
   baseId: veiculo.baseId,
   ativo: veiculo.ativo,
+}
+
+const CAMPOS_PNEU = {
+  id: pneu.id,
+  veiculoId: pneu.veiculoId,
+  posicao: pneu.posicao,
+  numeroFogo: pneu.numeroFogo,
+  marca: pneu.marca,
+  status: pneu.status,
+  recapagens: pneu.recapagens,
+  kmInstalado: pneu.kmInstalado,
+  dataInstalado: pneu.dataInstalado,
+  observacao: pneu.observacao,
+  ativo: pneu.ativo,
 }
 
 const CAMPOS_COLABORADOR = {
@@ -252,7 +324,7 @@ export async function catalogoCadastro(
   // `ativo` da propria tabela deixava passar o veiculo de uma base desligada, e o
   // formulario o oferecia com uma base que nem aparece na lista.
   const visivel = (daBase: SQL, ...ativas: SQL[]): SQL => (todos ? daBase : and(daBase, ...ativas)!)
-  const [bases, veiculos, colaboradores, rotas] = await Promise.all([
+  const [bases, veiculos, colaboradores, rotas, pneus] = await Promise.all([
     db
       .select(CAMPOS_BASE)
       .from(base)
@@ -276,8 +348,15 @@ export async function catalogoCadastro(
       .innerJoin(base, eq(base.id, rota.baseId))
       .where(visivel(inArray(rota.baseId, permitidas), eq(rota.ativo, true), eq(base.ativo, true)))
       .orderBy(rota.nome),
+    db
+      .select({ ...CAMPOS_PNEU, placa: veiculo.placa })
+      .from(pneu)
+      .innerJoin(veiculo, eq(veiculo.id, pneu.veiculoId))
+      .innerJoin(base, eq(base.id, veiculo.baseId))
+      .where(visivel(inArray(veiculo.baseId, permitidas), eq(pneu.ativo, true), eq(veiculo.ativo, true), eq(base.ativo, true)))
+      .orderBy(veiculo.placa, pneu.posicao),
   ])
-  return { bases, veiculos, colaboradores, rotas }
+  return { bases, veiculos, colaboradores, rotas, pneus }
 }
 
 export async function criarVeiculo(
@@ -389,4 +468,33 @@ export async function atualizarBase(
   // entao nao ha id que ele enxergue e nao possa mudar.
   if (!salva) throw new CadastroInvalido('base inexistente', 404)
   return salva
+}
+
+export async function criarPneu(
+  db: Db,
+  usuarioId: string,
+  entrada: EntradaPneu,
+): Promise<PneuCadastro> {
+  const alcance = await alcanceDoCadastro(db, usuarioId)
+  const placa = await veiculoDoAlcance(db, alcance, entrada.veiculoId)
+  const [criado] = await gravar(() => db.insert(pneu).values(entrada).returning(CAMPOS_PNEU))
+  return { ...criado!, placa }
+}
+
+export async function atualizarPneu(
+  db: Db,
+  usuarioId: string,
+  id: string,
+  entrada: EntradaPneu,
+): Promise<PneuCadastro> {
+  const alcance = await alcanceDoCadastro(db, usuarioId)
+  await exigirAlvoPneu(db, id, alcance)
+  // O veiculo pode mudar no PUT, igual `baseId` muda nos outros cadastros: confere o
+  // novo veiculo, nao so o antigo que `exigirAlvoPneu` ja aprovou.
+  const placa = await veiculoDoAlcance(db, alcance, entrada.veiculoId)
+  const [salvo] = await gravar(() =>
+    db.update(pneu).set(entrada).where(eq(pneu.id, id)).returning(CAMPOS_PNEU),
+  )
+  if (!salvo) throw new CadastroInvalido('pneu inexistente', 404)
+  return { ...salvo, placa }
 }

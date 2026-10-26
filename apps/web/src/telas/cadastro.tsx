@@ -26,6 +26,7 @@
 import { useState } from 'react'
 import type { JSX, ReactNode } from 'react'
 import { invalidar, useRecurso, useSessao } from '../app/dados.ts'
+import { lerNumero } from '../dashboard/digitado.ts'
 import { Caixa, Campo, Chips, Dialogo, GradeDeCampos, useAvisos } from '../geist/formulario.tsx'
 import { ChevronLeft, ChevronRight, Database, Icone, MoreHorizontal, Plus } from '../geist/icones.tsx'
 import {
@@ -65,12 +66,24 @@ import type {
   EntradaVeiculo,
   FuncaoColaborador,
 } from '../js/cadastro-api.ts'
+// `EntradaPneu`/`PneuCadastro` nao aparecem aqui: o cadastro de pneu mora na tela de
+// Pneus, nao nesta (ver `telas/pneus.tsx`) -- aqui so o veiculo ganha o campo "Eixos".
 
 type Aba = 'veiculos' | 'colaboradores' | 'rotas' | 'bases'
 
 /** O que o dialogo edita e o que a gravacao envia. `id` nulo e criacao. */
 type Rascunho =
-  | { readonly aba: 'veiculos'; readonly id: string | null; readonly placa: string; readonly marca: string; readonly modelo: string; readonly ano: string; readonly baseId: string; readonly ativo: boolean }
+  | {
+    readonly aba: 'veiculos'
+    readonly id: string | null
+    readonly placa: string
+    readonly marca: string
+    readonly modelo: string
+    readonly ano: string
+    readonly eixos: string
+    readonly baseId: string
+    readonly ativo: boolean
+  }
   | { readonly aba: 'colaboradores'; readonly id: string | null; readonly nome: string; readonly cargo: string; readonly funcao: FuncaoColaborador; readonly admissao: string; readonly baseId: string; readonly ativo: boolean }
   | { readonly aba: 'rotas'; readonly id: string | null; readonly nome: string; readonly baseId: string; readonly local: boolean; readonly ativo: boolean }
   | { readonly aba: 'bases'; readonly id: string | null; readonly nome: string; readonly ativo: boolean }
@@ -162,7 +175,7 @@ const ABAS: Readonly<Record<Aba, Especie>> = {
     editar: 'Editar veículo',
     titulo: 'Veículos',
     subtitulo: 'A placa daqui é a que aparece em Registrar rota, Manutenção e Documentos',
-    colunas: ['Placa', 'Marca', 'Modelo', 'Ano', 'Base'],
+    colunas: ['Placa', 'Marca', 'Modelo', 'Ano', 'Eixos', 'Base'],
     linhas: (catalogo) => catalogo.veiculos.map((veiculo) => ({
       id: veiculo.id,
       busca: `${veiculo.placa} ${veiculo.marca ?? ''} ${veiculo.modelo ?? ''} ${veiculo.base}`.toLowerCase(),
@@ -173,6 +186,7 @@ const ABAS: Readonly<Record<Aba, Especie>> = {
         texto(veiculo.marca),
         texto(veiculo.modelo),
         mono(veiculo.ano),
+        mono(veiculo.eixos === null ? null : String(veiculo.eixos)),
         texto(veiculo.base),
       ],
       rascunho: {
@@ -182,6 +196,7 @@ const ABAS: Readonly<Record<Aba, Especie>> = {
         marca: veiculo.marca ?? '',
         modelo: veiculo.modelo ?? '',
         ano: veiculo.ano ?? '',
+        eixos: veiculo.eixos === null ? '' : String(veiculo.eixos),
         baseId: veiculo.baseId,
         ativo: veiculo.ativo,
       },
@@ -197,6 +212,7 @@ const ABAS: Readonly<Record<Aba, Especie>> = {
       marca: '',
       modelo: '',
       ano: '',
+      eixos: '',
       baseId,
       ativo: true,
     }),
@@ -341,11 +357,13 @@ function restringir(vista: Vista, mudanca: Partial<Omit<Vista, 'pagina'>>): Vist
 async function gravar(rascunho: Rascunho): Promise<void> {
   switch (rascunho.aba) {
     case 'veiculos': {
+      const eixos = Math.trunc(lerNumero(rascunho.eixos))
       const entrada: EntradaVeiculo = {
         placa: rascunho.placa.trim(),
         marca: vazioNulo(rascunho.marca),
         modelo: vazioNulo(rascunho.modelo),
         ano: vazioNulo(rascunho.ano),
+        eixos: eixos > 0 ? eixos : null,
         baseId: rascunho.baseId,
         ativo: rascunho.ativo,
       }
@@ -420,6 +438,12 @@ function Campos({ rascunho, erro, bases, mudar }: {
         <Campo rotulo="Marca" valor={rascunho.marca} aoMudar={(marca) => mudar({ ...rascunho, marca })} />
         <Campo rotulo="Modelo" valor={rascunho.modelo} aoMudar={(modelo) => mudar({ ...rascunho, modelo })} />
         <Campo rotulo="Ano" valor={rascunho.ano} aoMudar={(ano) => mudar({ ...rascunho, ano })} />
+        <Campo
+          tipo="numero"
+          rotulo="Eixos"
+          valor={rascunho.eixos}
+          aoMudar={(eixos) => mudar({ ...rascunho, eixos })}
+        />
         <Campo
           rotulo="Base"
           tipo="select"

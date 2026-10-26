@@ -1,5 +1,5 @@
 /**
- * As onze telas do app, numa tabela.
+ * As doze telas do app, numa tabela.
  *
  * A tabela e a unica fonte: a sidebar sai dela, o roteador sai dela, o titulo da aba sai
  * dela e o pedaco de JavaScript de cada tela sai do `carregar` dela. Uma linha nova aqui
@@ -26,6 +26,7 @@ import {
   Layers,
   Notes,
   PencilEdit,
+  RefreshClockwise,
   Route,
   Users,
   Wrench,
@@ -156,6 +157,15 @@ export const ROTAS: readonly Rota[] = [
     comFiltros: false,
     exige: 'gerenciaUsuarios',
     carregar: () => import('../telas/usuarios.tsx'),
+  },
+  {
+    id: 'pneus',
+    caminho: '/pneus',
+    titulo: 'Controle de pneus',
+    grupo: 'Gestão',
+    icone: RefreshClockwise,
+    comFiltros: false,
+    carregar: () => import('../telas/pneus.tsx'),
   },
 ]
 

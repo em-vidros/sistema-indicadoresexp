@@ -15,14 +15,17 @@ import {
   type Db,
   atualizarBase,
   atualizarColaborador,
+  atualizarPneu,
   atualizarRota,
   atualizarVeiculo,
   catalogoCadastro,
   criarBase,
   criarColaborador,
+  criarPneu,
   criarRota,
   criarVeiculo,
   funcaoColaborador,
+  statusPneu,
 } from '@ind/db'
 import { type Context, Hono } from 'hono'
 import { z } from 'zod'
@@ -39,12 +42,28 @@ const Veiculo = z.object({
   marca: TextoOuNulo.optional().default(null),
   modelo: TextoOuNulo.optional().default(null),
   ano: TextoOuNulo.optional().default(null),
+  eixos: z.number().int().positive().nullable().optional().default(null),
   baseId: z.string().uuid(),
   ativo: z.boolean().optional().default(true),
 })
 
 /** No PUT a tela manda a linha inteira, entao `ativo` deixa de ter padrao. */
 const VeiculoSalvo = Veiculo.extend({ ativo: z.boolean() })
+
+const Pneu = z.object({
+  veiculoId: z.string().uuid(),
+  posicao: z.string().trim().min(1).max(80),
+  numeroFogo: TextoOuNulo.optional().default(null),
+  marca: TextoOuNulo.optional().default(null),
+  status: z.enum(statusPneu.enumValues).optional().default('novo'),
+  recapagens: z.number().int().nonnegative().optional().default(0),
+  kmInstalado: z.number().int().positive().nullable().optional().default(null),
+  dataInstalado: DataOuNula.optional().default(null),
+  observacao: TextoOuNulo.optional().default(null),
+  ativo: z.boolean().optional().default(true),
+})
+
+const PneuSalvo = Pneu.extend({ ativo: z.boolean() })
 
 const Colaborador = z.object({
   nome: z.string().trim().min(1).max(160),
@@ -76,7 +95,7 @@ const BaseSalva = Base.extend({ ativo: z.boolean() })
 const Id = z.string().uuid()
 
 /**
- * As nove rotas recusam do mesmo jeito, e a recusa e a parte que nao pode
+ * As onze rotas recusam do mesmo jeito, e a recusa e a parte que nao pode
  * divergir entre elas: um `catch` esquecido em uma vira 500 onde as outras
  * dizem 403.
  */
@@ -170,6 +189,24 @@ export function rotasCadastro(db: Db): Hono<Ambiente> {
       return c.json({ erro: mensagemDaEntrada(entrada.error, 'entrada invalida') }, 400)
     }
     return responder(c, () => atualizarBase(db, c.get('usuarioId'), id.data, entrada.data))
+  })
+
+  rotas.post('/cadastro/pneus', async (c) => {
+    const entrada = Pneu.safeParse(await c.req.json().catch(() => null))
+    if (!entrada.success) {
+      return c.json({ erro: mensagemDaEntrada(entrada.error, 'entrada invalida') }, 400)
+    }
+    return responder(c, () => criarPneu(db, c.get('usuarioId'), entrada.data), 201)
+  })
+
+  rotas.put('/cadastro/pneus/:id', async (c) => {
+    const id = Id.safeParse(c.req.param('id'))
+    const entrada = PneuSalvo.safeParse(await c.req.json().catch(() => null))
+    if (!id.success) return c.json({ erro: 'entrada invalida' }, 400)
+    if (!entrada.success) {
+      return c.json({ erro: mensagemDaEntrada(entrada.error, 'entrada invalida') }, 400)
+    }
+    return responder(c, () => atualizarPneu(db, c.get('usuarioId'), id.data, entrada.data))
   })
 
   return rotas

@@ -23,8 +23,26 @@ export type VeiculoCadastro = {
   modelo: string | null
   marca: string | null
   ano: string | null
+  eixos: number | null
   baseId: string
   base: string
+  ativo: boolean
+}
+
+export type StatusPneu = 'novo' | 'recapado' | 'sucateado'
+
+export type PneuCadastro = {
+  id: string
+  veiculoId: string
+  placa: string
+  posicao: string
+  numeroFogo: string | null
+  marca: string | null
+  status: StatusPneu
+  recapagens: number
+  kmInstalado: number | null
+  dataInstalado: string | null
+  observacao: string | null
   ativo: boolean
 }
 
@@ -53,6 +71,7 @@ export type CatalogoCadastro = {
   veiculos: VeiculoCadastro[]
   colaboradores: ColaboradorCadastro[]
   rotas: RotaCadastro[]
+  pneus: PneuCadastro[]
 }
 
 export type EntradaVeiculo = {
@@ -60,7 +79,21 @@ export type EntradaVeiculo = {
   marca: string | null
   modelo: string | null
   ano: string | null
+  eixos: number | null
   baseId: string
+  ativo: boolean
+}
+
+export type EntradaPneu = {
+  veiculoId: string
+  posicao: string
+  numeroFogo: string | null
+  marca: string | null
+  status: StatusPneu
+  recapagens: number
+  kmInstalado: number | null
+  dataInstalado: string | null
+  observacao: string | null
   ativo: boolean
 }
 
@@ -186,4 +219,19 @@ export async function atualizarBase(
   chamar: Chamar = fetch,
 ): Promise<BaseCadastro> {
   return await gravar('bases', id, entrada, chamar)
+}
+
+export async function criarPneu(
+  entrada: EntradaPneu,
+  chamar: Chamar = fetch,
+): Promise<PneuCadastro> {
+  return await gravar('pneus', null, entrada, chamar)
+}
+
+export async function atualizarPneu(
+  id: string,
+  entrada: EntradaPneu,
+  chamar: Chamar = fetch,
+): Promise<PneuCadastro> {
+  return await gravar('pneus', id, entrada, chamar)
 }

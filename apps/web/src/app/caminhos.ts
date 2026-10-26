@@ -18,6 +18,7 @@ export const CAMINHOS = [
   '/integracoes',
   '/cadastro',
   '/usuarios',
+  '/pneus',
 ] as const
 
 export type Caminho = (typeof CAMINHOS)[number]
