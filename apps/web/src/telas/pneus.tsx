@@ -14,8 +14,8 @@ import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import { invalidar, useRecurso, useSessao } from '../app/dados.ts'
 import { lerNumero } from '../dashboard/digitado.ts'
-import { Campo, Chips, Dialogo, GradeDeCampos, TituloDeSecao, useAvisos } from '../geist/formulario.tsx'
-import { Plus, SettingsGear, Trash } from '../geist/icones.tsx'
+import { Campo, CampoDeArquivo, Chips, Dialogo, GradeDeCampos, TituloDeSecao, useAvisos } from '../geist/formulario.tsx'
+import { CloudUpload, Plus, SettingsGear, Trash } from '../geist/icones.tsx'
 import {
   Badge,
   Botao,
@@ -30,8 +30,8 @@ import {
   classes,
 } from '../geist/primitivos.tsx'
 import type { CorDeBadge, Opcao } from '../geist/primitivos.tsx'
-import { atualizarPneu, criarPneu, obterCadastro } from '../js/cadastro-api.ts'
-import type { EntradaPneu, PneuCadastro, StatusPneu, VeiculoCadastro } from '../js/cadastro-api.ts'
+import { atualizarPneu, atualizarVeiculo, criarPneu, obterCadastro } from '../js/cadastro-api.ts'
+import type { EntradaPneu, EntradaVeiculo, PneuCadastro, StatusPneu, VeiculoCadastro } from '../js/cadastro-api.ts'
 import { listarRegistros } from '../js/registros-api.ts'
 import type { Registro } from '../js/registros-api.ts'
 
@@ -501,6 +501,176 @@ function DialogoDoVeiculo({ veiculo, aoFechar }: {
   )
 }
 
+// ---------- importar eixos e modelo ----------
+//
+// So os campos eixos e modelo do veiculo, pela mesma planilha que a Livia ja usa pra
+// controlar a frota (Base, Placa, Eixos, Quantidade de pneus) mais o modelo, que
+// tambem fica em branco em boa parte da frota. Nao cria pneu nenhum: "quantidade de
+// pneus" na planilha dela e so uma contagem, sem posicao nem status, e inventar doze
+// linhas genericas de "Pneu 1".."Pneu 12" por veiculo poluiria o inventario de verdade
+// em vez de ajudar -- o pneu individual continua entrando pelo dialogo, um a um, a
+// medida que ela identifica cada posicao fisica.
+//
+// Eixos e modelo sao independentes linha a linha: uma planilha so com eixos, so com
+// modelo, ou com os dois funciona igual. So troca o que a linha trouxe -- coluna
+// ausente ou em branco deixa o campo como ja estava no cadastro.
+
+type LinhaVeiculoImportado = { readonly placa: string; readonly eixos: number | null; readonly modelo: string | null }
+
+function lerCsvVeiculos(
+  conteudo: string,
+): { readonly achadas: readonly LinhaVeiculoImportado[]; readonly erros: readonly string[] } {
+  const linhas = conteudo.split('\n').map((l) => l.trim()).filter(Boolean)
+  const [cabecalhoBruto, ...corpo] = linhas
+  if (cabecalhoBruto === undefined || corpo.length === 0) return { achadas: [], erros: [] }
+  const cabecalho = cabecalhoBruto.split(',').map((h) => h.trim().toLowerCase())
+  const achadas: LinhaVeiculoImportado[] = []
+  const erros: string[] = []
+  corpo.forEach((bruta, i) => {
+    const colunas = bruta.split(',')
+    const linha: Record<string, string> = {}
+    cabecalho.forEach((h, j) => {
+      linha[h] = (colunas[j] ?? '').trim()
+    })
+    const eixos = linha.eixos ? Math.trunc(lerNumero(linha.eixos)) : 0
+    const modelo = linha.modelo || null
+    if (!linha.placa || (eixos <= 0 && modelo === null)) {
+      erros.push(`Linha ${i + 2}: faltou placa, e eixos ou modelo`)
+      return
+    }
+    achadas.push({ placa: linha.placa.toUpperCase(), eixos: eixos > 0 ? eixos : null, modelo })
+  })
+  return { achadas, erros }
+}
+
+type ResultadoVeiculoImportado =
+  & { readonly linha: LinhaVeiculoImportado }
+  & ({ readonly estado: 'ok' } | { readonly estado: 'erro'; readonly motivo: string })
+
+function DialogoImportarVeiculos({ veiculos, aoFechar }: {
+  readonly veiculos: readonly VeiculoCadastro[]
+  readonly aoFechar: () => void
+}): JSX.Element {
+  const { avisar } = useAvisos()
+  const [nomeDoArquivo, setNomeDoArquivo] = useState<string | null>(null)
+  const [linhas, setLinhas] = useState<readonly LinhaVeiculoImportado[]>([])
+  const [errosDoArquivo, setErrosDoArquivo] = useState<readonly string[]>([])
+  const [enviando, setEnviando] = useState(false)
+  const [resultados, setResultados] = useState<readonly ResultadoVeiculoImportado[]>([])
+
+  const escolher = (arquivo: File): void => {
+    setNomeDoArquivo(arquivo.name)
+    const leitor = new FileReader()
+    leitor.onload = () => {
+      const { achadas, erros } = lerCsvVeiculos(String(leitor.result))
+      setLinhas(achadas)
+      setErrosDoArquivo(erros)
+      setResultados([])
+    }
+    leitor.readAsText(arquivo, 'UTF-8')
+  }
+
+  async function importar(): Promise<void> {
+    setEnviando(true)
+    const saida: ResultadoVeiculoImportado[] = []
+    for (const linha of linhas) {
+      const compativeis = veiculos.filter((v) => v.placa.toUpperCase() === linha.placa)
+      const [veiculo, ...resto] = compativeis
+      if (veiculo === undefined) {
+        saida.push({ linha, estado: 'erro', motivo: 'nenhum veículo encontrado com essa placa' })
+        continue
+      }
+      if (resto.length > 0) {
+        saida.push({ linha, estado: 'erro', motivo: 'mais de um veículo com essa placa; corrija pelo Cadastro' })
+        continue
+      }
+      // So troca o que a linha trouxe; o resto do cadastro passa intacto.
+      const entrada: EntradaVeiculo = {
+        placa: veiculo.placa,
+        marca: veiculo.marca,
+        modelo: linha.modelo ?? veiculo.modelo,
+        ano: veiculo.ano,
+        eixos: linha.eixos ?? veiculo.eixos,
+        baseId: veiculo.baseId,
+        ativo: veiculo.ativo,
+      }
+      try {
+        await atualizarVeiculo(veiculo.id, entrada)
+        saida.push({ linha, estado: 'ok' })
+      } catch (e) {
+        saida.push({ linha, estado: 'erro', motivo: motivoDaFalha(e, 'não foi possível salvar') })
+      }
+    }
+    setResultados(saida)
+    setEnviando(false)
+    invalidar('cadastro')
+    const ok = saida.filter((r) => r.estado === 'ok').length
+    avisar(`${ok} de ${saida.length} veículos atualizados.`, ok === saida.length ? 'ok' : 'erro')
+  }
+
+  return (
+    <Dialogo
+      aberto
+      titulo="Importar eixos e modelo"
+      subtitulo="O CSV precisa da coluna placa, e de eixos e/ou modelo. Coluna ausente ou em branco não muda o que já está salvo."
+      largura={640}
+      aoFechar={aoFechar}
+      acoes={
+        <>
+          <Botao tipo="terciario" rotulo="Fechar" aoClicar={aoFechar} />
+          {linhas.length === 0
+            ? null
+            : (
+              <Botao
+                tipo="primario"
+                rotulo="Importar"
+                antes={CloudUpload}
+                carregando={enviando}
+                aoClicar={() => void importar()}
+              />
+            )}
+        </>
+      }
+    >
+      <GradeDeCampos>
+        <CampoDeArquivo
+          rotulo="Arquivo CSV"
+          span={12}
+          aceita=".csv,text/csv"
+          texto="Arraste o CSV ou clique"
+          aoEscolher={escolher}
+          {...(nomeDoArquivo === null ? {} : { arquivo: nomeDoArquivo })}
+        />
+      </GradeDeCampos>
+      {linhas.length === 0 && errosDoArquivo.length === 0
+        ? null
+        : (
+          <div className="g-secao">
+            <span className="g-l14">
+              <span className="g-forte">{`${linhas.length} linhas`}</span>
+              {' encontradas para importar'}
+              {errosDoArquivo.length === 0
+                ? null
+                : <>{' · '}<span className="g-tom-critico">{`${errosDoArquivo.length} com erro no arquivo`}</span></>}
+            </span>
+          </div>
+        )}
+      {errosDoArquivo.map((erro) => <div className="g-l13 g-tom-critico" key={erro}>{erro}</div>)}
+      {resultados.map((r, i) => {
+        const mudou = [
+          r.linha.eixos === null ? null : `eixos = ${r.linha.eixos}`,
+          r.linha.modelo === null ? null : `modelo = ${r.linha.modelo}`,
+        ].filter((p): p is string => p !== null).join(', ')
+        return (
+          <div className={`g-l13 ${r.estado === 'erro' ? 'g-tom-critico' : 'g-tom-ok'}`} key={i}>
+            {`${r.linha.placa}: ${r.estado === 'ok' ? mudou : r.motivo}`}
+          </div>
+        )
+      })}
+    </Dialogo>
+  )
+}
+
 // ---------- tela ----------
 
 export default function Pneus(): JSX.Element {
@@ -511,6 +681,7 @@ export default function Pneus(): JSX.Element {
 
   const [base, setBase] = useState<string | null>(null)
   const [veiculoConfigurando, setVeiculoConfigurando] = useState<string | null>(null)
+  const [importandoVeiculos, setImportandoVeiculos] = useState(false)
 
   // A dependencia e o estado da leitura, e nao o render: o aviso e sobre a leitura ter
   // falhado, e uma tela que redesenha nao e uma falha nova.
@@ -548,7 +719,12 @@ export default function Pneus(): JSX.Element {
       <CabecalhoDePagina
         titulo="Controle de pneus"
         subtitulo={`${veiculos.length} ${veiculos.length === 1 ? 'veículo' : 'veículos'} · Base ${baseAtual}`}
-        acoes={<Botao rotulo="Cadastrar veículo" href="/cadastro" />}
+        acoes={
+          <>
+            <Botao rotulo="Importar eixos e modelo" antes={CloudUpload} aoClicar={() => setImportandoVeiculos(true)} />
+            <Botao rotulo="Cadastrar veículo" href="/cadastro" />
+          </>
+        }
       />
 
       <div className="g-secao">
@@ -590,6 +766,10 @@ export default function Pneus(): JSX.Element {
       {configurando === null ? null : (
         <DialogoDoVeiculo veiculo={configurando} aoFechar={() => setVeiculoConfigurando(null)} />
       )}
+
+      {importandoVeiculos
+        ? <DialogoImportarVeiculos veiculos={todosOsVeiculos} aoFechar={() => setImportandoVeiculos(false)} />
+        : null}
     </>
   )
 }
