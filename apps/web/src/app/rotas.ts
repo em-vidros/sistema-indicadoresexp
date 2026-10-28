@@ -162,7 +162,7 @@ export const ROTAS: readonly Rota[] = [
     id: 'pneus',
     caminho: '/pneus',
     titulo: 'Controle de pneus',
-    grupo: 'Gestão',
+    grupo: 'Registros',
     icone: RefreshClockwise,
     comFiltros: false,
     carregar: () => import('../telas/pneus.tsx'),
