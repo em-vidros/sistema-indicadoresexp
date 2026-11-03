@@ -706,15 +706,16 @@ function Historico({ registros, estado, deHoje, editando, pagina, aoMudarPagina,
   readonly aoEditar: (registro: Registro) => void
   readonly aoApagar: (registro: Registro) => void
 }): JSX.Element {
-  const paginas = Math.max(1, Math.ceil(registros.length / POR_PAGINA_DO_HISTORICO))
+  const ordenados = [...registros].reverse()
+  const paginas = Math.max(1, Math.ceil(ordenados.length / POR_PAGINA_DO_HISTORICO))
   const paginaAtual = Math.min(pagina, paginas)
   const primeira = (paginaAtual - 1) * POR_PAGINA_DO_HISTORICO
-  const linhas = registros.slice(primeira, primeira + POR_PAGINA_DO_HISTORICO)
+  const linhas = ordenados.slice(primeira, primeira + POR_PAGINA_DO_HISTORICO)
   return (
     <>
       <CabecalhoDeBloco
         titulo="Histórico recente"
-        subtitulo="Últimos lançamentos da base, do mais novo para o mais antigo"
+        subtitulo="Lançamentos da base, do mais antigo para o mais novo"
         direita={<span className="g-l13 g-fraco">{deHoje} hoje</span>}
       />
       <Tabela
@@ -1952,9 +1953,9 @@ export default function Registrar(): JSX.Element {
     try {
       if (editando === null) {
         await salvarRegistros(montagem.registros)
-        // O novo registro entra no topo (mais recente primeiro); sem isto, quem estava
-        // numa pagina velha do historico nao veria o que acabou de lancar.
-        setPaginaDoHistorico(1)
+        // O novo registro entra no fim (mais antigo primeiro, mais recente por ultimo); sem
+        // isto, quem estava numa pagina velha do historico nao veria o que acabou de lancar.
+        setPaginaDoHistorico(Number.MAX_SAFE_INTEGER)
       } else {
         await atualizarRegistro(editando.id, montagem.registros)
       }
