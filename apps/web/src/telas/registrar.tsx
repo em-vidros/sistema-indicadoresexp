@@ -29,7 +29,18 @@ import {
   TituloDeSecao,
   useAvisos,
 } from '../geist/formulario.tsx'
-import { Buildings, Check, CloudUpload, Icone, MoreHorizontal, PencilEdit, Plus, Trash } from '../geist/icones.tsx'
+import {
+  Buildings,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  CloudUpload,
+  Icone,
+  MoreHorizontal,
+  PencilEdit,
+  Plus,
+  Trash,
+} from '../geist/icones.tsx'
 import {
   Abas,
   Badge,
@@ -658,8 +669,8 @@ const LEITORES: Readonly<Record<Tipo, (registro: Registro) => LinhaDoHistorico>>
 
 const COLUNAS_DO_HISTORICO = ['Quando', 'Tipo', 'Quem / veículo', 'Descrição', 'Valor', ''] as const
 
-/** Quantas linhas do historico cabem embaixo do formulario sem virar segunda tela. */
-const LINHAS_DO_HISTORICO = 12
+/** O mesmo tamanho de pagina que o Cadastro ja usa, pra paginacao ficar previsivel. */
+const POR_PAGINA_DO_HISTORICO = 20
 
 /**
  * `data_saida` quer dizer coisas diferentes em dois tipos: na viagem e o dia da partida, na
@@ -683,16 +694,22 @@ function LinhaVazia({ children }: { readonly children: ReactNode }): JSX.Element
   return <tr><Td colunas={COLUNAS_DO_HISTORICO.length} vazio>{children}</Td></tr>
 }
 
-function Historico({ registros, estado, deHoje, editando, aoEditar, aoApagar }: {
+function Historico({ registros, estado, deHoje, editando, pagina, aoMudarPagina, aoEditar, aoApagar }: {
   readonly registros: readonly Registro[]
   readonly estado: 'carregando' | 'ok' | 'erro'
   readonly deHoje: number
   /** O id do registro que esta no formulario agora, para a linha dele sair destacada. */
   readonly editando: string | null
+  /** 1-indexada, igual a do Cadastro. */
+  readonly pagina: number
+  readonly aoMudarPagina: (pagina: number) => void
   readonly aoEditar: (registro: Registro) => void
   readonly aoApagar: (registro: Registro) => void
 }): JSX.Element {
-  const linhas = registros.slice(0, LINHAS_DO_HISTORICO)
+  const paginas = Math.max(1, Math.ceil(registros.length / POR_PAGINA_DO_HISTORICO))
+  const paginaAtual = Math.min(pagina, paginas)
+  const primeira = (paginaAtual - 1) * POR_PAGINA_DO_HISTORICO
+  const linhas = registros.slice(primeira, primeira + POR_PAGINA_DO_HISTORICO)
   return (
     <>
       <CabecalhoDeBloco
@@ -756,6 +773,29 @@ function Historico({ registros, estado, deHoje, editando, aoEditar, aoApagar }: 
             )
           })}
       </Tabela>
+      {registros.length === 0
+        ? null
+        : (
+          <div className="g-paginacao">
+            <span className="g-paginacao-conta g-l13">
+              {primeira + 1} a {primeira + linhas.length} de {registros.length}
+            </span>
+            <div className="g-paginacao-botoes">
+              <Botao
+                rotulo="Anterior"
+                antes={ChevronLeft}
+                desabilitado={paginaAtual === 1}
+                aoClicar={() => aoMudarPagina(Math.max(1, paginaAtual - 1))}
+              />
+              <Botao
+                rotulo="Próxima"
+                depois={ChevronRight}
+                desabilitado={paginaAtual === paginas}
+                aoClicar={() => aoMudarPagina(Math.min(paginas, paginaAtual + 1))}
+              />
+            </div>
+          </div>
+        )}
     </>
   )
 }
@@ -1749,6 +1789,7 @@ export default function Registrar(): JSX.Element {
   const [apagandoEmProgresso, setApagandoEmProgresso] = useState(false)
   const [importandoPontualidade, setImportandoPontualidade] = useState(false)
   const [importandoAbastecimento, setImportandoAbastecimento] = useState(false)
+  const [paginaDoHistorico, setPaginaDoHistorico] = useState(1)
 
   // O admin comeca na base do ultimo lancamento desta maquina, e nao numa tela vazia
   // pedindo um clique; quem lanca todo dia lanca quase sempre na mesma base.
@@ -1911,6 +1952,9 @@ export default function Registrar(): JSX.Element {
     try {
       if (editando === null) {
         await salvarRegistros(montagem.registros)
+        // O novo registro entra no topo (mais recente primeiro); sem isto, quem estava
+        // numa pagina velha do historico nao veria o que acabou de lancar.
+        setPaginaDoHistorico(1)
       } else {
         await atualizarRegistro(editando.id, montagem.registros)
       }
@@ -2050,6 +2094,8 @@ export default function Registrar(): JSX.Element {
             estado={registros.estado}
             deHoje={deHoje}
             editando={editando?.id ?? null}
+            pagina={paginaDoHistorico}
+            aoMudarPagina={setPaginaDoHistorico}
             aoEditar={editar}
             aoApagar={setApagando}
           />
@@ -2127,6 +2173,7 @@ export default function Registrar(): JSX.Element {
               aoEscolher={(nome) => {
                 cancelarEdicao()
                 setBase(nome)
+                setPaginaDoHistorico(1)
               }}
             />
             <span className="g-l12 g-fraco">O registro entra na base marcada.</span>
@@ -2153,6 +2200,7 @@ export default function Registrar(): JSX.Element {
             if (escolhido === undefined) return
             if (escolhido !== editando?.tipo) cancelarEdicao()
             setTipoEscolhido(escolhido)
+            setPaginaDoHistorico(1)
           }}
         />
         <span className="g-l12 g-fraco">Cada aba grava numa tabela própria; o rodapé é o mesmo.</span>
