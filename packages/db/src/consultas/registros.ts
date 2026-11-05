@@ -1,7 +1,8 @@
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, lt, max, or, sql } from 'drizzle-orm'
 import type { Db } from '../index.ts'
 import { usuarioTipo } from '../schema/auth.ts'
 import { base, colaborador, rota, veiculo } from '../schema/cadastro.ts'
+import { itemPreventivo, tipoPreventivo } from '../schema/preventiva.ts'
 import { abastecimento, abastecimentoParada, manutencao, quebra, viagem } from '../schema/registro.ts'
 import { mesEstaFechado } from './fechamento.ts'
 import { lerPermissao } from './permissao.ts'
@@ -408,7 +409,8 @@ export async function listarRegistros(db: Db, usuarioId: string, nomeBase?: stri
     ...linha,
     tipo: 'manutencao',
     valor: Number(linha.valor),
-    status_documental: linha.status_documental ? 'concluido' : 'pendente',
+    // Lavagem nao exige orcamento nem OS: sem anexo, nao fica pendente de documento.
+    status_documental: linha.status_documental || servicoDispensaDocumento(linha.servico) ? 'concluido' : 'pendente',
     registrado_em: linha.registrado_em.toISOString(),
   })))
   saida.push(...quebras.map((linha) => ({
@@ -520,7 +522,52 @@ async function salvarManutencaoEm(tx: Escritor, usuarioId: string, entrada: Entr
     atualizadoPor: usuarioId,
   }).returning({ id: manutencao.id })
   if (!salva) throw new RegistroInvalido('manutenção não foi salva')
+  await renovarItemPreventivo(tx, usuarioId, valores.veiculoId, entrada)
   return { ...salva, tipo: 'manutencao' as const }
+}
+
+/** Servicos que nao precisam de orcamento nem OS anexados para contar como documentados. */
+function servicoDispensaDocumento(servico: unknown): boolean {
+  return typeof servico === 'string' && servico.trim().toLowerCase() === 'lavagem'
+}
+
+/**
+ * Lancar uma preventiva renova a contagem do item do plano: o `ultimo_km` passa a ser o
+ * km da manutencao (ou, sem ele, o maior km de chegada ja registrado do veiculo), e o
+ * vencimento recalcula a partir dai. So sobe: lancar um servico atrasado, de km menor,
+ * nao faz o item andar para tras. Servico fora do catalogo (ou item que o veiculo nao
+ * tem no plano) nao muda nada.
+ */
+async function renovarItemPreventivo(
+  tx: Escritor,
+  usuarioId: string,
+  veiculoId: string,
+  entrada: EntradaManutencao,
+): Promise<void> {
+  if (entrada.tipo_manutencao !== 'preventiva') return
+  const [tipo] = await tx
+    .select({ id: tipoPreventivo.id })
+    .from(tipoPreventivo)
+    .where(sql`lower(${tipoPreventivo.nome}) = ${entrada.servico.trim().toLowerCase()}`)
+  if (!tipo) return
+  let km = entrada.km_odometro
+  if (!km) {
+    const [ultimo] = await tx
+      .select({ km: max(viagem.kmChegada) })
+      .from(viagem)
+      .where(and(eq(viagem.veiculoId, veiculoId), isNull(viagem.apagadoEm)))
+    km = ultimo?.km ?? null
+  }
+  if (!km || km <= 0) return
+  await tx
+    .update(itemPreventivo)
+    .set({ ultimoKm: km, atualizadoPor: usuarioId, atualizadoEm: new Date() })
+    .where(and(
+      eq(itemPreventivo.veiculoId, veiculoId),
+      eq(itemPreventivo.tipoPreventivoId, tipo.id),
+      isNull(itemPreventivo.apagadoEm),
+      or(isNull(itemPreventivo.ultimoKm), lt(itemPreventivo.ultimoKm, km)),
+    ))
 }
 
 async function valoresDaQuebra(tx: Escritor, usuarioId: string, entrada: EntradaQuebra) {

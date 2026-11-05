@@ -841,3 +841,64 @@ describe('fechamento mensal', () => {
     expect(((await segunda.json()) as { erro: string }).erro).toMatch(/já está fechada/i)
   })
 })
+
+/**
+ * Lavagem nao exige orcamento nem OS, e lancar uma preventiva renova o `ultimo_km` do
+ * item do plano (so para cima), que e o que faz a tabela de vencimento recalcular.
+ */
+describe('manutenção: lavagem sem documento e renovação do plano preventivo', () => {
+  const lancar = async (registro: Record<string, unknown>): Promise<string> => {
+    const resposta = await pedir('/api/registros', {
+      method: 'POST',
+      headers: { cookie: livia, 'content-type': 'application/json' },
+      body: JSON.stringify({ registros: [registro] }),
+    })
+    expect(resposta.status).toBe(201)
+    const [salva] = (await resposta.json()) as Array<{ id: string }>
+    manutencoes.push(salva!.id)
+    return salva!.id
+  }
+  const lavagem = { ...manutencaoRaposa, servico: 'Lavagem', valor: 250, data_entrada: '2026-09-09' }
+  const kmDoItem = async (): Promise<number | null> => {
+    const [item] = await sql<Array<{ ultimo_km: number | null }>>`
+      select ip.ultimo_km from item_preventivo ip
+      join veiculo v on v.id = ip.veiculo_id
+      join tipo_preventivo tp on tp.id = ip.tipo_preventivo_id
+      where v.placa = 'PTV0006' and tp.nome = 'Lavagem' and ip.apagado_em is null`
+    return item!.ultimo_km
+  }
+
+  test('lavagem sem anexo é concluída; outro serviço sem anexo continua pendente', async () => {
+    const idLavagem = await lancar(lavagem)
+    const idCorretiva = await lancar({
+      ...manutencaoRaposa, tipo_manutencao: 'corretiva', servico: 'Troca de embreagem', data_entrada: '2026-09-09',
+    })
+    const lista = (await (await pedir('/api/registros?base=Raposa', { headers: { cookie: livia } })).json()) as Array<Record<string, unknown>>
+    expect(lista.find((r) => r['id'] === idLavagem)?.['status_documental']).toBe('concluido')
+    expect(lista.find((r) => r['id'] === idCorretiva)?.['status_documental']).toBe('pendente')
+  })
+
+  test('lançar a lavagem renova o ultimo_km; km menor não faz o item andar para trás', async () => {
+    const [original] = await sql<Array<{ ultimo_km: number | null }>>`
+      select ip.ultimo_km from item_preventivo ip
+      join veiculo v on v.id = ip.veiculo_id
+      join tipo_preventivo tp on tp.id = ip.tipo_preventivo_id
+      where v.placa = 'PTV0006' and tp.nome = 'Lavagem' and ip.apagado_em is null`
+    expect(original).toBeDefined()
+    try {
+      await lancar({ ...lavagem, km_odometro: 987654 })
+      expect(await kmDoItem()).toBe(987654)
+      await lancar({ ...lavagem, km_odometro: 1000 })
+      expect(await kmDoItem()).toBe(987654)
+      // Corretiva e serviço fora do catálogo não mexem no plano.
+      await lancar({ ...lavagem, tipo_manutencao: 'corretiva', km_odometro: 999999 })
+      await lancar({ ...lavagem, servico: 'Serviço fora do catálogo', km_odometro: 999999 })
+      expect(await kmDoItem()).toBe(987654)
+    } finally {
+      await sql`
+        update item_preventivo set ultimo_km = ${original!.ultimo_km}
+        where veiculo_id = (select id from veiculo where placa = 'PTV0006')
+          and tipo_preventivo_id = (select id from tipo_preventivo where nome = 'Lavagem')`
+    }
+  })
+})
