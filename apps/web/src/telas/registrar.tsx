@@ -156,6 +156,18 @@ type Abastecimento = {
 
 type CampoDeAbastecimento = 'data' | 'placa' | 'motorista' | 'rota'
 
+/**
+ * O abastecimento embutido no lancamento de viagem: litros, valor por litro e posto,
+ * digitados ali mesmo, sem abrir a aba Abastecimento. Diferente de `Abastecimento`
+ * (a aba separada), nao tem data/placa/motorista/rota proprios -- esses vem da
+ * propria viagem na hora de montar o registro.
+ */
+type AbastecimentoDaViagem = {
+  readonly litros: string
+  readonly vlLitro: string
+  readonly posto: string
+}
+
 type Manutencao = {
   readonly tipoManutencao: TipoDeManutencao
   readonly dataProgramada: string
@@ -191,6 +203,7 @@ type Quebra = {
 
 type Rascunho = {
   readonly viagem: Viagem
+  readonly abastecimentoDaViagem: AbastecimentoDaViagem
   readonly abastecimento: Abastecimento
   readonly manutencao: Manutencao
   readonly quebra: Quebra
@@ -347,6 +360,7 @@ function rascunhoVazio(): Rascunho {
       peso: '',
       observacao: '',
     },
+    abastecimentoDaViagem: { litros: '', vlLitro: '', posto: '' },
     abastecimento: {
       data: hoje,
       placa: '',
@@ -374,7 +388,7 @@ function rascunhoVazio(): Rascunho {
 }
 
 const LIMPADORES: Readonly<Record<Tipo, (atual: Rascunho, vazio: Rascunho) => Rascunho>> = {
-  viagem: (atual, vazio) => ({ ...atual, viagem: vazio.viagem }),
+  viagem: (atual, vazio) => ({ ...atual, viagem: vazio.viagem, abastecimentoDaViagem: vazio.abastecimentoDaViagem }),
   abastecimento: (atual, vazio) => ({ ...atual, abastecimento: vazio.abastecimento }),
   manutencao: (atual, vazio) => ({ ...atual, manutencao: vazio.manutencao }),
   quebra: (atual, vazio) => ({ ...atual, quebra: vazio.quebra }),
@@ -397,13 +411,20 @@ function comParada(paradas: Paradas, indice: number, mudar: (parada: Parada) => 
 type Montagem = { readonly erro: string } | { readonly registros: Registro[] }
 
 const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Montagem>> = {
-  viagem: ({ viagem }, base) => {
+  viagem: ({ viagem, abastecimentoDaViagem: ab }, base) => {
     const veiculo = viagem.veiculo.trim().toUpperCase()
     const valorCarga = decimal(viagem.valorCarga)
-    const combustivel = decimal(viagem.combustivel)
     const diarias = decimal(viagem.diarias)
     const m2 = decimal(viagem.m2)
     const peso = decimal(viagem.peso)
+    const litros = decimal(ab.litros)
+    const vlLitro = valorPorLitro(ab.vlLitro)
+    if ((litros > 0) !== (vlLitro > 0)) {
+      return { erro: 'Preencha os litros e o valor por litro do abastecimento desta viagem, ou deixe os dois em branco.' }
+    }
+    // Com litros preenchidos o combustivel e o proprio gasto deste abastecimento; sem
+    // eles, continua o valor digitado a mao em Custos da viagem.
+    const combustivel = litros > 0 ? litros * vlLitro : decimal(viagem.combustivel)
     if (
       viagem.dataSaida === '' || viagem.motorista.trim() === '' || veiculo === ''
       || viagem.rota.trim() === '' || valorCarga <= 0 || combustivel + diarias <= 0 || m2 <= 0 || peso <= 0
@@ -438,6 +459,9 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
         m2,
         peso_kg: peso,
         observacao: viagem.observacao.trim(),
+        litros: litros > 0 ? litros : null,
+        vl_litro: vlLitro > 0 ? vlLitro : null,
+        posto: litros > 0 ? ab.posto.trim() : null,
       }],
     }
   },
@@ -554,8 +578,13 @@ function horaCurta(registro: Registro, chave: string): string {
  * leitura devolve uma por parada e a edicao troca o grupo inteiro.
  */
 const LEITORES_DE_RASCUNHO: Readonly<Record<Tipo, (linhas: readonly Registro[], atual: Rascunho) => Rascunho>> = {
-  viagem: ([r], atual) =>
-    r === undefined ? atual : {
+  viagem: (linhas, atual) => {
+    const r = linhas.find((l) => l.tipo === 'viagem')
+    if (r === undefined) return atual
+    // O abastecimento embutido, quando esta viagem tiver um -- `editar()` ja filtra
+    // pelo `viagem_id`, entao so pode haver zero ou um.
+    const ab = linhas.find((l) => l.tipo === 'abastecimento')
+    return {
       ...atual,
       viagem: {
         dataSaida: texto(r, 'data_saida'),
@@ -578,7 +607,11 @@ const LEITORES_DE_RASCUNHO: Readonly<Record<Tipo, (linhas: readonly Registro[], 
         peso: digitavel(r, 'peso_kg'),
         observacao: texto(r, 'observacao'),
       },
-    },
+      abastecimentoDaViagem: ab === undefined
+        ? { litros: '', vlLitro: '', posto: '' }
+        : { litros: digitavel(ab, 'litros'), vlLitro: digitavel(ab, 'vl_litro'), posto: texto(ab, 'posto') },
+    }
+  },
 
   abastecimento: (linhas, atual) => {
     const [primeira] = linhas
@@ -645,11 +678,17 @@ function idParaEditar(registro: Registro): string {
 type LinhaDoHistorico = { readonly quem: string; readonly descricao: string; readonly valor: string }
 
 const LEITORES: Readonly<Record<Tipo, (registro: Registro) => LinhaDoHistorico>> = {
-  viagem: (r) => ({
-    quem: `${texto(r, 'motorista') || '·'} · ${texto(r, 'veiculo') || '·'}`,
-    descricao: texto(r, 'rota') || '·',
-    valor: brl(numero(r, 'custo_viagem')),
-  }),
+  viagem: (r) => {
+    const kmRodados = numero(r, 'km_rodados')
+    const litros = numero(r, 'litros')
+    const media = kmRodados > 0 && litros > 0 ? duasCasas(kmRodados / litros) : null
+    const rota = texto(r, 'rota') || '·'
+    return {
+      quem: `${texto(r, 'motorista') || '·'} · ${texto(r, 'veiculo') || '·'}`,
+      descricao: media === null ? rota : `${rota} · ${media} km/L`,
+      valor: brl(numero(r, 'custo_viagem')),
+    }
+  },
   abastecimento: (r) => ({
     quem: `${texto(r, 'motorista') || '·'} · ${texto(r, 'placa') || '·'}`,
     descricao: texto(r, 'posto') || '·',
@@ -812,7 +851,10 @@ type Ferramentas = {
   readonly servicos: readonly Opcao[]
   /** A rota curta esconde o toggle de viagem longa e o desliga. */
   readonly rotaCurta: boolean
+  /** Sem a permissao de 'abastecimento' o bloco de litros nem aparece na Viagem. */
+  readonly podeAbastecer: boolean
   readonly mudarViagem: (campo: keyof Viagem, valor: string) => void
+  readonly mudarAbastecimentoDaViagem: (campo: keyof AbastecimentoDaViagem, valor: string) => void
   readonly mudarAbastecimento: (campo: CampoDeAbastecimento, valor: string) => void
   readonly mudarLonga: (longa: boolean) => void
   readonly adicionarParada: () => void
@@ -824,9 +866,21 @@ type Ferramentas = {
 
 function celulasDeViagem(f: Ferramentas): readonly Celula[] {
   const v = f.rascunho.viagem
-  const custo = decimal(v.combustivel) + decimal(v.diarias)
+  const ab = f.rascunho.abastecimentoDaViagem
+  const litrosAb = decimal(ab.litros)
+  const vlLitroAb = valorPorLitro(ab.vlLitro)
+  const combustivelAutomatico = litrosAb > 0 && vlLitroAb > 0
+  const combustivelEfetivo = combustivelAutomatico ? litrosAb * vlLitroAb : decimal(v.combustivel)
+  const custo = combustivelEfetivo + decimal(v.diarias)
   const atraso = atrasoDe(v)
   const atrasoEntrega = atrasoDaEntregaDe(v)
+  const kmSaidaNum = inteiro(v.kmSaida)
+  const kmChegadaNum = inteiro(v.kmChegada)
+  const kmRodados = kmSaidaNum > 0 && kmChegadaNum > kmSaidaNum ? kmChegadaNum - kmSaidaNum : 0
+  const mediaKmL = kmRodados > 0 && litrosAb > 0 ? duasCasas(kmRodados / litrosAb) : '·'
+  // Sem a permissao de abastecimento o bloco nem aparece, entao as linhas seguintes nao
+  // abrem um vao vazio no grid -- a numeracao desliza em vez de pular.
+  const apos = f.podeAbastecer ? 1 : 0
   return [
     {
       col: [1, 13],
@@ -955,9 +1009,55 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
         </>
       ),
     },
+    ...(f.podeAbastecer
+      ? [{
+        col: [1, 13] as const,
+        linha: 2,
+        conteudo: (
+          <>
+            <TituloDeSecao
+              titulo="Abastecimento desta viagem"
+              subtitulo="Litros e valor por litro, pra fechar a média sem abrir a aba Abastecimento"
+            />
+            <GradeDeCampos>
+              <Campo
+                tipo="numero"
+                rotulo="Litros"
+                span={3}
+                mono
+                valor={ab.litros}
+                aoMudar={(valor) => f.mudarAbastecimentoDaViagem('litros', valor)}
+              />
+              <Campo
+                tipo="numero"
+                rotulo="Valor por litro"
+                span={3}
+                mono
+                valor={ab.vlLitro}
+                aoMudar={(valor) => f.mudarAbastecimentoDaViagem('vlLitro', valor)}
+              />
+              <Campo
+                rotulo="Posto / fornecedor"
+                span={3}
+                valor={ab.posto}
+                aoMudar={(valor) => f.mudarAbastecimentoDaViagem('posto', valor)}
+              />
+              <Campo
+                tipo="calculado"
+                rotulo="km rodados"
+                span={3}
+                mono
+                valor={kmRodados > 0 ? kmRodados.toLocaleString('pt-BR') : '·'}
+              />
+              <Campo tipo="calculado" rotulo="Média km/L" span={3} mono valor={mediaKmL} />
+            </GradeDeCampos>
+          </>
+        ),
+      }]
+      : []),
     {
       col: [1, 9],
-      linha: 2,
+      linha: 2 + apos,
       conteudo: (
         <>
           <TituloDeSecao titulo="Custos da viagem" subtitulo="O total é a soma das parcelas e não aceita digitação" />
@@ -970,14 +1070,27 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
               valor={v.diarias}
               aoMudar={(valor) => f.mudarViagem('diarias', valor)}
             />
-            <Campo
-              tipo="dinheiro"
-              rotulo="Combustível"
-              span={6}
-              mono
-              valor={v.combustivel}
-              aoMudar={(valor) => f.mudarViagem('combustivel', valor)}
-            />
+            {combustivelAutomatico
+              ? (
+                <Campo
+                  tipo="calculado"
+                  rotulo="Combustível"
+                  span={6}
+                  mono
+                  valor={duasCasas(combustivelEfetivo)}
+                  dica="Calculado a partir do abastecimento desta viagem"
+                />
+              )
+              : (
+                <Campo
+                  tipo="dinheiro"
+                  rotulo="Combustível"
+                  span={6}
+                  mono
+                  valor={v.combustivel}
+                  aoMudar={(valor) => f.mudarViagem('combustivel', valor)}
+                />
+              )}
             <Campo tipo="calculado" rotulo="Total custo da viagem (R$)" span={6} mono valor={duasCasas(custo)} />
             <Campo
               tipo="calculado"
@@ -997,7 +1110,7 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
     },
     {
       col: [9, 13],
-      linha: 2,
+      linha: 2 + apos,
       conteudo: (
         <>
           <TituloDeSecao titulo="Pontualidade da rota" subtitulo="A diferença entre a hora prevista e a hora real de chegada" />
@@ -1020,7 +1133,7 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
     },
     {
       col: [1, 13],
-      linha: 3,
+      linha: 3 + apos,
       conteudo: (
         <>
           <TituloDeSecao
@@ -1873,6 +1986,9 @@ export default function Registrar(): JSX.Element {
   const mudarViagem = (campo: keyof Viagem, valor: string): void => {
     setRascunho((r) => ({ ...r, viagem: { ...r.viagem, [campo]: valor } }))
   }
+  const mudarAbastecimentoDaViagem = (campo: keyof AbastecimentoDaViagem, valor: string): void => {
+    setRascunho((r) => ({ ...r, abastecimentoDaViagem: { ...r.abastecimentoDaViagem, [campo]: valor } }))
+  }
   // A rota curta nao tem interior, entao escolher uma desliga a viagem longa em vez de so
   // esconder o toggle: escondido e ligado, o montador ainda gravaria as tres paradas.
   const mudarAbastecimento = (campo: CampoDeAbastecimento, valor: string): void => {
@@ -1932,6 +2048,8 @@ export default function Registrar(): JSX.Element {
     const id = idParaEditar(registro)
     const grupo = doRegistro === 'abastecimento'
       ? daBase.filter((r) => r.tipo === 'abastecimento' && idParaEditar(r) === id)
+      : doRegistro === 'viagem'
+      ? [registro, ...daBase.filter((r) => r.tipo === 'abastecimento' && texto(r, 'viagem_id') === id)]
       : [registro]
     setRascunho((r) => LEITORES_DE_RASCUNHO[doRegistro](grupo, r))
     setTipoEscolhido(doRegistro)
@@ -2070,7 +2188,9 @@ export default function Registrar(): JSX.Element {
     rotas,
     servicos,
     rotaCurta,
+    podeAbastecer: sessao.tipos.includes('abastecimento'),
     mudarViagem,
+    mudarAbastecimentoDaViagem,
     mudarAbastecimento,
     mudarLonga,
     adicionarParada,

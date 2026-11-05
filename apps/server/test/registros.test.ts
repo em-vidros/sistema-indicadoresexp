@@ -592,6 +592,100 @@ describe('editar um lançamento já gravado', () => {
   })
 })
 
+describe('abastecimento embutido no lançamento de viagem', () => {
+  const editar = (cookie: string, id: string, registros: unknown[]) =>
+    pedir(`/api/registros/${id}`, {
+      method: 'PUT',
+      headers: { cookie, 'content-type': 'application/json' },
+      body: JSON.stringify({ registros }),
+    })
+
+  const apagar = (cookie: string, tipo: string, id: string) =>
+    pedir(`/api/registros/${tipo}/${id}`, { method: 'DELETE', headers: { cookie } })
+
+  const ler = async (cookie: string, base: string) =>
+    (await (await pedir(`/api/registros?base=${encodeURIComponent(base)}`, { headers: { cookie } })).json()) as Array<
+      Record<string, unknown>
+    >
+
+  test('litros e valor por litro gravam um abastecimento vinculado, e a viagem traz os dois de volta', async () => {
+    const [salva] = await lancar(livia, [{
+      ...viagem, data_saida: '2026-09-23', data_chegada: '2026-09-23', litros: 200, vl_litro: 6.1,
+      posto: 'Posto da prova',
+    }])
+
+    const lista = await ler(livia, 'Imperatriz')
+    expect(lista).toContainEqual(expect.objectContaining({ id: salva!.id, tipo: 'viagem', litros: 200, vl_litro: 6.1 }))
+    const vinculado = lista.find((r) => r['tipo'] === 'abastecimento' && r['viagem_id'] === salva!.id)
+    expect(vinculado).toMatchObject({ litros: 200, vl_litro: 6.1, posto: 'Posto da prova', placa: 'DMG9D41' })
+  })
+
+  test('litros sem valor por litro é 400, e nada é gravado', async () => {
+    const resposta = await pedir('/api/registros', {
+      method: 'POST',
+      headers: { cookie: livia, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        registros: [{ ...viagem, data_saida: '2026-09-24', data_chegada: '2026-09-24', litros: 200 }],
+      }),
+    })
+    expect(resposta.status).toBe(400)
+    const [linha] = await sql<Array<{ n: number }>>`
+      select count(*)::int as n from viagem where data_saida = '2026-09-24' and observacao = 'Prova da fase 2'`
+    expect(linha!.n).toBe(0)
+  })
+
+  test('editar a viagem tirando os litros apaga o abastecimento vinculado', async () => {
+    const [salva] = await lancar(livia, [{
+      ...viagem, data_saida: '2026-09-25', data_chegada: '2026-09-25', litros: 150, vl_litro: 6,
+    }])
+    expect((await ler(livia, 'Imperatriz')).some((r) => r['tipo'] === 'abastecimento' && r['viagem_id'] === salva!.id))
+      .toBe(true)
+
+    const resposta = await editar(livia, salva!.id, [{
+      ...viagem, data_saida: '2026-09-25', data_chegada: '2026-09-25', litros: null, vl_litro: null,
+    }])
+    expect(resposta.status).toBe(200)
+
+    const lista = await ler(livia, 'Imperatriz')
+    expect(lista.some((r) => r['tipo'] === 'abastecimento' && r['viagem_id'] === salva!.id)).toBe(false)
+    expect(lista).toContainEqual(expect.objectContaining({ id: salva!.id, tipo: 'viagem', litros: null }))
+  })
+
+  test('editar a viagem acrescentando litros que não existiam cria o abastecimento', async () => {
+    const [salva] = await lancar(livia, [{ ...viagem, data_saida: '2026-09-26', data_chegada: '2026-09-26' }])
+    expect((await ler(livia, 'Imperatriz')).some((r) => r['tipo'] === 'abastecimento' && r['viagem_id'] === salva!.id))
+      .toBe(false)
+
+    const resposta = await editar(livia, salva!.id, [{
+      ...viagem, data_saida: '2026-09-26', data_chegada: '2026-09-26', litros: 180, vl_litro: 6.2,
+    }])
+    expect(resposta.status).toBe(200)
+
+    const lista = await ler(livia, 'Imperatriz')
+    expect(lista).toContainEqual(expect.objectContaining({ id: salva!.id, tipo: 'viagem', litros: 180, vl_litro: 6.2 }))
+    expect(lista.some((r) => r['tipo'] === 'abastecimento' && r['viagem_id'] === salva!.id)).toBe(true)
+  })
+
+  test('apagar a viagem apaga o abastecimento vinculado junto', async () => {
+    const [salva] = await lancar(livia, [{
+      ...viagem, data_saida: '2026-09-27', data_chegada: '2026-09-27', litros: 100, vl_litro: 6,
+    }])
+    const vinculado = (await ler(livia, 'Imperatriz'))
+      .find((r) => r['tipo'] === 'abastecimento' && r['viagem_id'] === salva!.id)
+    expect(vinculado).toBeDefined()
+
+    const resposta = await apagar(livia, 'viagem', salva!.id)
+    expect(resposta.status).toBe(204)
+
+    const lista = await ler(livia, 'Imperatriz')
+    expect(lista.some((r) => r['id'] === salva!.id)).toBe(false)
+    expect(lista.some((r) => r['id'] === vinculado!['id'])).toBe(false)
+    const [linha] = await sql<Array<{ apagado_em: Date | null }>>`
+      select apagado_em from abastecimento where id = ${String(vinculado!['abastecimento_id'])}::uuid`
+    expect(linha!.apagado_em).not.toBeNull()
+  })
+})
+
 describe('apagar um lançamento só', () => {
   const apagar = (cookie: string, tipo: string, id: string) =>
     pedir(`/api/registros/${tipo}/${id}`, { method: 'DELETE', headers: { cookie } })

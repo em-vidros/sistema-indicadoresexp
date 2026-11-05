@@ -14,7 +14,7 @@ import {
 } from '@ind/db'
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { Data, DataOuNula, HoraOuNula, mensagemDaEntrada } from './entrada.ts'
+import { Data, DataOuNula, HoraOuNula, TextoOuNulo, mensagemDaEntrada } from './entrada.ts'
 import type { Ambiente } from './portao.ts'
 
 /**
@@ -45,6 +45,17 @@ const Viagem = z.object({
   m2: z.number().nonnegative(),
   peso_kg: z.number().nonnegative(),
   observacao: z.string().trim().max(2000),
+  /**
+   * O abastecimento embutido no lancamento de viagem, sem passar pela aba
+   * Abastecimento. `litros` e `vl_litro` vem juntos ou nenhum dos dois -- o
+   * `superRefine` abaixo cobra isso, porque o zod sozinho nao expressa "os dois
+   * ou nenhum" entre dois campos opcionais.
+   */
+  litros: z.number().positive().nullable().optional().default(null),
+  vl_litro: z.number().nonnegative().nullable().optional().default(null),
+  posto: TextoOuNulo.refine((v) => v === null || v.length <= 240, 'posto: no máximo 240 caracteres')
+    .optional()
+    .default(null),
 })
   /**
    * O que os CHECK de `schema/registro.ts` dizem, dito onde da para responder 400.
@@ -89,6 +100,15 @@ const Viagem = z.object({
           path: ['data_chegada'],
         })
       }
+    }
+    // O abastecimento embutido so existe com os dois campos: so litros, ou so valor
+    // por litro, nao da para gravar uma parada completa.
+    if ((entrada.litros === null) !== (entrada.vl_litro === null)) {
+      contexto.addIssue({
+        code: 'custom',
+        message: 'preencha os litros e o valor por litro do abastecimento desta viagem, ou deixe os dois em branco',
+        path: ['litros'],
+      })
     }
   })
 const Abastecimento = z.object({

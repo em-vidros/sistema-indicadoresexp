@@ -39,6 +39,15 @@ export type EntradaViagem = {
   m2: number
   peso_kg: number
   observacao: string
+  /**
+   * O abastecimento embutido no lancamento de viagem -- litros/vl_litro/posto
+   * digitados ali mesmo, sem passar pela aba Abastecimento. `litros` e `vl_litro`
+   * vem juntos ou nenhum dos dois; so com os dois presentes um `abastecimento`
+   * nasce (ou se atualiza) vinculado a esta viagem por `viagemId`.
+   */
+  litros: number | null
+  vl_litro: number | null
+  posto: string | null
 }
 
 export type EntradaAbastecimento = {
@@ -140,7 +149,88 @@ async function salvarViagemEm(tx: Escritor, usuarioId: string, entrada: EntradaV
       .values({ ...valores, criadoPor: usuarioId, atualizadoPor: usuarioId })
       .returning({ id: viagem.id })
     if (!salva) throw new RegistroInvalido('viagem não foi salva')
+    await sincronizarAbastecimentoDaViagem(tx, usuarioId, entrada, salva.id, valores)
     return { ...salva, tipo: 'viagem' as const }
+}
+
+/**
+ * O abastecimento que nasce embutido no lancamento de viagem (litros/vl_litro/posto
+ * digitados ali mesmo), vinculado por `abastecimento.viagemId`. Cria quando vieram
+ * litros e ainda nao existia, atualiza quando ja existia, e apaga (soft-delete) quando
+ * os litros sumiram de uma edicao -- os tres casos do mesmo lado do `atualizarRegistro`
+ * e do `salvarViagemEm`, por isso uma funcao so para os dois caminhos.
+ *
+ * Reaproveita base/veiculo/motorista/rota que `valoresDaViagem` ja resolveu, sem bater
+ * no cadastro de novo. A permissao de 'abastecimento' so e cobrada quando litros vem
+ * preenchido -- sem isso, quem so tem permissao de 'viagem' nunca precisa dela.
+ */
+async function sincronizarAbastecimentoDaViagem(
+  tx: Escritor,
+  usuarioId: string,
+  entrada: EntradaViagem,
+  viagemId: string,
+  valoresViagem: { baseId: string; veiculoId: string; motoristaId: string; rotaId: string },
+) {
+  const [existente] = await tx
+    .select({ id: abastecimento.id })
+    .from(abastecimento)
+    .where(and(eq(abastecimento.viagemId, viagemId), isNull(abastecimento.apagadoEm)))
+
+  if (entrada.litros === null || entrada.vl_litro === null) {
+    if (existente) {
+      const agora = new Date()
+      await tx
+        .update(abastecimento)
+        .set({ apagadoEm: agora, atualizadoPor: usuarioId, atualizadoEm: agora })
+        .where(eq(abastecimento.id, existente.id))
+    }
+    return
+  }
+
+  await contextoPermitido(tx, usuarioId, entrada.base, 'abastecimento', entrada.data_saida)
+  const parada = {
+    ordem: 1,
+    litros: String(entrada.litros),
+    vlLitro: String(entrada.vl_litro),
+    // `abastecimento_parada_nao_negativo_ck` recusa km = 0 (so aceita nulo ou positivo),
+    // o mesmo tratamento que o abastecimento avulso ja da ao campo.
+    km: entrada.km_chegada || null,
+    posto: entrada.posto,
+  }
+
+  if (existente) {
+    const agora = new Date()
+    await tx
+      .update(abastecimento)
+      .set({
+        baseId: valoresViagem.baseId,
+        veiculoId: valoresViagem.veiculoId,
+        rotaId: valoresViagem.rotaId,
+        motoristaId: valoresViagem.motoristaId,
+        data: entrada.data_saida,
+        atualizadoPor: usuarioId,
+        atualizadoEm: agora,
+      })
+      .where(eq(abastecimento.id, existente.id))
+    await tx.update(abastecimentoParada).set(parada).where(eq(abastecimentoParada.abastecimentoId, existente.id))
+    return
+  }
+
+  const [salvo] = await tx
+    .insert(abastecimento)
+    .values({
+      baseId: valoresViagem.baseId,
+      veiculoId: valoresViagem.veiculoId,
+      rotaId: valoresViagem.rotaId,
+      motoristaId: valoresViagem.motoristaId,
+      data: entrada.data_saida,
+      viagemId,
+      criadoPor: usuarioId,
+      atualizadoPor: usuarioId,
+    })
+    .returning({ id: abastecimento.id })
+  if (!salvo) throw new RegistroInvalido('abastecimento da viagem não foi salvo')
+  await tx.insert(abastecimentoParada).values({ ...parada, abastecimentoId: salvo.id })
 }
 
 export function salvarRegistros(db: Db, usuarioId: string, entradas: EntradaRegistro[]) {
@@ -206,12 +296,22 @@ export async function listarRegistros(db: Db, usuarioId: string, nomeBase?: stri
         observacao: viagem.observacao,
         atraso_min: viagem.atrasoMin,
         registrado_em: viagem.criadoEm,
+        litros: abastecimentoParada.litros,
+        vl_litro: abastecimentoParada.vlLitro,
       })
       .from(viagem)
       .innerJoin(base, eq(base.id, viagem.baseId))
       .innerJoin(veiculo, eq(veiculo.id, viagem.veiculoId))
       .innerJoin(colaborador, eq(colaborador.id, viagem.motoristaId))
       .innerJoin(rota, eq(rota.id, viagem.rotaId))
+      // O abastecimento embutido nesta viagem (se tiver um): so existe 1 por viagem
+      // (`abastecimento_viagem_uk`) e so 1 parada (`ordem = 1`), entao o join nunca
+      // multiplica linha de viagem.
+      .leftJoin(abastecimento, and(eq(abastecimento.viagemId, viagem.id), isNull(abastecimento.apagadoEm)))
+      .leftJoin(
+        abastecimentoParada,
+        and(eq(abastecimentoParada.abastecimentoId, abastecimento.id), eq(abastecimentoParada.ordem, 1)),
+      )
       .where(and(inArray(viagem.baseId, ids), isNull(viagem.apagadoEm)))
       .orderBy(desc(viagem.criadoEm)),
     db
@@ -223,6 +323,7 @@ export async function listarRegistros(db: Db, usuarioId: string, nomeBase?: stri
         placa: veiculo.placa,
         motorista: colaborador.nome,
         rota: rota.nome,
+        viagem_id: abastecimento.viagemId,
         ordem: abastecimentoParada.ordem,
         litros: abastecimentoParada.litros,
         vl_litro: abastecimentoParada.vlLitro,
@@ -290,6 +391,8 @@ export async function listarRegistros(db: Db, usuarioId: string, nomeBase?: stri
     pct_custo: linha.pct_custo === null ? null : Number(linha.pct_custo),
     m2: linha.m2 === null ? 0 : Number(linha.m2),
     peso_kg: linha.peso_kg === null ? 0 : Number(linha.peso_kg),
+    litros: linha.litros === null ? null : Number(linha.litros),
+    vl_litro: linha.vl_litro === null ? null : Number(linha.vl_litro),
   })) as Array<Record<string, unknown> & { registrado_em: string }>
   saida.push(...abastecimentos.map((linha) => ({
     ...linha,
@@ -478,6 +581,7 @@ export async function atualizarRegistro(
       await contextoPermitido(tx, usuarioId, atual.nome, 'viagem', atual.data)
       const valores = await valoresDaViagem(tx, usuarioId, primeira)
       await tx.update(viagem).set({ ...valores, ...marca }).where(eq(viagem.id, id))
+      await sincronizarAbastecimentoDaViagem(tx, usuarioId, primeira, id, valores)
     } else if (primeira.tipo === 'manutencao') {
       const [atual] = await tx
         .select({ nome: base.nome, data: manutencao.dataEntrada })
@@ -541,6 +645,13 @@ export async function apagarRegistro(
       if (!atual) throw new RegistroAusente()
       await contextoPermitido(tx, usuarioId, atual.nome, 'viagem', atual.data)
       await tx.update(viagem).set(marca).where(eq(viagem.id, id))
+      // Soft-delete nao aciona o `onDelete: cascade` do FK -- esse so dispara num DELETE
+      // fisico, que esta casa nunca faz. O abastecimento embutido precisa ser apagado
+      // explicitamente junto, senao sobrevive sozinho no historico sem a viagem dele.
+      await tx
+        .update(abastecimento)
+        .set(marca)
+        .where(and(eq(abastecimento.viagemId, id), isNull(abastecimento.apagadoEm)))
     } else if (tipo === 'manutencao') {
       const [atual] = await tx
         .select({ nome: base.nome, data: manutencao.dataEntrada })

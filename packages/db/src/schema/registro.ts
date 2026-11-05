@@ -10,6 +10,7 @@ import {
   text,
   time,
   unique,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
 import { base, colaborador, rota, veiculo } from './cadastro.ts'
@@ -150,25 +151,38 @@ export const viagem = pgTable(
   ],
 )
 
-export const abastecimento = pgTable('abastecimento', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  baseId: uuid('base_id')
-    .notNull()
-    .references(() => base.id),
-  veiculoId: uuid('veiculo_id')
-    .notNull()
-    .references(() => veiculo.id),
-  rotaId: uuid('rota_id').references(() => rota.id),
-  /**
-   * De quem e a media que este abastecimento fecha -- nao necessariamente quem
-   * fisicamente abasteceu. Uma rota que chega sabado a noite pode so ser
-   * abastecida na segunda, por outro motorista; a coluna e anulavel porque
-   * abastecimento gravado antes desta coluna existir nao tem como saber.
-   */
-  motoristaId: uuid('motorista_id').references(() => colaborador.id),
-  data: date('data').notNull(),
-  ...auditoria(),
-})
+export const abastecimento = pgTable(
+  'abastecimento',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    baseId: uuid('base_id')
+      .notNull()
+      .references(() => base.id),
+    veiculoId: uuid('veiculo_id')
+      .notNull()
+      .references(() => veiculo.id),
+    rotaId: uuid('rota_id').references(() => rota.id),
+    /**
+     * De quem e a media que este abastecimento fecha -- nao necessariamente quem
+     * fisicamente abasteceu. Uma rota que chega sabado a noite pode so ser
+     * abastecida na segunda, por outro motorista; a coluna e anulavel porque
+     * abastecimento gravado antes desta coluna existir nao tem como saber.
+     */
+    motoristaId: uuid('motorista_id').references(() => colaborador.id),
+    data: date('data').notNull(),
+    /**
+     * Preenchida so quando este abastecimento nasceu embutido no lancamento de
+     * viagem (litros/vl_litro/posto digitados ali mesmo). Um abastecimento avulso,
+     * lancado pela aba propria ou pelo CSV, fica com isto nulo. `cascade` porque
+     * o embutido so existe como parte da viagem que o criou.
+     */
+    viagemId: uuid('viagem_id').references(() => viagem.id, { onDelete: 'cascade' }),
+    ...auditoria(),
+  },
+  (t) => [
+    uniqueIndex('abastecimento_viagem_uk').on(t.viagemId).where(sql`${t.viagemId} is not null`),
+  ],
+)
 
 export const abastecimentoParada = pgTable(
   'abastecimento_parada',
