@@ -39,7 +39,7 @@ import {
   TituloDeSecao,
   useAvisos,
 } from '../geist/formulario.tsx'
-import { CloudUpload, Plus, SettingsGear, Trash } from '../geist/icones.tsx'
+import { CloudUpload, PencilEdit, Plus, SettingsGear, Trash } from '../geist/icones.tsx'
 import {
   Abas,
   Badge,
@@ -64,7 +64,7 @@ import type {
   TipoPreventivo,
   VeiculoPreventivo,
 } from '../js/preventiva-api.ts'
-import { listarRegistros, salvarRegistros } from '../js/registros-api.ts'
+import { apagarRegistro, listarRegistros, salvarRegistros } from '../js/registros-api.ts'
 import type { Registro } from '../js/registros-api.ts'
 
 // ---------- tabelas de configuracao ----------
@@ -139,8 +139,9 @@ const COLUNAS_PREVENTIVAS: ReadonlyArray<{ readonly rotulo: string; readonly dir
   { rotulo: '', direita: false },
 ]
 
-const COLUNAS_CORRETIVAS = ['Data', 'Placa', 'Serviço', 'Fornecedor', 'Valor', 'Status']
-const COLUNAS_HISTORICO = ['Data', 'Placa', 'Tipo', 'Serviço', 'Fornecedor', 'Valor', 'Status']
+// A ultima coluna, sem titulo, e a das acoes (Editar e Apagar).
+const COLUNAS_CORRETIVAS = ['Data', 'Placa', 'Serviço', 'Fornecedor', 'Valor', 'Status', '']
+const COLUNAS_HISTORICO = ['Data', 'Placa', 'Tipo', 'Serviço', 'Fornecedor', 'Valor', 'Status', '']
 
 type FiltroDeTipo = 'todos' | 'preventiva' | 'corretiva'
 type FiltroDeDoc = 'todos' | 'pendente' | 'concluido'
@@ -366,9 +367,10 @@ function TabelaDePreventivas({ veiculos, aoConfigurar }: {
 
 // ---------- tabelas de manutencoes ----------
 
-function LinhaDeManutencao({ registro, comTipo }: {
+function LinhaDeManutencao({ registro, comTipo, aoApagar }: {
   readonly registro: Registro
   readonly comTipo: boolean
+  readonly aoApagar: (registro: Registro) => void
 }): JSX.Element {
   const preventiva = texto(registro, 'tipo_manutencao') === 'preventiva'
   const concluido = texto(registro, 'status_documental') === 'concluido'
@@ -396,17 +398,30 @@ function LinhaDeManutencao({ registro, comTipo }: {
           cor={concluido ? 'verde' : 'ambar'}
         />
       </Td>
+      <Td direita>
+        <span className="g-rodape-acoes">
+          {/* Editar abre o lancamento no formulario do Registrar, que ja valida e grava. */}
+          <Botao
+            tipo="terciario"
+            antes={PencilEdit}
+            rotulo="Editar"
+            href={`/registrar?tipo=manutencao&editar=${encodeURIComponent(texto(registro, 'id') ?? '')}`}
+          />
+          <Botao tipo="terciario" antes={Trash} nome="Apagar" aoClicar={() => aoApagar(registro)} />
+        </span>
+      </Td>
     </tr>
   )
 }
 
-function TabelaDeManutencoes({ titulo, subtitulo, direita, colunas, registros, vazio }: {
+function TabelaDeManutencoes({ titulo, subtitulo, direita, colunas, registros, vazio, aoApagar }: {
   readonly titulo: string
   readonly subtitulo: string
   readonly direita?: JSX.Element
   readonly colunas: readonly string[]
   readonly registros: readonly Registro[]
   readonly vazio: string
+  readonly aoApagar: (registro: Registro) => void
 }): JSX.Element {
   const comTipo = colunas.includes('Tipo')
   return (
@@ -414,13 +429,15 @@ function TabelaDeManutencoes({ titulo, subtitulo, direita, colunas, registros, v
       <CabecalhoDeBloco titulo={titulo} subtitulo={subtitulo} direita={direita} />
       <Tabela
         cabecalho={colunas.map((coluna) => (
-          <Th key={coluna} direita={coluna === 'Valor'}>{coluna}</Th>
+          <Th key={coluna || 'acoes'} direita={coluna === 'Valor' || coluna === ''}>
+            {coluna === '' ? <span className="g-escondido">Ações</span> : coluna}
+          </Th>
         ))}
       >
         {registros.length === 0
           ? <tr><Td colunas={colunas.length} vazio>{vazio}</Td></tr>
           : registros.map((registro, i) => (
-            <LinhaDeManutencao key={i} registro={registro} comTipo={comTipo} />
+            <LinhaDeManutencao key={i} registro={registro} comTipo={comTipo} aoApagar={aoApagar} />
           ))}
       </Tabela>
     </>
@@ -832,6 +849,25 @@ export default function Manutencao(): JSX.Element {
   const [vista, setVista] = useState<Vista>(VISTA_INICIAL)
   const [placaConfigurando, setPlacaConfigurando] = useState<string | null>(null)
   const [importando, setImportando] = useState(false)
+  /** O lancamento esperando confirmacao para apagar, ou nulo com o dialogo fechado. */
+  const [apagando, setApagando] = useState<Registro | null>(null)
+  const [apagandoEmProgresso, setApagandoEmProgresso] = useState(false)
+
+  async function confirmarApagar(): Promise<void> {
+    const id = apagando === null ? null : texto(apagando, 'id')
+    if (id === null || id === '') return
+    setApagandoEmProgresso(true)
+    try {
+      await apagarRegistro('manutencao', id)
+      invalidar('registros')
+      setApagando(null)
+      avisar('Lançamento apagado.', 'ok')
+    } catch (falha) {
+      avisar(falha instanceof Error ? falha.message : 'Não foi possível apagar.', 'erro')
+    } finally {
+      setApagandoEmProgresso(false)
+    }
+  }
 
   // A dependencia e o estado das leituras, e nao o render: o aviso e sobre a leitura ter
   // falhado, e uma tela que redesenha nao e uma falha nova.
@@ -891,6 +927,7 @@ export default function Manutencao(): JSX.Element {
       colunas={COLUNAS_CORRETIVAS}
       registros={corretivas}
       vazio="Nenhuma corretiva registrada para esta base"
+      aoApagar={setApagando}
     />,
     <TabelaDeManutencoes
       key="historico"
@@ -915,6 +952,7 @@ export default function Manutencao(): JSX.Element {
       colunas={COLUNAS_HISTORICO}
       registros={historico}
       vazio="Nenhum registro com esses filtros"
+      aoApagar={setApagando}
     />,
   ][vista.aba]
 
@@ -997,6 +1035,30 @@ export default function Manutencao(): JSX.Element {
       {importando
         ? <DialogoDoImport base={baseAtual} aoFechar={() => setImportando(false)} />
         : null}
+
+      <Dialogo
+        aberto={apagando !== null}
+        titulo="Apagar lançamento"
+        subtitulo="Manutenção"
+        aoFechar={() => setApagando(null)}
+        acoes={
+          <>
+            <Botao tipo="terciario" rotulo="Cancelar" aoClicar={() => setApagando(null)} />
+            <Botao
+              tipo="primario"
+              rotulo="Apagar lançamento"
+              carregando={apagandoEmProgresso}
+              aoClicar={() => void confirmarApagar()}
+            />
+          </>
+        }
+      >
+        <div className="g-l14">
+          {apagando === null
+            ? null
+            : `Isto apaga "${texto(apagando, 'placa')} · ${texto(apagando, 'servico')}" do histórico. Não tem como desfazer pela tela. O km já registrado no plano preventivo não volta sozinho.`}
+        </div>
+      </Dialogo>
     </>
   )
 }

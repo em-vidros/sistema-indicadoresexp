@@ -13,7 +13,7 @@
 import { useEffect, useState } from 'react'
 import type { JSX, ReactNode } from 'react'
 import { invalidar, useRecurso, useSessao } from '../app/dados.ts'
-import { useLocalizacao } from '../app/navegacao.tsx'
+import { navegar, useLocalizacao } from '../app/navegacao.tsx'
 import { brl, numero, texto } from '../dashboard/dominio.ts'
 import { lerDinheiro, lerNumero } from '../dashboard/digitado.ts'
 import { hojeISO } from '../app/data.ts'
@@ -1948,6 +1948,28 @@ export default function Registrar(): JSX.Element {
     const tipo = tipoDe(parametros.get('tipo') ?? '')
     if (tipo !== null) setTipoEscolhido(tipo)
   }, [busca])
+
+  // O "Editar" da aba Historico da Manutencao chega aqui com `?editar=<id>`: carrega o
+  // lancamento no formulario, como o Editar do historico desta tela, e tira o parametro da
+  // URL para que recarregar a pagina nao reabra a edicao.
+  const idParaAbrir = new URLSearchParams(busca).get('editar')
+  const listaDeRegistros = registros.dados ?? null
+  useEffect(() => {
+    if (idParaAbrir === null || idParaAbrir === '' || listaDeRegistros === null) return
+    const alvo = listaDeRegistros.find((r) => r.tipo === 'manutencao' && texto(r, 'id') === idParaAbrir)
+    if (alvo === undefined) {
+      avisar('Lançamento não encontrado. Talvez já tenha sido apagado.', 'erro')
+    } else {
+      setBase(alvo.base)
+      setRascunho((r) => LEITORES_DE_RASCUNHO.manutencao([alvo], r))
+      setTipoEscolhido('manutencao')
+      setEditando({ id: idParaAbrir, tipo: 'manutencao' })
+    }
+    const restante = new URLSearchParams(busca)
+    restante.delete('editar')
+    const consulta = restante.toString()
+    navegar(`/registrar${consulta === '' ? '' : `?${consulta}`}`, { substituir: true })
+  }, [idParaAbrir, listaDeRegistros])
 
   if (sessao === null) return <Esqueleto />
 
