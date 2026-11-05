@@ -1,0 +1,3 @@
+ALTER TABLE "abastecimento" ADD COLUMN "viagem_id" uuid;--> statement-breakpoint
+ALTER TABLE "abastecimento" ADD CONSTRAINT "abastecimento_viagem_id_viagem_id_fk" FOREIGN KEY ("viagem_id") REFERENCES "public"."viagem"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "abastecimento_viagem_uk" ON "abastecimento" USING btree ("viagem_id") WHERE "abastecimento"."viagem_id" is not null;
