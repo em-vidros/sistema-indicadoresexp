@@ -5,7 +5,7 @@
  * o catalogo de tipos, e o PUT grava o plano de um veiculo por vez, que e como a
  * tela edita. Quem autoriza e a base do veiculo, na camada de consulta.
  */
-import { RegistroInvalido, type Db, gravarPreventiva, listarPreventiva } from '@ind/db'
+import { RegistroInvalido, type Db, gravarKmAtual, gravarPreventiva, listarPreventiva } from '@ind/db'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { Ambiente } from './portao.ts'
@@ -33,8 +33,29 @@ const Corpo = z
     }
   })
 
+/**
+ * O km atual informado a mao. `null` limpa e devolve o veiculo ao km dos registros. O teto
+ * e folga larga para um odometro de caminhao, e existe para um zero a mais digitado sem
+ * querer nao virar um km de bilhoes.
+ */
+const CorpoKm = z.object({ km: z.number().int().positive().max(9_999_999).nullable() })
+
 export function rotasPreventiva(db: Db): Hono<Ambiente> {
   const rotas = new Hono<Ambiente>()
+
+  rotas.put('/preventiva/:veiculoId/km', async (c) => {
+    const veiculoId = z.string().uuid().safeParse(c.req.param('veiculoId'))
+    const entrada = CorpoKm.safeParse(await c.req.json().catch(() => null))
+    if (!veiculoId.success || !entrada.success) return c.json({ erro: 'entrada inválida' }, 400)
+    try {
+      return c.json(await gravarKmAtual(db, c.get('usuarioId'), veiculoId.data, entrada.data.km))
+    } catch (falha) {
+      if (falha instanceof RegistroInvalido) {
+        return c.json({ erro: falha.message }, falha.proibido ? 403 : 400)
+      }
+      throw falha
+    }
+  })
 
   rotas.get('/preventiva', async (c) => {
     try {

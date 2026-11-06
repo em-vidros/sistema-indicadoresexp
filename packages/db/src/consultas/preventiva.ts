@@ -41,6 +41,9 @@ export type VeiculoPreventivo = {
   modelo: string | null
   marca: string | null
   ano: string | null
+  /** O km atual informado a mao, ou nulo quando vale o dos registros. */
+  km_atual: number | null
+  km_atual_em: string | null
   itens: ItemPreventivo[]
 }
 
@@ -99,6 +102,8 @@ export async function listarPreventiva(db: Db, usuarioId: string): Promise<Plano
       modelo: veiculo.modelo,
       marca: veiculo.marca,
       ano: veiculo.ano,
+      km_atual: veiculo.kmAtual,
+      km_atual_em: veiculo.kmAtualEm,
     })
     .from(veiculo)
     .innerJoin(base, eq(base.id, veiculo.baseId))
@@ -111,9 +116,48 @@ export async function listarPreventiva(db: Db, usuarioId: string): Promise<Plano
     tipos,
     veiculos: veiculos.map((item) => ({
       ...item,
+      km_atual_em: item.km_atual_em === null ? null : item.km_atual_em.toISOString(),
       itens: itens.filter((linha) => linha.veiculoId === item.id).map(semVeiculo),
     })),
   }
+}
+
+/**
+ * Grava (ou limpa, com `km` nulo) o km atual de um veiculo, informado a mao. Mesma
+ * autorizacao do plano: a base do veiculo tem que ser uma das do usuario. Quem informou e
+ * quando ficam junto, e limpar zera os tres, devolvendo o veiculo ao km dos registros.
+ */
+export async function gravarKmAtual(
+  db: Db,
+  usuarioId: string,
+  veiculoId: string,
+  km: number | null,
+): Promise<{ id: string; placa: string; km_atual: number | null; km_atual_em: string | null }> {
+  if (km !== null && (!Number.isInteger(km) || km <= 0)) {
+    throw new RegistroInvalido('km inválido')
+  }
+  return await db.transaction(async (tx) => {
+    const [alvo] = await tx
+      .select({ id: veiculo.id, placa: veiculo.placa, baseId: veiculo.baseId })
+      .from(veiculo)
+      .where(eq(veiculo.id, veiculoId))
+    if (!alvo) throw new RegistroInvalido('veículo inexistente')
+
+    const bases = await basesDoUsuario(tx, usuarioId)
+    if (!bases.includes(alvo.baseId)) throw new RegistroInvalido('operação não permitida', true)
+
+    const agora = km === null ? null : new Date()
+    await tx
+      .update(veiculo)
+      .set({ kmAtual: km, kmAtualEm: agora, kmAtualPor: km === null ? null : usuarioId })
+      .where(eq(veiculo.id, alvo.id))
+    return {
+      id: alvo.id,
+      placa: alvo.placa,
+      km_atual: km,
+      km_atual_em: agora === null ? null : agora.toISOString(),
+    }
+  })
 }
 
 async function itensDe(db: Leitor, veiculoIds: string[]) {
@@ -167,6 +211,8 @@ export async function gravarPreventiva(
         modelo: veiculo.modelo,
         marca: veiculo.marca,
         ano: veiculo.ano,
+        kmAtual: veiculo.kmAtual,
+        kmAtualEm: veiculo.kmAtualEm,
       })
       .from(veiculo)
       .innerJoin(base, eq(base.id, veiculo.baseId))
@@ -234,6 +280,8 @@ export async function gravarPreventiva(
       modelo: alvo.modelo,
       marca: alvo.marca,
       ano: alvo.ano,
+      km_atual: alvo.kmAtual,
+      km_atual_em: alvo.kmAtualEm === null ? null : alvo.kmAtualEm.toISOString(),
       itens: gravados.map(semVeiculo),
     }
   })

@@ -57,7 +57,7 @@ import {
 } from '../geist/primitivos.tsx'
 import type { CorDeBadge, Opcao } from '../geist/primitivos.tsx'
 import { obterCadastro } from '../js/cadastro-api.ts'
-import { gravarPreventiva, obterPreventiva } from '../js/preventiva-api.ts'
+import { gravarKmAtual, gravarPreventiva, obterPreventiva } from '../js/preventiva-api.ts'
 import type {
   EntradaItemPreventivo,
   ItemPreventivo,
@@ -126,7 +126,7 @@ const TOM_DO_STATUS: Readonly<Record<StatusItem, string | null>> = {
   sem_dado: null,
 }
 
-const ABAS = ['Preventivas', 'Corretivas', 'Histórico']
+const ABAS = ['Preventivas', 'Corretivas', 'Histórico', 'KM atual']
 
 const COLUNAS_PREVENTIVAS: ReadonlyArray<{ readonly rotulo: string; readonly direita: boolean }> = [
   { rotulo: 'Placa', direita: false },
@@ -233,7 +233,9 @@ function maisUrgente(itens: readonly ItemAvaliado[]): ItemAvaliado | null {
 }
 
 function avaliar(veiculo: VeiculoPreventivo, registros: readonly Registro[]): VeiculoAvaliado {
-  const kmAtual = kmAtualPorPlaca(registros, veiculo.placa) ?? ULTIMO_KM_PGQ[veiculo.placa] ?? null
+  // O km informado a mao na aba "KM atual" vale primeiro, mesmo quando e menor que o dos
+  // registros: e assim que se corrige um km digitado errado. Sem ele, o dos registros.
+  const kmAtual = veiculo.km_atual ?? kmAtualPorPlaca(registros, veiculo.placa) ?? ULTIMO_KM_PGQ[veiculo.placa] ?? null
   const itens = naOrdemDoCatalogo(veiculo.itens, ORDEM_CATALOGO).map((item) => calcularStatus(item, kmAtual))
   return {
     id: veiculo.id,
@@ -358,6 +360,136 @@ function TabelaDePreventivas({ veiculos, aoConfigurar }: {
               key={veiculo.id}
               veiculo={veiculo}
               aoConfigurar={() => aoConfigurar(veiculo.placa)}
+            />
+          ))}
+      </Tabela>
+    </>
+  )
+}
+
+// ---------- aba KM atual ----------
+
+const COLUNAS_KM_ATUAL: ReadonlyArray<{ readonly rotulo: string; readonly direita: boolean }> = [
+  { rotulo: 'Placa', direita: false },
+  { rotulo: 'Modelo', direita: false },
+  { rotulo: 'KM atual', direita: false },
+  { rotulo: 'KM dos registros', direita: true },
+  { rotulo: 'Origem', direita: false },
+  { rotulo: 'Atualizado em', direita: false },
+  { rotulo: '', direita: false },
+]
+
+/** `2026-11-06T12:00:00Z` vira `06/11/2026`; sem data, o ponto medio. */
+function dataCompleta(iso: string | null): string {
+  const [ano, mes, dia] = (iso ?? '').slice(0, 10).split('-')
+  return ano === undefined || mes === undefined || dia === undefined ? VAZIO : `${dia}/${mes}/${ano}`
+}
+
+function LinhaKmAtual({ veiculo, kmDosRegistros }: {
+  readonly veiculo: VeiculoPreventivo
+  readonly kmDosRegistros: number | null
+}): JSX.Element {
+  const { avisar } = useAvisos()
+  const manual = veiculo.km_atual
+  const [digitado, setDigitado] = useState(manual === null ? '' : String(manual))
+  const [gravando, setGravando] = useState(false)
+
+  // O que a tela mostra de partida e o que o servidor tem. Quando a lista recarrega com outro
+  // valor (outra aba salvou, ou limpou), o campo acompanha, e nao fica com o digitado antigo.
+  useEffect(() => {
+    setDigitado(manual === null ? '' : String(manual))
+  }, [manual])
+
+  const lido = digitado.trim() === '' ? null : Math.trunc(lerNumero(digitado))
+  const invalido = lido !== null && lido <= 0
+  const mudou = (lido ?? null) !== manual
+  // O km dos registros e maior: o digitado pode estar defasado, e quem digita precisa saber.
+  const defasado = manual !== null && kmDosRegistros !== null && kmDosRegistros > manual
+
+  async function gravar(km: number | null): Promise<void> {
+    setGravando(true)
+    try {
+      await gravarKmAtual(veiculo.id, km)
+      invalidar('preventiva')
+      avisar(km === null ? `${veiculo.placa}: voltou ao km dos registros.` : `${veiculo.placa}: km atual gravado.`, 'ok')
+    } catch (falha) {
+      avisar(motivoDaFalha(falha, 'Não foi possível gravar o km.'), 'erro')
+    } finally {
+      setGravando(false)
+    }
+  }
+
+  return (
+    <tr>
+      <Td><span className="g-l13m g-forte">{veiculo.placa}</span></Td>
+      <Td><span className="g-fraco">{veiculo.modelo ?? VAZIO}</span></Td>
+      <Td>
+        <input
+          className="g-campo-entrada g-l14m"
+          type="text"
+          inputMode="numeric"
+          aria-label={`KM atual de ${veiculo.placa}`}
+          placeholder={kmDosRegistros === null ? 'km' : `${emKm(kmDosRegistros)} (registros)`}
+          value={digitado}
+          aria-invalid={invalido ? true : undefined}
+          style={{ width: 170 }}
+          onChange={(e) => setDigitado(e.currentTarget.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && mudou && !invalido && lido !== null && !gravando) void gravar(lido)
+          }}
+        />
+      </Td>
+      <Td direita>{kmDosRegistros === null ? <span className="g-fraco">{VAZIO}</span> : emKm(kmDosRegistros)}</Td>
+      <Td>
+        {manual === null
+          ? <Badge rotulo="Automático" cor="cinza" comIcone={false} />
+          : defasado
+          ? <Badge rotulo="Manual, registros têm km maior" cor="ambar" />
+          : <Badge rotulo="Manual" cor="teal" comIcone={false} />}
+      </Td>
+      <Td><span className="g-fraco">{dataCompleta(veiculo.km_atual_em)}</span></Td>
+      <Td>
+        <div className="g-rodape-acoes">
+          <Botao
+            rotulo="Salvar"
+            tipo="primario"
+            carregando={gravando}
+            desabilitado={!mudou || invalido || lido === null || gravando}
+            aoClicar={() => lido !== null && void gravar(lido)}
+          />
+          <Botao
+            rotulo="Usar registros"
+            desabilitado={manual === null || gravando}
+            aoClicar={() => void gravar(null)}
+          />
+        </div>
+      </Td>
+    </tr>
+  )
+}
+
+function TabelaDeKmAtual({ veiculos, registros }: {
+  readonly veiculos: readonly VeiculoPreventivo[]
+  readonly registros: readonly Registro[]
+}): JSX.Element {
+  return (
+    <>
+      <CabecalhoDeBloco
+        titulo="KM atual dos veículos"
+        subtitulo="O km que você informa vale no cálculo do vencimento, mesmo menor que o dos registros. Sem km informado, vale o dos registros."
+      />
+      <Tabela
+        cabecalho={COLUNAS_KM_ATUAL.map((coluna) => (
+          <Th key={coluna.rotulo === '' ? 'acoes' : coluna.rotulo} direita={coluna.direita}>{coluna.rotulo}</Th>
+        ))}
+      >
+        {veiculos.length === 0
+          ? <tr><Td colunas={COLUNAS_KM_ATUAL.length} vazio>Nenhum veículo nesta base</Td></tr>
+          : veiculos.map((veiculo) => (
+            <LinhaKmAtual
+              key={veiculo.id}
+              veiculo={veiculo}
+              kmDosRegistros={kmAtualPorPlaca(registros, veiculo.placa)}
             />
           ))}
       </Tabela>
@@ -953,6 +1085,11 @@ export default function Manutencao(): JSX.Element {
       registros={historico}
       vazio="Nenhum registro com esses filtros"
       aoApagar={setApagando}
+    />,
+    <TabelaDeKmAtual
+      key="km"
+      veiculos={(plano.dados?.veiculos ?? []).filter((v) => v.base === baseAtual)}
+      registros={todosOsRegistros}
     />,
   ][vista.aba]
 

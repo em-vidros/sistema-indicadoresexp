@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { gravarPreventiva, obterPreventiva } from '../src/js/preventiva-api.ts'
+import { gravarKmAtual, gravarPreventiva, obterPreventiva } from '../src/js/preventiva-api.ts'
 
 describe('a tela de manutencao fala com a API', () => {
   test('le o plano e o catalogo do banco', async () => {
@@ -70,5 +70,39 @@ describe('a tela de manutencao fala com a API', () => {
     expect(gravarPreventiva('d84e0e82-b094-55ad-bb3e-f6cdf910a208', [], chamar)).rejects.toThrow(
       'operação não permitida',
     )
+  })
+})
+
+describe('a aba KM atual fala com a API', () => {
+  const id = 'd84e0e82-b094-55ad-bb3e-f6cdf910a208'
+
+  test('grava o km num PUT para a rota do veiculo', async () => {
+    const pedidos: Array<{ caminho: string; metodo: string; corpo: BodyInit | null | undefined }> = []
+    const chamar = async (recurso: string | URL | Request, init?: RequestInit) => {
+      pedidos.push({ caminho: recurso.toString(), metodo: init?.method ?? 'GET', corpo: init?.body })
+      return Response.json({ id, placa: 'PTV0006', km_atual: 424638, km_atual_em: '2026-11-06T12:00:00.000Z' })
+    }
+    const salvo = await gravarKmAtual(id, 424638, chamar)
+    expect(pedidos[0]?.caminho).toBe(`/api/preventiva/${id}/km`)
+    expect(pedidos[0]?.metodo).toBe('PUT')
+    expect(JSON.parse(String(pedidos[0]?.corpo))).toEqual({ km: 424638 })
+    expect(salvo.km_atual).toBe(424638)
+  })
+
+  // Limpar e um pedido de verdade: se o modulo pulasse o PUT com `null`, o veiculo voltaria
+  // ao km manual no proximo carregamento.
+  test('km nulo tambem vai para o servidor, para limpar', async () => {
+    let corpo: BodyInit | null | undefined
+    const chamar = async (_recurso: string | URL | Request, init?: RequestInit) => {
+      corpo = init?.body
+      return Response.json({ id, placa: 'PTV0006', km_atual: null, km_atual_em: null })
+    }
+    await gravarKmAtual(id, null, chamar)
+    expect(JSON.parse(String(corpo))).toEqual({ km: null })
+  })
+
+  test('a recusa da API vira erro com o motivo dela', async () => {
+    const chamar = async () => Response.json({ erro: 'km inválido' }, { status: 400 })
+    expect(gravarKmAtual(id, 0, chamar)).rejects.toThrow('km inválido')
   })
 })

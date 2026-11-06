@@ -38,6 +38,9 @@ export type VeiculoPreventivo = {
   modelo: string | null
   marca: string | null
   ano: string | null
+  /** O km atual informado a mao na aba "KM atual", ou nulo quando vale o dos registros. */
+  km_atual: number | null
+  km_atual_em: string | null
   itens: ItemPreventivo[]
 }
 
@@ -59,6 +62,23 @@ async function pedirJson<T>(caminho: string, init: RequestInit, chamar: Chamar):
 
 export async function obterPreventiva(chamar: Chamar = fetch): Promise<PlanoPreventivo> {
   return await pedirJson('/api/preventiva', {}, chamar)
+}
+
+/** Grava o km atual de um veiculo, ou limpa com `null` para voltar ao km dos registros. */
+export async function gravarKmAtual(
+  veiculoId: string,
+  km: number | null,
+  chamar: Chamar = fetch,
+): Promise<{ id: string; placa: string; km_atual: number | null; km_atual_em: string | null }> {
+  return await pedirJson(
+    `/api/preventiva/${encodeURIComponent(veiculoId)}/km`,
+    {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ km }),
+    },
+    chamar,
+  )
 }
 
 export async function gravarPreventiva(

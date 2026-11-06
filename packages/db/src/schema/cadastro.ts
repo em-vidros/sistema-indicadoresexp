@@ -1,5 +1,16 @@
 import { sql } from 'drizzle-orm'
-import { boolean, date, integer, pgEnum, pgTable, text, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  date,
+  integer,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core'
 
 export const funcaoColaborador = pgEnum('funcao_colaborador', [
   'motorista',
@@ -24,6 +35,16 @@ export const veiculo = pgTable('veiculo', {
   ano: text('ano'),
   /** Quantos eixos o veiculo tem. Nulo pra picape e outro veiculo que nao se conta assim. */
   eixos: integer('eixos'),
+  /**
+   * O km atual informado a mao (aba "KM atual" da Manutencao). Nulo e o padrao: o veiculo
+   * usa o maior km dos registros. Preenchido, vale no calculo do vencimento da preventiva,
+   * inclusive quando e menor que o dos registros, que e como se corrige um km digitado errado.
+   * `km_atual_por` e o id do usuario, sem FK: `auth.ts` ja importa este arquivo, e a FK
+   * fecharia um ciclo de import entre os dois schemas.
+   */
+  kmAtual: integer('km_atual'),
+  kmAtualEm: timestamp('km_atual_em', { withTimezone: true }),
+  kmAtualPor: text('km_atual_por'),
   baseId: uuid('base_id')
     .notNull()
     .references(() => base.id),

@@ -160,3 +160,72 @@ describe('plano de preventiva no banco', () => {
     expect((await gravar(livia, 'PTV0006', [lavagem])).status).toBe(400)
   })
 })
+
+async function gravarKm(cookie: string, veiculoId: string, corpo: unknown) {
+  return await pedir(`/api/preventiva/${veiculoId}/km`, {
+    method: 'PUT',
+    headers: { cookie, 'content-type': 'application/json' },
+    body: JSON.stringify(corpo),
+  })
+}
+
+async function kmNoBanco(veiculoId: string) {
+  const [linha] = await sql<Array<{ km_atual: number | null; km_atual_em: Date | null; km_atual_por: string | null }>>`
+    select km_atual, km_atual_em, km_atual_por from veiculo where id = ${veiculoId}::uuid`
+  return linha!
+}
+
+describe('km atual do veículo, informado à mão', () => {
+  test('a Lívia grava o km, e o plano devolve o km, a data e quem informou fica no banco', async () => {
+    const resposta = await gravarKm(livia, deImperatriz, { km: 123456 })
+    expect(resposta.status).toBe(200)
+    expect(await resposta.json()).toMatchObject({ id: deImperatriz, placa: PLACAS[0]!, km_atual: 123456 })
+
+    const veiculo = (await planoDe(livia)).veiculos.find((item) => item.id === deImperatriz) as
+      | (Veiculo & { km_atual: number | null; km_atual_em: string | null })
+      | undefined
+    expect(veiculo?.km_atual).toBe(123456)
+    expect(veiculo?.km_atual_em).not.toBeNull()
+    const banco = await kmNoBanco(deImperatriz)
+    expect(banco.km_atual_por).toBe('usr_livia')
+  })
+
+  test('um km menor que o anterior é aceito: é assim que se corrige um km digitado errado', async () => {
+    expect((await gravarKm(livia, deImperatriz, { km: 100 })).status).toBe(200)
+    expect((await kmNoBanco(deImperatriz)).km_atual).toBe(100)
+  })
+
+  test('km nulo limpa o km, a data e quem informou', async () => {
+    await gravarKm(livia, deImperatriz, { km: 5000 })
+    const resposta = await gravarKm(livia, deImperatriz, { km: null })
+    expect(resposta.status).toBe(200)
+    expect(await resposta.json()).toMatchObject({ km_atual: null, km_atual_em: null })
+    expect(await kmNoBanco(deImperatriz)).toEqual({ km_atual: null, km_atual_em: null, km_atual_por: null })
+  })
+
+  test('km inválido é 400 e o que estava gravado não muda', async () => {
+    await gravarKm(livia, deImperatriz, { km: 7777 })
+    for (const corpo of [{ km: 0 }, { km: -5 }, { km: 1.5 }, { km: '123' }, { km: 10_000_000 }, {}, null]) {
+      expect((await gravarKm(livia, deImperatriz, corpo)).status).toBe(400)
+    }
+    expect((await kmNoBanco(deImperatriz)).km_atual).toBe(7777)
+  })
+
+  test('Andreina não grava o km de um veículo de Imperatriz', async () => {
+    await gravarKm(livia, deImperatriz, { km: 8888 })
+    const resposta = await gravarKm(andreina, deImperatriz, { km: 1 })
+    expect(resposta.status).toBe(403)
+    expect((await kmNoBanco(deImperatriz)).km_atual).toBe(8888)
+  })
+
+  test('Andreina grava o km de um veículo da sua base', async () => {
+    const resposta = await gravarKm(andreina, daRaposa, { km: 4321 })
+    expect(resposta.status).toBe(200)
+    expect((await kmNoBanco(daRaposa)).km_atual).toBe(4321)
+  })
+
+  test('veículo inexistente é 400, e id que não é uuid também', async () => {
+    expect((await gravarKm(livia, '00000000-0000-4000-8000-000000000000', { km: 10 })).status).toBe(400)
+    expect((await gravarKm(livia, 'PTV0006', { km: 10 })).status).toBe(400)
+  })
+})
