@@ -25,9 +25,14 @@
  * e periodo de uma vez, navegando para a query padrao, o que zera tudo pelo mesmo
  * caminho. Botao desenhado que nao faz nada e pior que botao ausente.
  *
- * O CSV do "Exportar" leva as mesmas colunas, o mesmo texto de cada celula e a mesma
- * ordem da tabela, e leva todas as linhas que os filtros deixaram passar, nao so as dez
- * da pagina aberta. A paginacao e a janela por onde se olha a tabela, e nao a tabela.
+ * O "Exportar Excel" gera um .xlsx com as mesmas colunas e a mesma ordem da tabela, mas com
+ * numero como numero e data como data (o texto "R$ 1.234,00" nao somava no Excel). Leva
+ * todas as linhas que os filtros deixaram passar, mes incluido, nao so as dez da pagina
+ * aberta. A paginacao e a janela por onde se olha a tabela, e nao a tabela.
+ *
+ * O seletor "Mes" e da vista, e nao da query: so existe aqui, e lista os meses que tem
+ * viagem no recorte de base e periodo. Ele filtra por cima do periodo, entao para ver um
+ * mes antigo o periodo precisa ser "Todo o periodo".
  */
 import { useState } from 'react'
 import type { JSX } from 'react'
@@ -44,7 +49,8 @@ import {
   useFiltros,
 } from '../dashboard/filtros.ts'
 import type { Filtros } from '../dashboard/filtros.ts'
-import { baixarCsv } from '../dashboard/relatorio.ts'
+import { baixarXlsx } from '../dashboard/relatorio.ts'
+import { useAvisos } from '../geist/formulario.tsx'
 import { ChevronLeft, ChevronRight, Download, Filter, Plus } from '../geist/icones.tsx'
 import {
   Badge,
@@ -85,10 +91,28 @@ const OPCOES_DE_PONTUALIDADE: ReadonlyArray<Opcao<FiltroDePontualidade>> = [
 type Vista = {
   readonly busca: string
   readonly pontualidade: FiltroDePontualidade
+  /** `todos`, ou o mes escolhido como `AAAA-MM`. */
+  readonly mes: string
   readonly pagina: number
 }
 
-const VISTA_INICIAL: Vista = { busca: '', pontualidade: 'todas', pagina: 1 }
+const VISTA_INICIAL: Vista = { busca: '', pontualidade: 'todas', mes: 'todos', pagina: 1 }
+
+const NOMES_DOS_MESES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+] as const
+
+/** `AAAA-MM` da viagem, que e o que o seletor de mes compara. */
+function mesDa(viagem: Viagem): string {
+  return dataDa(viagem).slice(0, 7)
+}
+
+/** `2026-10` vira `Outubro/2026`. */
+function rotuloDoMes(mes: string): string {
+  const [ano, numero] = mes.split('-')
+  return `${NOMES_DOS_MESES[Number(numero) - 1] ?? mes}/${ano}`
+}
 
 /** Toda mudanca de recorte volta para a primeira pagina, senao a tabela abre vazia. */
 function restringir(vista: Vista, mudanca: Partial<Omit<Vista, 'pagina'>>): Vista {
@@ -156,9 +180,18 @@ export default function Viagens(): JSX.Element {
   const registros = useRegistros()
   const { itens } = registros
   const [vista, setVista] = useState<Vista>(VISTA_INICIAL)
+  const { avisar } = useAvisos()
 
   const todas = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo)).viagens
+  // So os meses que tem viagem no recorte de base e periodo: escolher um mes vazio so
+  // mostraria uma tabela vazia. O mais recente primeiro.
+  const mesesComViagem = [...new Set(todas.map(mesDa).filter((m) => /^\d{4}-\d{2}$/.test(m)))].sort().reverse()
+  const OPCOES_DE_MES: ReadonlyArray<Opcao<string>> = [
+    { valor: 'todos', rotulo: 'Todos' },
+    ...mesesComViagem.map((valor) => ({ valor, rotulo: rotuloDoMes(valor) })),
+  ]
   const achadas = [...todas]
+    .filter((v) => vista.mes === 'todos' || mesDa(v) === vista.mes)
     .filter((v) => vista.pontualidade === 'todas' || v.pontualidade === vista.pontualidade)
     .filter((v) => combina(v, vista.busca))
     .sort((a, b) => dataDa(b).localeCompare(dataDa(a)))
@@ -174,8 +207,42 @@ export default function Viagens(): JSX.Element {
     void definirFiltros(novos)
   }
 
-  const exportar = (): void => {
-    baixarCsv(`viagens-${filtros.base}-${filtros.periodo}.csv`, [COLUNAS, ...achadas.map(celulasDa)])
+  /**
+   * O Excel recebe numero como numero e data como data, e nao o texto da tabela: "R$ 1.234,00"
+   * entrava como texto e nao somava. Leva todas as linhas que os filtros deixaram, incluindo o
+   * mes escolhido, e nao so as dez da pagina.
+   */
+  const exportar = async (): Promise<void> => {
+    if (achadas.length === 0) {
+      avisar('Não há viagens neste recorte para exportar.', 'erro')
+      return
+    }
+    const dinheiro = '"R$" #,##0.00'
+    const cabecalho = COLUNAS.map((value) => ({ value, fontWeight: 'bold' as const }))
+    const linhas = achadas.map((viagem) => {
+      const [ano, mes, dia] = dataDa(viagem).slice(0, 10).split('-').map(Number)
+      const data = ano && mes && dia ? new Date(Date.UTC(ano, mes - 1, dia)) : null
+      return [
+        data === null ? null : { value: data, type: Date, format: 'dd/mm/yyyy' },
+        viagem.motorista || null,
+        viagem.veiculo || null,
+        viagem.rota || null,
+        viagem.km === null ? null : { value: viagem.km, format: '#,##0' },
+        { value: viagem.valorCarga, format: dinheiro },
+        { value: viagem.custoViagem, format: dinheiro },
+        { value: viagem.pctCusto / 100, format: '0.00%' },
+        viagem.pontualidade === null ? null : PONTUALIDADES[viagem.pontualidade].rotulo,
+      ]
+    })
+    try {
+      await baixarXlsx(
+        `viagens-${filtros.base}-${vista.mes === 'todos' ? filtros.periodo : vista.mes}.xlsx`,
+        [cabecalho, ...linhas],
+        [12, 28, 12, 24, 10, 16, 16, 10, 14],
+      )
+    } catch {
+      avisar('Não foi possível gerar o Excel. Tente de novo.', 'erro')
+    }
   }
 
   const tabela = (
@@ -216,7 +283,7 @@ export default function Viagens(): JSX.Element {
         subtitulo={`${todas.length} ${todas.length === 1 ? 'viagem' : 'viagens'} · ${PERIODOS[filtros.periodo].rotulo} · ${BASES[filtros.base].naCasca}`}
         acoes={
           <>
-            <Botao rotulo="Exportar" antes={Download} aoClicar={exportar} />
+            <Botao rotulo="Exportar Excel" antes={Download} aoClicar={() => void exportar()} />
             <Botao rotulo="Registrar rota" tipo="primario" antes={Plus} href="/registrar" />
           </>
         }
@@ -240,6 +307,12 @@ export default function Viagens(): JSX.Element {
           valor={filtros.periodo}
           opcoes={OPCOES_DE_PERIODO}
           aoEscolher={(periodo) => irPara({ ...filtros, periodo })}
+        />
+        <Seletor
+          rotulo="Mês"
+          valor={vista.mes}
+          opcoes={OPCOES_DE_MES}
+          aoEscolher={(mes) => setVista((atual) => restringir(atual, { mes }))}
         />
         <Seletor
           rotulo="Pontualidade"

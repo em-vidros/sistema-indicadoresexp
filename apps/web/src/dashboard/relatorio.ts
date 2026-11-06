@@ -14,6 +14,7 @@ import { BASES, PERIODOS } from './filtros.ts'
 import type { Filtros } from './filtros.ts'
 import { brl, fmtPct, parcela } from './dominio.ts'
 import type { Indicadores, Rota } from './dominio.ts'
+import type { SheetData } from 'write-excel-file/universal'
 
 export function textoDoRelatorio(kpis: Indicadores, filtros: Filtros, agora: Date): string {
   return [
@@ -107,6 +108,21 @@ export function baixarCsv(nome: string, linhas: ReadonlyArray<readonly string[]>
     /[";\n]/.test(celula) ? `"${celula.replaceAll('"', '""')}"` : celula
   const corpo = linhas.map((linha) => linha.map(escapar).join(';')).join('\n')
   baixar(nome, `﻿${corpo}`, 'text/csv;charset=utf-8')
+}
+
+/**
+ * O `.xlsx` de verdade, com numero como numero e data como data, para somar e filtrar no
+ * Excel sem converter texto. A biblioteca so e baixada quando alguem exporta (import
+ * dinamico), e o resto do painel nao paga por ela. A primeira linha e o cabecalho e fica
+ * congelada. `larguras` e uma por coluna, em caracteres.
+ */
+export async function baixarXlsx(nome: string, linhas: SheetData, larguras: readonly number[]): Promise<void> {
+  const { default: escrever } = await import('write-excel-file/universal')
+  const blob = await escrever(linhas, {
+    columns: larguras.map((width) => ({ width })),
+    stickyRowsCount: 1,
+  }).toBlob()
+  baixar(nome, blob, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 }
 
 /** `false` quando o navegador recusa a area de transferencia, e ai quem chamou decide. */
