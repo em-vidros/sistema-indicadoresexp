@@ -177,15 +177,18 @@ test('viagem com carga zerada nao entra: quem recusa e o viagem_nao_negativo_ck'
   expect(pctCusto(1500, 0)).toBeNull()
 })
 
-// O `superRefine` do dominio exige `combustivel + diarias > 0` desde sempre, e o
-// banco nao tinha CHECK nenhum para isso: a linha com as duas parcelas zeradas
-// gravava e saia com custo_viagem 0.
-test('combustivel e diarias zerados juntos nao entram, mas cada um sozinho entra', async () => {
-  const soma = await emTransacao(async (tx) => {
+// O banco nao tem mais o `viagem_custo_ck` (migracao 0016): a rota local (SAO LUIS, lojas)
+// nao tem diaria nem abastecimento, e a viagem dela tem custo zero. O CHECK nao enxerga
+// `rota.local`; quem recusa o custo zero nas outras rotas e `valoresDaViagem`, e isso e
+// provado nos testes do servidor (apps/server/test/registros.test.ts).
+test('combustivel e diarias zerados juntos entram no banco, com custo e % zerados', async () => {
+  const zerada = await emTransacao(async (tx) => {
     const ids = await cenario(tx)
-    return erroDe(
-      tx.insert(viagem).values({ ...ids, ...VIAGEM, combustivel: '0.00', diarias: '0.00' }),
-    )
+    const [linha] = await tx
+      .insert(viagem)
+      .values({ ...ids, ...VIAGEM, combustivel: '0.00', diarias: '0.00' })
+      .returning()
+    return linha!
   })
   const umaParcela = await emTransacao(async (tx) => {
     const ids = await cenario(tx)
@@ -196,7 +199,8 @@ test('combustivel e diarias zerados juntos nao entram, mas cada um sozinho entra
     return linha!
   })
 
-  expect(soma?.cause?.constraint_name).toBe('viagem_custo_ck')
+  expect(num(zerada.custoViagem)).toBe(custoViagem(0, 0))
+  expect(num(zerada.pctCusto)).toBe(0)
   expect(num(umaParcela.custoViagem)).toBe(custoViagem(0, 300))
 })
 

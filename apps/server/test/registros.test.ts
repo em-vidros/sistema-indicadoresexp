@@ -902,3 +902,72 @@ describe('manutenção: lavagem sem documento e renovação do plano preventivo'
     }
   })
 })
+
+/**
+ * Rota local (SAO LUIS, lojas) nao tem diaria nem abastecimento: o custo da viagem pode ser
+ * zero. Nas outras rotas combustivel mais diarias continua tendo que passar de zero. A regra
+ * mora em `valoresDaViagem`, porque o banco nao tem mais o `viagem_custo_ck` e nao enxerga
+ * `rota.local`.
+ */
+describe('viagem sem custo: so a rota local aceita', () => {
+  const semCusto = { combustivel: 0, diarias: 0 }
+  const saoLuis = { ...viagemRaposa, rota: 'SÃO LUÍS', ...semCusto, data_saida: '2026-09-20', data_chegada: '2026-09-20' }
+
+  const lancarUma = async (registro: unknown) => {
+    const resposta = await pedir('/api/registros', {
+      method: 'POST',
+      headers: { cookie: livia, 'content-type': 'application/json' },
+      body: JSON.stringify({ registros: [registro] }),
+    })
+    const corpo = (await resposta.json().catch(() => null)) as Array<{ id: string }> | { erro?: string } | null
+    if (resposta.status === 201 && Array.isArray(corpo)) viagens.push(corpo[0]!.id)
+    return { status: resposta.status, corpo }
+  }
+
+  test('SÃO LUÍS sem combustível e sem diárias grava, com custo e % custo zerados', async () => {
+    const { status, corpo } = await lancarUma(saoLuis)
+    expect(status).toBe(201)
+    const id = (corpo as Array<{ id: string }>)[0]!.id
+    const [linha] = await sql<Array<{ custo_viagem: string; pct_custo: string; combustivel: string; diarias: string }>>`
+      select custo_viagem, pct_custo, combustivel, diarias from viagem where id = ${id}::uuid`
+    expect(Number(linha!.custo_viagem)).toBe(0)
+    expect(Number(linha!.pct_custo)).toBe(0)
+    expect(Number(linha!.combustivel)).toBe(0)
+    expect(Number(linha!.diarias)).toBe(0)
+  })
+
+  test('rota que não é local continua recusando custo zero, com a mesma mensagem', async () => {
+    const { status, erro } = await recusa([{ ...viagemRaposa, ...semCusto, data_saida: '2026-09-20' }])
+    expect(status).toBe(400)
+    expect(erro).toMatch(/combustível.*diárias/i)
+    expect(erro).toMatch(/maior que zero/i)
+  })
+
+  test('a rota local com custo positivo também grava', async () => {
+    const { status } = await lancarUma({ ...saoLuis, combustivel: 120, diarias: 0, data_saida: '2026-09-21', data_chegada: '2026-09-21' })
+    expect(status).toBe(201)
+  })
+
+  test('editar uma viagem de rota local para custo zero é aceito; de rota longa, 400 e nada muda', async () => {
+    const longa = await lancarUma({ ...viagemRaposa, data_saida: '2026-09-22', data_chegada: '2026-09-22' })
+    const idLonga = (longa.corpo as Array<{ id: string }>)[0]!.id
+    const editar = (id: string, registro: unknown) =>
+      pedir(`/api/registros/${id}`, {
+        method: 'PUT',
+        headers: { cookie: livia, 'content-type': 'application/json' },
+        body: JSON.stringify({ registros: [registro] }),
+      })
+
+    const recusada = await editar(idLonga, { ...viagemRaposa, ...semCusto, data_saida: '2026-09-22', data_chegada: '2026-09-22' })
+    expect(recusada.status).toBe(400)
+    const [antes] = await sql<Array<{ combustivel: string }>>`select combustivel from viagem where id = ${idLonga}::uuid`
+    expect(Number(antes!.combustivel)).toBeGreaterThan(0)
+
+    const local = await lancarUma({ ...saoLuis, combustivel: 80, data_saida: '2026-09-23', data_chegada: '2026-09-23' })
+    const idLocal = (local.corpo as Array<{ id: string }>)[0]!.id
+    const aceita = await editar(idLocal, { ...saoLuis, data_saida: '2026-09-23', data_chegada: '2026-09-23' })
+    expect(aceita.status).toBe(200)
+    const [depois] = await sql<Array<{ custo_viagem: string }>>`select custo_viagem from viagem where id = ${idLocal}::uuid`
+    expect(Number(depois!.custo_viagem)).toBe(0)
+  })
+})

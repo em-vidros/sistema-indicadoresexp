@@ -410,8 +410,13 @@ function comParada(paradas: Paradas, indice: number, mudar: (parada: Parada) => 
 
 type Montagem = { readonly erro: string } | { readonly registros: Registro[] }
 
-const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Montagem>> = {
-  viagem: ({ viagem, abastecimentoDaViagem: ab }, base) => {
+/**
+ * `rotaLocal` diz se a rota escolhida e local (SAO LUIS, lojas): ela nao tem diaria nem
+ * abastecimento, entao combustivel e diarias podem ficar em branco ou zero. Nas demais, a
+ * soma tem que ser maior que zero.
+ */
+const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string, rotaLocal: boolean) => Montagem>> = {
+  viagem: ({ viagem, abastecimentoDaViagem: ab }, base, rotaLocal) => {
     const veiculo = viagem.veiculo.trim().toUpperCase()
     const valorCarga = decimal(viagem.valorCarga)
     const diarias = decimal(viagem.diarias)
@@ -427,8 +432,15 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string) => Mo
     const combustivel = litros > 0 ? litros * vlLitro : decimal(viagem.combustivel)
     if (
       viagem.dataSaida === '' || viagem.motorista.trim() === '' || veiculo === ''
-      || viagem.rota.trim() === '' || valorCarga <= 0 || combustivel + diarias <= 0 || m2 <= 0 || peso <= 0
+      || viagem.rota.trim() === '' || valorCarga <= 0 || m2 <= 0 || peso <= 0
     ) {
+      return {
+        erro: rotaLocal
+          ? 'Preencha os campos obrigatórios: data de saída, motorista, veículo, rota, m² total, peso da carga e valor da carga.'
+          : 'Preencha os campos obrigatórios: data de saída, motorista, veículo, rota, m² total, peso da carga, valor da carga, combustível e diárias.',
+      }
+    }
+    if (!rotaLocal && combustivel + diarias <= 0) {
       return {
         erro:
           'Preencha os campos obrigatórios: data de saída, motorista, veículo, rota, m² total, peso da carga, valor da carga, combustível e diárias.',
@@ -2084,7 +2096,8 @@ export default function Registrar(): JSX.Element {
       avisar('Escolha uma base antes de gravar.', 'erro')
       return
     }
-    const montagem = MONTADORES[tipo](rascunho, base)
+    const rotaLocal = rotasDaBase.some((r) => r.nome === rascunho.viagem.rota && r.local)
+    const montagem = MONTADORES[tipo](rascunho, base, rotaLocal)
     if ('erro' in montagem) {
       avisar(montagem.erro, 'erro')
       return

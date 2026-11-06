@@ -113,6 +113,13 @@
       "when": 1793972611351,
       "tag": "0015_empty_smiling_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793986843299,
+      "tag": "0016_clever_tyger_tiger",
+      "breakpoints": true
     }
   ]
 }

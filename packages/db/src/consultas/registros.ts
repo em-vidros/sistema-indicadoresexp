@@ -111,7 +111,7 @@ async function valoresDaViagem(tx: Escritor, usuarioId: string, entrada: Entrada
         .from(colaborador)
         .where(and(eq(colaborador.nome, entrada.motorista), eq(colaborador.baseId, contexto.baseId))),
       tx
-        .select({ id: rota.id })
+        .select({ id: rota.id, local: rota.local })
         .from(rota)
         .where(and(eq(rota.nome, entrada.rota), eq(rota.baseId, contexto.baseId))),
     ])
@@ -119,6 +119,13 @@ async function valoresDaViagem(tx: Escritor, usuarioId: string, entrada: Entrada
     const motoristaId = motoristas[0]?.id
     const rotaId = rotas[0]?.id
     if (!veiculoId || !motoristaId || !rotaId) throw new RegistroInvalido('cadastro inexistente')
+
+    // Rota local (SAO LUIS, lojas) nao tem diaria nem abastecimento: o custo da viagem pode ser
+    // zero. Nas demais, combustivel mais diarias tem que ser maior que zero, e quem recusa e
+    // aqui, porque o banco nao tem mais o CHECK e nao enxerga `rota.local`.
+    if (entrada.combustivel + entrada.diarias <= 0 && !rotas[0]?.local) {
+      throw new RegistroInvalido('informe combustível ou diárias: a soma dos dois tem que ser maior que zero')
+    }
 
     const chegadaCompleta = Boolean(entrada.data_chegada && entrada.hora_chegada && entrada.km_chegada !== null)
     return {

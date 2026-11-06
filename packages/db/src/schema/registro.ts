@@ -112,10 +112,11 @@ export const viagem = pgTable(
           AND (${t.m2} IS NULL OR ${t.m2} >= 0)
           AND (${t.pesoKg} IS NULL OR ${t.pesoKg} >= 0)`,
     ),
-    // O `superRefine` do dominio exige `combustivel + diarias > 0`, espelhando o
-    // guarda da linha 816 do formulario (`cv = comb + diar`, e `!cv` recusa). Cada
-    // parcela pode ser zero; a soma nao. Ate agora isso nao existia no banco.
-    check('viagem_custo_ck', sql`${t.combustivel} + ${t.diarias} > 0`),
+    // Nao ha CHECK de `combustivel + diarias > 0`. Ele existiu (`viagem_custo_ck`, removido na
+    // migracao 0016), mas a rota local (SAO LUIS, lojas) nao tem diaria nem abastecimento e a
+    // viagem dela tem custo zero. O CHECK nao enxerga outra tabela, entao quem recusa o custo
+    // zero numa rota que nao e local e `valoresDaViagem` (consultas/registros.ts), que olha
+    // `rota.local`, e o formulario do Registrar.
     // O par do `manutencao_saida_ck`, que faltava aqui: sem ele uma linha com
     // saida 2026-08-01 e chegada 2026-07-01 gravava e ainda saia com km_rodados 500.
     // A comparacao segue a `ordemCronologica` do dominio: com hora dos dois lados

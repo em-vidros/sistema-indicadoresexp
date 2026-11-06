@@ -1,0 +1,1 @@
+ALTER TABLE "viagem" DROP CONSTRAINT "viagem_custo_ck";

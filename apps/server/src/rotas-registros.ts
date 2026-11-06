@@ -69,14 +69,9 @@ const Viagem = z.object({
    * vieram.
    */
   .superRefine((entrada, contexto) => {
-    // `viagem_custo_ck`. Cada parcela pode ser zero; a soma nao.
-    if (entrada.combustivel + entrada.diarias <= 0) {
-      contexto.addIssue({
-        code: 'custom',
-        message: 'informe combustível ou diárias: a soma dos dois tem que ser maior que zero',
-        path: ['combustivel'],
-      })
-    }
+    // O custo zero (`combustivel + diarias <= 0`) nao e mais recusado aqui: a rota local
+    // (SAO LUIS, lojas) nao tem diaria nem abastecimento. Quem recusa nas demais rotas e
+    // `valoresDaViagem`, que enxerga `rota.local`, e responde 400 igual.
     // `viagem_previsao_ck`. Data prevista sem hora prevista nao da para comparar
     // instante com instante -- so sobraria o dia, e `atraso_min` ficaria mudo.
     if (entrada.data_prevista && !entrada.hora_prevista) {
