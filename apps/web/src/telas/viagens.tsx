@@ -39,6 +39,7 @@ import type { JSX } from 'react'
 import { useRegistros } from '../dashboard/carregar.ts'
 import { EstadoDosRegistros } from '../dashboard/estado-dos-registros.tsx'
 import { PONTUALIDADES, brl, calcularKPIs, diaMes, filtrarDados, porcento } from '../dashboard/dominio.ts'
+import { COLUNAS_DO_EXCEL, linhaDoExcel } from '../dashboard/excel-viagens.ts'
 import type { Item, Pontualidade } from '../dashboard/dominio.ts'
 import {
   BASES,
@@ -217,28 +218,12 @@ export default function Viagens(): JSX.Element {
       avisar('Não há viagens neste recorte para exportar.', 'erro')
       return
     }
-    const dinheiro = '"R$" #,##0.00'
-    const cabecalho = COLUNAS.map((value) => ({ value, fontWeight: 'bold' as const }))
-    const linhas = achadas.map((viagem) => {
-      const [ano, mes, dia] = dataDa(viagem).slice(0, 10).split('-').map(Number)
-      const data = ano && mes && dia ? new Date(Date.UTC(ano, mes - 1, dia)) : null
-      return [
-        data === null ? null : { value: data, type: Date, format: 'dd/mm/yyyy' },
-        viagem.motorista || null,
-        viagem.veiculo || null,
-        viagem.rota || null,
-        viagem.km === null ? null : { value: viagem.km, format: '#,##0' },
-        { value: viagem.valorCarga, format: dinheiro },
-        { value: viagem.custoViagem, format: dinheiro },
-        { value: viagem.pctCusto / 100, format: '0.00%' },
-        viagem.pontualidade === null ? null : PONTUALIDADES[viagem.pontualidade].rotulo,
-      ]
-    })
+    const cabecalho = COLUNAS_DO_EXCEL.map(([value]) => ({ value, fontWeight: 'bold' as const }))
     try {
       await baixarXlsx(
         `viagens-${filtros.base}-${vista.mes === 'todos' ? filtros.periodo : vista.mes}.xlsx`,
-        [cabecalho, ...linhas],
-        [12, 28, 12, 24, 10, 16, 16, 10, 14],
+        [cabecalho, ...achadas.map(linhaDoExcel)],
+        COLUNAS_DO_EXCEL.map(([, largura]) => largura),
       )
     } catch {
       avisar('Não foi possível gerar o Excel. Tente de novo.', 'erro')

@@ -57,6 +57,8 @@ export type Item =
     readonly custoViagem: number
     readonly pctCusto: number
     readonly pontualidade: Pontualidade | null
+    /** O registro como a API entregou, para o que a tela nao desenha mas o Excel leva (m², peso, km, horas...). */
+    readonly bruto: Registro
   })
   | (Comum & {
     readonly tipo: 'manutencao'
@@ -134,6 +136,7 @@ export function lerItem(registro: Registro): Item {
       custoViagem: numero(registro, 'custo_viagem'),
       pctCusto: numero(registro, 'pct_custo'),
       pontualidade: pontualidadeDe(registro),
+      bruto: registro,
     }
   }
   if (registro.tipo === 'manutencao') {
