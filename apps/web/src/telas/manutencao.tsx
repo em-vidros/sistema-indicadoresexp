@@ -424,20 +424,23 @@ function LinhaKmAtual({ veiculo, kmDosRegistros }: {
       <Td><span className="g-l13m g-forte">{veiculo.placa}</span></Td>
       <Td><span className="g-fraco">{veiculo.modelo ?? VAZIO}</span></Td>
       <Td>
-        <input
-          className="g-campo-entrada g-l14m"
-          type="text"
-          inputMode="numeric"
-          aria-label={`KM atual de ${veiculo.placa}`}
-          placeholder={kmDosRegistros === null ? 'km' : `${emKm(kmDosRegistros)} (registros)`}
-          value={digitado}
-          aria-invalid={invalido ? true : undefined}
-          style={{ width: 170 }}
-          onChange={(e) => setDigitado(e.currentTarget.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && mudou && !invalido && lido !== null && !gravando) void gravar(lido)
-          }}
-        />
+        {/* O `g-campo-entrada` nao tem borda nem fundo: quem desenha a caixa e o `g-caixa`, como no
+            `Campo`. Sem ela o campo parecia texto e ninguem via que dava para digitar. */}
+        <div className={classes('g-caixa', invalido && 'g-caixa-errada')} style={{ width: 190 }}>
+          <input
+            className="g-campo-entrada g-l14m"
+            type="text"
+            inputMode="numeric"
+            aria-label={`KM atual de ${veiculo.placa}`}
+            placeholder={kmDosRegistros === null ? 'Digite o km' : `${emKm(kmDosRegistros)} (registros)`}
+            value={digitado}
+            aria-invalid={invalido ? true : undefined}
+            onChange={(e) => setDigitado(e.currentTarget.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && mudou && !invalido && lido !== null && !gravando) void gravar(lido)
+            }}
+          />
+        </div>
       </Td>
       <Td direita>{kmDosRegistros === null ? <span className="g-fraco">{VAZIO}</span> : emKm(kmDosRegistros)}</Td>
       <Td>
