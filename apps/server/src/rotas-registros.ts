@@ -56,6 +56,16 @@ const Viagem = z.object({
   posto: TextoOuNulo.refine((v) => v === null || v.length <= 240, 'posto: no máximo 240 caracteres')
     .optional()
     .default(null),
+  /**
+   * Varios abastecimentos na mesma viagem, um por posto (no maximo 3, que e o limite de
+   * `abastecimento_parada_ordem_ck`). Quando vem preenchido vale no lugar dos tres campos
+   * acima.
+   */
+  paradas: z.array(z.object({
+    litros: z.number().positive(),
+    vl_litro: z.number().nonnegative(),
+    posto: z.string().trim().max(240),
+  })).max(3, 'no máximo 3 abastecimentos por viagem').nullable().optional().default(null),
 })
   /**
    * O que os CHECK de `schema/registro.ts` dizem, dito onde da para responder 400.

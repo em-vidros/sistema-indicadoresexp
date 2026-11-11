@@ -203,7 +203,8 @@ type Quebra = {
 
 type Rascunho = {
   readonly viagem: Viagem
-  readonly abastecimentoDaViagem: AbastecimentoDaViagem
+  /** De 1 a 3 abastecimentos, um por posto; a linha vazia e ignorada ao gravar. */
+  readonly abastecimentosDaViagem: readonly AbastecimentoDaViagem[]
   readonly abastecimento: Abastecimento
   readonly manutencao: Manutencao
   readonly quebra: Quebra
@@ -338,6 +339,22 @@ function paradaVazia(): Parada {
   return { litros: '', vlLitro: '', km: '', posto: '' }
 }
 
+function abastecimentoDaViagemVazio(): AbastecimentoDaViagem {
+  return { litros: '', vlLitro: '', posto: '' }
+}
+
+const MAXIMO_DE_ABASTECIMENTOS_NA_VIAGEM = 3
+
+/** Linha em que o usuario digitou qualquer coisa; so essas viram abastecimento ao gravar. */
+function abastecimentoPreenchido(ab: AbastecimentoDaViagem): boolean {
+  return ab.litros.trim() !== '' || ab.vlLitro.trim() !== '' || ab.posto.trim() !== ''
+}
+
+/** Valor deste abastecimento, arredondado em centavos como o banco faz (`valor_total`). */
+function valorDoAbastecimento(ab: AbastecimentoDaViagem): number {
+  return Math.round(decimal(ab.litros) * valorPorLitro(ab.vlLitro) * 100) / 100
+}
+
 function rascunhoVazio(): Rascunho {
   const hoje = hojeISO()
   return {
@@ -360,7 +377,7 @@ function rascunhoVazio(): Rascunho {
       peso: '',
       observacao: '',
     },
-    abastecimentoDaViagem: { litros: '', vlLitro: '', posto: '' },
+    abastecimentosDaViagem: [abastecimentoDaViagemVazio()],
     abastecimento: {
       data: hoje,
       placa: '',
@@ -388,7 +405,7 @@ function rascunhoVazio(): Rascunho {
 }
 
 const LIMPADORES: Readonly<Record<Tipo, (atual: Rascunho, vazio: Rascunho) => Rascunho>> = {
-  viagem: (atual, vazio) => ({ ...atual, viagem: vazio.viagem, abastecimentoDaViagem: vazio.abastecimentoDaViagem }),
+  viagem: (atual, vazio) => ({ ...atual, viagem: vazio.viagem, abastecimentosDaViagem: vazio.abastecimentosDaViagem }),
   abastecimento: (atual, vazio) => ({ ...atual, abastecimento: vazio.abastecimento }),
   manutencao: (atual, vazio) => ({ ...atual, manutencao: vazio.manutencao }),
   quebra: (atual, vazio) => ({ ...atual, quebra: vazio.quebra }),
@@ -416,20 +433,30 @@ type Montagem = { readonly erro: string } | { readonly registros: Registro[] }
  * soma tem que ser maior que zero.
  */
 const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string, rotaLocal: boolean) => Montagem>> = {
-  viagem: ({ viagem, abastecimentoDaViagem: ab }, base, rotaLocal) => {
+  viagem: ({ viagem, abastecimentosDaViagem }, base, rotaLocal) => {
     const veiculo = viagem.veiculo.trim().toUpperCase()
     const valorCarga = decimal(viagem.valorCarga)
     const diarias = decimal(viagem.diarias)
     const m2 = decimal(viagem.m2)
     const peso = decimal(viagem.peso)
-    const litros = decimal(ab.litros)
-    const vlLitro = valorPorLitro(ab.vlLitro)
-    if ((litros > 0) !== (vlLitro > 0)) {
-      return { erro: 'Preencha os litros e o valor por litro do abastecimento desta viagem, ou deixe os dois em branco.' }
+    // Cada posto precisa dos litros e do valor por litro; a linha que ficou vazia e ignorada.
+    const paradas: Array<{ litros: number; vl_litro: number; posto: string }> = []
+    for (const [indice, ab] of abastecimentosDaViagem.entries()) {
+      if (!abastecimentoPreenchido(ab)) continue
+      const litrosDaLinha = decimal(ab.litros)
+      const vlLitroDaLinha = valorPorLitro(ab.vlLitro)
+      if (litrosDaLinha <= 0 || vlLitroDaLinha <= 0) {
+        return {
+          erro: `Preencha os litros e o valor por litro do abastecimento ${indice + 1}, ou limpe a linha.`,
+        }
+      }
+      paradas.push({ litros: litrosDaLinha, vl_litro: vlLitroDaLinha, posto: ab.posto.trim() })
     }
-    // Com litros preenchidos o combustivel e o proprio gasto deste abastecimento; sem
-    // eles, continua o valor digitado a mao em Custos da viagem.
-    const combustivel = litros > 0 ? litros * vlLitro : decimal(viagem.combustivel)
+    // Com abastecimentos preenchidos o combustivel e a soma deles; sem nenhum, continua o
+    // valor digitado a mao em Custos da viagem.
+    const combustivel = paradas.length > 0
+      ? abastecimentosDaViagem.filter(abastecimentoPreenchido).reduce((soma, ab) => soma + valorDoAbastecimento(ab), 0)
+      : decimal(viagem.combustivel)
     if (
       viagem.dataSaida === '' || viagem.motorista.trim() === '' || veiculo === ''
       || viagem.rota.trim() === '' || valorCarga <= 0 || m2 <= 0 || peso <= 0
@@ -471,9 +498,7 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string, rotaL
         m2,
         peso_kg: peso,
         observacao: viagem.observacao.trim(),
-        litros: litros > 0 ? litros : null,
-        vl_litro: vlLitro > 0 ? vlLitro : null,
-        posto: litros > 0 ? ab.posto.trim() : null,
+        paradas: paradas.length > 0 ? paradas : null,
       }],
     }
   },
@@ -593,9 +618,15 @@ const LEITORES_DE_RASCUNHO: Readonly<Record<Tipo, (linhas: readonly Registro[], 
   viagem: (linhas, atual) => {
     const r = linhas.find((l) => l.tipo === 'viagem')
     if (r === undefined) return atual
-    // O abastecimento embutido, quando esta viagem tiver um -- `editar()` ja filtra
-    // pelo `viagem_id`, entao so pode haver zero ou um.
-    const ab = linhas.find((l) => l.tipo === 'abastecimento')
+    // Os abastecimentos embutidos desta viagem, um por posto -- `editar()` ja filtra pelo
+    // `viagem_id`. Na ordem em que foram digitados.
+    const abastecimentos = linhas
+      .filter((l) => l.tipo === 'abastecimento')
+      .sort((a, b) => numero(a, 'ordem') - numero(b, 'ordem'))
+      .slice(0, MAXIMO_DE_ABASTECIMENTOS_NA_VIAGEM)
+      .map((ab): AbastecimentoDaViagem => (
+        { litros: digitavel(ab, 'litros'), vlLitro: digitavel(ab, 'vl_litro'), posto: texto(ab, 'posto') }
+      ))
     return {
       ...atual,
       viagem: {
@@ -619,9 +650,7 @@ const LEITORES_DE_RASCUNHO: Readonly<Record<Tipo, (linhas: readonly Registro[], 
         peso: digitavel(r, 'peso_kg'),
         observacao: texto(r, 'observacao'),
       },
-      abastecimentoDaViagem: ab === undefined
-        ? { litros: '', vlLitro: '', posto: '' }
-        : { litros: digitavel(ab, 'litros'), vlLitro: digitavel(ab, 'vl_litro'), posto: texto(ab, 'posto') },
+      abastecimentosDaViagem: abastecimentos.length > 0 ? abastecimentos : [abastecimentoDaViagemVazio()],
     }
   },
 
@@ -866,7 +895,9 @@ type Ferramentas = {
   /** Sem a permissao de 'abastecimento' o bloco de litros nem aparece na Viagem. */
   readonly podeAbastecer: boolean
   readonly mudarViagem: (campo: keyof Viagem, valor: string) => void
-  readonly mudarAbastecimentoDaViagem: (campo: keyof AbastecimentoDaViagem, valor: string) => void
+  readonly mudarAbastecimentoDaViagem: (indice: number, campo: keyof AbastecimentoDaViagem, valor: string) => void
+  readonly adicionarAbastecimentoDaViagem: () => void
+  readonly removerAbastecimentoDaViagem: (indice: number) => void
   readonly mudarAbastecimento: (campo: CampoDeAbastecimento, valor: string) => void
   readonly mudarLonga: (longa: boolean) => void
   readonly adicionarParada: () => void
@@ -878,11 +909,15 @@ type Ferramentas = {
 
 function celulasDeViagem(f: Ferramentas): readonly Celula[] {
   const v = f.rascunho.viagem
-  const ab = f.rascunho.abastecimentoDaViagem
-  const litrosAb = decimal(ab.litros)
-  const vlLitroAb = valorPorLitro(ab.vlLitro)
-  const combustivelAutomatico = litrosAb > 0 && vlLitroAb > 0
-  const combustivelEfetivo = combustivelAutomatico ? litrosAb * vlLitroAb : decimal(v.combustivel)
+  const abastecimentos = f.rascunho.abastecimentosDaViagem
+  // So entram nas somas os abastecimentos com litros e valor por litro; a linha incompleta
+  // e recusada ao gravar, e a vazia e ignorada.
+  const completos = abastecimentos.filter((ab) => decimal(ab.litros) > 0 && valorPorLitro(ab.vlLitro) > 0)
+  const litrosAb = completos.reduce((soma, ab) => soma + decimal(ab.litros), 0)
+  const combustivelAutomatico = completos.length > 0
+  const combustivelEfetivo = combustivelAutomatico
+    ? completos.reduce((soma, ab) => soma + valorDoAbastecimento(ab), 0)
+    : decimal(v.combustivel)
   const custo = combustivelEfetivo + decimal(v.diarias)
   const atraso = atrasoDe(v)
   const atrasoEntrega = atrasoDaEntregaDe(v)
@@ -1028,38 +1063,85 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
         conteudo: (
           <>
             <TituloDeSecao
-              titulo="Abastecimento desta viagem"
-              subtitulo="Litros e valor por litro, pra fechar a média sem abrir a aba Abastecimento"
+              titulo="Abastecimentos desta viagem"
+              subtitulo="Um por posto: litros, valor por litro e posto. O combustível e a média km/L somam todos"
             />
+            {abastecimentos.map((ab, i) => (
+              <div key={i}>
+                {abastecimentos.length > 1
+                  ? <TituloDeSecao titulo={TITULOS_DE_PARADA[i] ?? `Abastecimento ${i + 1}`} />
+                  : null}
+                <GradeDeCampos>
+                  <Campo
+                    tipo="numero"
+                    rotulo="Litros"
+                    span={3}
+                    mono
+                    valor={ab.litros}
+                    aoMudar={(valor) => f.mudarAbastecimentoDaViagem(i, 'litros', valor)}
+                  />
+                  <Campo
+                    tipo="numero"
+                    rotulo="Valor por litro"
+                    span={3}
+                    mono
+                    valor={ab.vlLitro}
+                    aoMudar={(valor) => f.mudarAbastecimentoDaViagem(i, 'vlLitro', valor)}
+                  />
+                  <Campo
+                    rotulo="Posto / fornecedor"
+                    span={3}
+                    valor={ab.posto}
+                    aoMudar={(valor) => f.mudarAbastecimentoDaViagem(i, 'posto', valor)}
+                  />
+                  <Campo
+                    tipo="calculado"
+                    rotulo="Valor deste abastecimento"
+                    span={3}
+                    mono
+                    valor={decimal(ab.litros) > 0 && valorPorLitro(ab.vlLitro) > 0
+                      ? duasCasas(valorDoAbastecimento(ab))
+                      : '·'}
+                  />
+                </GradeDeCampos>
+                {abastecimentos.length > 1
+                  ? (
+                    <div className="g-secao">
+                      <Botao rotulo="Remover este abastecimento" aoClicar={() => f.removerAbastecimentoDaViagem(i)} />
+                    </div>
+                  )
+                  : null}
+              </div>
+            ))}
+            {abastecimentos.length < MAXIMO_DE_ABASTECIMENTOS_NA_VIAGEM
+              ? (
+                <div className="g-secao">
+                  <Botao antes={Plus} rotulo="Adicionar outro abastecimento" aoClicar={f.adicionarAbastecimentoDaViagem} />
+                </div>
+              )
+              : null}
+            <TituloDeSecao titulo="Totais da viagem" />
             <GradeDeCampos>
-              <Campo
-                tipo="numero"
-                rotulo="Litros"
-                span={3}
-                mono
-                valor={ab.litros}
-                aoMudar={(valor) => f.mudarAbastecimentoDaViagem('litros', valor)}
-              />
-              <Campo
-                tipo="numero"
-                rotulo="Valor por litro"
-                span={3}
-                mono
-                valor={ab.vlLitro}
-                aoMudar={(valor) => f.mudarAbastecimentoDaViagem('vlLitro', valor)}
-              />
-              <Campo
-                rotulo="Posto / fornecedor"
-                span={3}
-                valor={ab.posto}
-                aoMudar={(valor) => f.mudarAbastecimentoDaViagem('posto', valor)}
-              />
               <Campo
                 tipo="calculado"
                 rotulo="km rodados"
                 span={3}
                 mono
                 valor={kmRodados > 0 ? kmRodados.toLocaleString('pt-BR') : '·'}
+              />
+              <Campo
+                tipo="calculado"
+                rotulo="Total de litros"
+                span={3}
+                mono
+                valor={litrosAb > 0 ? duasCasas(litrosAb) : '·'}
+              />
+              <Campo
+                tipo="calculado"
+                rotulo="Total de combustível (R$)"
+                span={3}
+                mono
+                valor={combustivelAutomatico ? duasCasas(combustivelEfetivo) : '·'}
               />
               <Campo tipo="calculado" rotulo="Média km/L" span={3} mono valor={mediaKmL} />
             </GradeDeCampos>
@@ -2020,8 +2102,24 @@ export default function Registrar(): JSX.Element {
   const mudarViagem = (campo: keyof Viagem, valor: string): void => {
     setRascunho((r) => ({ ...r, viagem: { ...r.viagem, [campo]: valor } }))
   }
-  const mudarAbastecimentoDaViagem = (campo: keyof AbastecimentoDaViagem, valor: string): void => {
-    setRascunho((r) => ({ ...r, abastecimentoDaViagem: { ...r.abastecimentoDaViagem, [campo]: valor } }))
+  const mudarAbastecimentoDaViagem = (indice: number, campo: keyof AbastecimentoDaViagem, valor: string): void => {
+    setRascunho((r) => ({
+      ...r,
+      abastecimentosDaViagem: r.abastecimentosDaViagem.map((ab, i) => (i === indice ? { ...ab, [campo]: valor } : ab)),
+    }))
+  }
+  const adicionarAbastecimentoDaViagem = (): void => {
+    setRascunho((r) =>
+      r.abastecimentosDaViagem.length >= MAXIMO_DE_ABASTECIMENTOS_NA_VIAGEM
+        ? r
+        : { ...r, abastecimentosDaViagem: [...r.abastecimentosDaViagem, abastecimentoDaViagemVazio()] }
+    )
+  }
+  const removerAbastecimentoDaViagem = (indice: number): void => {
+    setRascunho((r) => {
+      const restantes = r.abastecimentosDaViagem.filter((_, i) => i !== indice)
+      return { ...r, abastecimentosDaViagem: restantes.length > 0 ? restantes : [abastecimentoDaViagemVazio()] }
+    })
   }
   // A rota curta nao tem interior, entao escolher uma desliga a viagem longa em vez de so
   // esconder o toggle: escondido e ligado, o montador ainda gravaria as tres paradas.
@@ -2226,6 +2324,8 @@ export default function Registrar(): JSX.Element {
     podeAbastecer: sessao.tipos.includes('abastecimento'),
     mudarViagem,
     mudarAbastecimentoDaViagem,
+    adicionarAbastecimentoDaViagem,
+    removerAbastecimentoDaViagem,
     mudarAbastecimento,
     mudarLonga,
     adicionarParada,

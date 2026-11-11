@@ -49,6 +49,12 @@ export type EntradaViagem = {
   litros: number | null
   vl_litro: number | null
   posto: string | null
+  /**
+   * Varios abastecimentos na mesma viagem (ate 3, um por posto), cada um com os seus
+   * litros, valor por litro e posto. Quando vem preenchido, vale no lugar dos tres campos
+   * acima; vazio ou ausente, vale `litros`/`vl_litro`/`posto` como sempre valeu.
+   */
+  paradas?: ReadonlyArray<{ litros: number; vl_litro: number; posto: string }> | null
 }
 
 export type EntradaAbastecimento = {
@@ -184,7 +190,14 @@ async function sincronizarAbastecimentoDaViagem(
     .from(abastecimento)
     .where(and(eq(abastecimento.viagemId, viagemId), isNull(abastecimento.apagadoEm)))
 
-  if (entrada.litros === null || entrada.vl_litro === null) {
+  const lista: ReadonlyArray<{ litros: number; vl_litro: number; posto: string | null }> =
+    entrada.paradas && entrada.paradas.length > 0
+      ? entrada.paradas
+      : entrada.litros !== null && entrada.vl_litro !== null
+      ? [{ litros: entrada.litros, vl_litro: entrada.vl_litro, posto: entrada.posto }]
+      : []
+
+  if (lista.length === 0) {
     if (existente) {
       const agora = new Date()
       await tx
@@ -196,16 +209,19 @@ async function sincronizarAbastecimentoDaViagem(
   }
 
   await contextoPermitido(tx, usuarioId, entrada.base, 'abastecimento', entrada.data_saida)
-  const parada = {
-    ordem: 1,
-    litros: String(entrada.litros),
-    vlLitro: String(entrada.vl_litro),
-    // `abastecimento_parada_nao_negativo_ck` recusa km = 0 (so aceita nulo ou positivo),
-    // o mesmo tratamento que o abastecimento avulso ja da ao campo.
-    km: entrada.km_chegada || null,
-    posto: entrada.posto,
-  }
-
+  // Uma linha por posto, na ordem digitada (`abastecimento_parada_ordem_ck` aceita 1 a 3).
+  // `abastecimento_parada_nao_negativo_ck` recusa km = 0 (so aceita nulo ou positivo), o
+  // mesmo tratamento que o abastecimento avulso ja da ao campo; o km de chegada fica so
+  // na primeira, como sempre ficou.
+  const paradasDe = (abastecimentoId: string) =>
+    lista.map((item, indice) => ({
+      abastecimentoId,
+      ordem: indice + 1,
+      litros: String(item.litros),
+      vlLitro: String(item.vl_litro),
+      km: indice === 0 ? entrada.km_chegada || null : null,
+      posto: item.posto,
+    }))
   if (existente) {
     const agora = new Date()
     await tx
@@ -220,7 +236,9 @@ async function sincronizarAbastecimentoDaViagem(
         atualizadoEm: agora,
       })
       .where(eq(abastecimento.id, existente.id))
-    await tx.update(abastecimentoParada).set(parada).where(eq(abastecimentoParada.abastecimentoId, existente.id))
+    // Troca as paradas inteiras: pode ter ficado mais ou menos postos do que antes.
+    await tx.delete(abastecimentoParada).where(eq(abastecimentoParada.abastecimentoId, existente.id))
+    await tx.insert(abastecimentoParada).values(paradasDe(existente.id))
     return
   }
 
@@ -238,7 +256,7 @@ async function sincronizarAbastecimentoDaViagem(
     })
     .returning({ id: abastecimento.id })
   if (!salvo) throw new RegistroInvalido('abastecimento da viagem não foi salvo')
-  await tx.insert(abastecimentoParada).values({ ...parada, abastecimentoId: salvo.id })
+  await tx.insert(abastecimentoParada).values(paradasDe(salvo.id))
 }
 
 export function salvarRegistros(db: Db, usuarioId: string, entradas: EntradaRegistro[]) {
@@ -304,22 +322,27 @@ export async function listarRegistros(db: Db, usuarioId: string, nomeBase?: stri
         observacao: viagem.observacao,
         atraso_min: viagem.atrasoMin,
         registrado_em: viagem.criadoEm,
-        litros: abastecimentoParada.litros,
-        vl_litro: abastecimentoParada.vlLitro,
+        // Soma de todos os abastecimentos da viagem (ate 3 postos) e o valor medio do litro
+        // (gasto total / litros total), pra media km/L e o Excel fecharem com a viagem inteira.
+        // "viagem"."id" escrito por extenso: o drizzle tira o nome da tabela de uma coluna
+        // dentro de `sql`, e um "id" solto apontaria para o abastecimento da subconsulta.
+        litros: sql<string | null>`(
+          select sum(p.litros) from abastecimento_parada p
+          join abastecimento a on a.id = p.abastecimento_id
+          where a.viagem_id = "viagem"."id" and a.apagado_em is null
+        )`,
+        vl_litro: sql<string | null>`(
+          select case when sum(p.litros) > 0 then round(sum(p.valor_total) / sum(p.litros), 3) end
+          from abastecimento_parada p
+          join abastecimento a on a.id = p.abastecimento_id
+          where a.viagem_id = "viagem"."id" and a.apagado_em is null
+        )`,
       })
       .from(viagem)
       .innerJoin(base, eq(base.id, viagem.baseId))
       .innerJoin(veiculo, eq(veiculo.id, viagem.veiculoId))
       .innerJoin(colaborador, eq(colaborador.id, viagem.motoristaId))
       .innerJoin(rota, eq(rota.id, viagem.rotaId))
-      // O abastecimento embutido nesta viagem (se tiver um): so existe 1 por viagem
-      // (`abastecimento_viagem_uk`) e so 1 parada (`ordem = 1`), entao o join nunca
-      // multiplica linha de viagem.
-      .leftJoin(abastecimento, and(eq(abastecimento.viagemId, viagem.id), isNull(abastecimento.apagadoEm)))
-      .leftJoin(
-        abastecimentoParada,
-        and(eq(abastecimentoParada.abastecimentoId, abastecimento.id), eq(abastecimentoParada.ordem, 1)),
-      )
       .where(and(inArray(viagem.baseId, ids), isNull(viagem.apagadoEm)))
       .orderBy(desc(viagem.criadoEm)),
     db

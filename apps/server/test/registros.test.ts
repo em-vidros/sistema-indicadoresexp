@@ -684,6 +684,65 @@ describe('abastecimento embutido no lançamento de viagem', () => {
       select apagado_em from abastecimento where id = ${String(vinculado!['abastecimento_id'])}::uuid`
     expect(linha!.apagado_em).not.toBeNull()
   })
+
+  test('dois postos na mesma viagem gravam duas paradas e a viagem traz o total de litros e o valor médio', async () => {
+    const [salva] = await lancar(livia, [{
+      ...viagem, data_saida: '2026-09-28', data_chegada: '2026-09-28', combustivel: 1260,
+      paradas: [
+        { litros: 100, vl_litro: 6, posto: 'Posto A' },
+        { litros: 100, vl_litro: 6.6, posto: 'Posto B' },
+      ],
+    }])
+
+    const lista = await ler(livia, 'Imperatriz')
+    // 100 x 6 + 100 x 6,6 = 1260 em 200 litros: valor médio 6,3.
+    expect(lista).toContainEqual(expect.objectContaining({ id: salva!.id, tipo: 'viagem', litros: 200, vl_litro: 6.3 }))
+    const paradas = lista
+      .filter((r) => r['tipo'] === 'abastecimento' && r['viagem_id'] === salva!.id)
+      .sort((a, b) => Number(a['ordem']) - Number(b['ordem']))
+    expect(paradas.map((p) => p['posto'])).toEqual(['Posto A', 'Posto B'])
+    expect(paradas.map((p) => p['vl_litro'])).toEqual([6, 6.6])
+  })
+
+  test('editar de dois postos para um troca as paradas, sem deixar a segunda para trás', async () => {
+    const [salva] = await lancar(livia, [{
+      ...viagem, data_saida: '2026-09-29', data_chegada: '2026-09-29',
+      paradas: [
+        { litros: 80, vl_litro: 6, posto: 'Posto A' },
+        { litros: 70, vl_litro: 6.2, posto: 'Posto B' },
+      ],
+    }])
+
+    const resposta = await editar(livia, salva!.id, [{
+      ...viagem, data_saida: '2026-09-29', data_chegada: '2026-09-29',
+      paradas: [{ litros: 90, vl_litro: 6.1, posto: 'Posto C' }],
+    }])
+    expect(resposta.status).toBe(200)
+
+    const lista = await ler(livia, 'Imperatriz')
+    const paradas = lista.filter((r) => r['tipo'] === 'abastecimento' && r['viagem_id'] === salva!.id)
+    expect(paradas).toHaveLength(1)
+    expect(paradas[0]).toMatchObject({ posto: 'Posto C', litros: 90, vl_litro: 6.1 })
+    expect(lista).toContainEqual(expect.objectContaining({ id: salva!.id, tipo: 'viagem', litros: 90 }))
+  })
+
+  test('mais de 3 abastecimentos na mesma viagem é 400, e nada é gravado', async () => {
+    const parada = (n: number) => ({ litros: 10 + n, vl_litro: 6, posto: `Posto ${n}` })
+    const resposta = await pedir('/api/registros', {
+      method: 'POST',
+      headers: { cookie: livia, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        registros: [{
+          ...viagem, data_saida: '2026-09-30', data_chegada: '2026-09-30',
+          paradas: [parada(1), parada(2), parada(3), parada(4)],
+        }],
+      }),
+    })
+    expect(resposta.status).toBe(400)
+    const [linha] = await sql<Array<{ n: number }>>`
+      select count(*)::int as n from viagem where data_saida = '2026-09-30' and observacao = 'Prova da fase 2'`
+    expect(linha!.n).toBe(0)
+  })
 })
 
 describe('apagar um lançamento só', () => {
