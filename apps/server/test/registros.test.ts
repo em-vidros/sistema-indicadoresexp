@@ -689,8 +689,8 @@ describe('abastecimento embutido no lançamento de viagem', () => {
     const [salva] = await lancar(livia, [{
       ...viagem, data_saida: '2026-09-28', data_chegada: '2026-09-28', combustivel: 1260,
       paradas: [
-        { litros: 100, vl_litro: 6, posto: 'Posto A' },
-        { litros: 100, vl_litro: 6.6, posto: 'Posto B' },
+        { litros: 100, vl_litro: 6, posto: 'Posto A', km: 50400 },
+        { litros: 100, vl_litro: 6.6, posto: 'Posto B', km: 50900 },
       ],
     }])
 
@@ -702,6 +702,8 @@ describe('abastecimento embutido no lançamento de viagem', () => {
       .sort((a, b) => Number(a['ordem']) - Number(b['ordem']))
     expect(paradas.map((p) => p['posto'])).toEqual(['Posto A', 'Posto B'])
     expect(paradas.map((p) => p['vl_litro'])).toEqual([6, 6.6])
+    // O hodômetro de cada abastecimento fica com o próprio abastecimento.
+    expect(paradas.map((p) => p['km'])).toEqual([50400, 50900])
   })
 
   test('editar de dois postos para um troca as paradas, sem deixar a segunda para trás', async () => {

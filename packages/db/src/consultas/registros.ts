@@ -54,7 +54,7 @@ export type EntradaViagem = {
    * litros, valor por litro e posto. Quando vem preenchido, vale no lugar dos tres campos
    * acima; vazio ou ausente, vale `litros`/`vl_litro`/`posto` como sempre valeu.
    */
-  paradas?: ReadonlyArray<{ litros: number; vl_litro: number; posto: string }> | null
+  paradas?: ReadonlyArray<{ litros: number; vl_litro: number; posto: string; km?: number | null }> | null
 }
 
 export type EntradaAbastecimento = {
@@ -190,11 +190,13 @@ async function sincronizarAbastecimentoDaViagem(
     .from(abastecimento)
     .where(and(eq(abastecimento.viagemId, viagemId), isNull(abastecimento.apagadoEm)))
 
-  const lista: ReadonlyArray<{ litros: number; vl_litro: number; posto: string | null }> =
+  // `km` e o hodometro de cada abastecimento. Sem `paradas` (o formato antigo, um so), o
+  // hodometro continua sendo o km de chegada da viagem, como sempre foi.
+  const lista: ReadonlyArray<{ litros: number; vl_litro: number; posto: string | null; km?: number | null }> =
     entrada.paradas && entrada.paradas.length > 0
       ? entrada.paradas
       : entrada.litros !== null && entrada.vl_litro !== null
-      ? [{ litros: entrada.litros, vl_litro: entrada.vl_litro, posto: entrada.posto }]
+      ? [{ litros: entrada.litros, vl_litro: entrada.vl_litro, posto: entrada.posto, km: entrada.km_chegada }]
       : []
 
   if (lista.length === 0) {
@@ -211,15 +213,14 @@ async function sincronizarAbastecimentoDaViagem(
   await contextoPermitido(tx, usuarioId, entrada.base, 'abastecimento', entrada.data_saida)
   // Uma linha por posto, na ordem digitada (`abastecimento_parada_ordem_ck` aceita 1 a 3).
   // `abastecimento_parada_nao_negativo_ck` recusa km = 0 (so aceita nulo ou positivo), o
-  // mesmo tratamento que o abastecimento avulso ja da ao campo; o km de chegada fica so
-  // na primeira, como sempre ficou.
+  // mesmo tratamento que o abastecimento avulso ja da ao campo.
   const paradasDe = (abastecimentoId: string) =>
     lista.map((item, indice) => ({
       abastecimentoId,
       ordem: indice + 1,
       litros: String(item.litros),
       vlLitro: String(item.vl_litro),
-      km: indice === 0 ? entrada.km_chegada || null : null,
+      km: item.km || null,
       posto: item.posto,
     }))
   if (existente) {

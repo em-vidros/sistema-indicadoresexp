@@ -65,6 +65,8 @@ const Viagem = z.object({
     litros: z.number().positive(),
     vl_litro: z.number().nonnegative(),
     posto: z.string().trim().max(240),
+    // Hodometro do abastecimento; `abastecimento_parada_nao_negativo_ck` recusa zero.
+    km: z.number().int().positive().nullable().optional().default(null),
   })).max(3, 'no máximo 3 abastecimentos por viagem').nullable().optional().default(null),
 })
   /**

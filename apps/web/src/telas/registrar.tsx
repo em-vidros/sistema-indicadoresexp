@@ -165,6 +165,8 @@ type CampoDeAbastecimento = 'data' | 'placa' | 'motorista' | 'rota'
 type AbastecimentoDaViagem = {
   readonly litros: string
   readonly vlLitro: string
+  /** Hodometro do caminhao no momento deste abastecimento. */
+  readonly km: string
   readonly posto: string
 }
 
@@ -340,14 +342,14 @@ function paradaVazia(): Parada {
 }
 
 function abastecimentoDaViagemVazio(): AbastecimentoDaViagem {
-  return { litros: '', vlLitro: '', posto: '' }
+  return { litros: '', vlLitro: '', km: '', posto: '' }
 }
 
 const MAXIMO_DE_ABASTECIMENTOS_NA_VIAGEM = 3
 
 /** Linha em que o usuario digitou qualquer coisa; so essas viram abastecimento ao gravar. */
 function abastecimentoPreenchido(ab: AbastecimentoDaViagem): boolean {
-  return ab.litros.trim() !== '' || ab.vlLitro.trim() !== '' || ab.posto.trim() !== ''
+  return ab.litros.trim() !== '' || ab.vlLitro.trim() !== '' || ab.km.trim() !== '' || ab.posto.trim() !== ''
 }
 
 /** Valor deste abastecimento, arredondado em centavos como o banco faz (`valor_total`). */
@@ -440,7 +442,7 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string, rotaL
     const m2 = decimal(viagem.m2)
     const peso = decimal(viagem.peso)
     // Cada posto precisa dos litros e do valor por litro; a linha que ficou vazia e ignorada.
-    const paradas: Array<{ litros: number; vl_litro: number; posto: string }> = []
+    const paradas: Array<{ litros: number; vl_litro: number; posto: string; km: number | null }> = []
     for (const [indice, ab] of abastecimentosDaViagem.entries()) {
       if (!abastecimentoPreenchido(ab)) continue
       const litrosDaLinha = decimal(ab.litros)
@@ -450,7 +452,12 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string, rotaL
           erro: `Preencha os litros e o valor por litro do abastecimento ${indice + 1}, ou limpe a linha.`,
         }
       }
-      paradas.push({ litros: litrosDaLinha, vl_litro: vlLitroDaLinha, posto: ab.posto.trim() })
+      paradas.push({
+        litros: litrosDaLinha,
+        vl_litro: vlLitroDaLinha,
+        posto: ab.posto.trim(),
+        km: inteiro(ab.km) || null,
+      })
     }
     // Com abastecimentos preenchidos o combustivel e a soma deles; sem nenhum, continua o
     // valor digitado a mao em Custos da viagem.
@@ -625,7 +632,7 @@ const LEITORES_DE_RASCUNHO: Readonly<Record<Tipo, (linhas: readonly Registro[], 
       .sort((a, b) => numero(a, 'ordem') - numero(b, 'ordem'))
       .slice(0, MAXIMO_DE_ABASTECIMENTOS_NA_VIAGEM)
       .map((ab): AbastecimentoDaViagem => (
-        { litros: digitavel(ab, 'litros'), vlLitro: digitavel(ab, 'vl_litro'), posto: texto(ab, 'posto') }
+        { litros: digitavel(ab, 'litros'), vlLitro: digitavel(ab, 'vl_litro'), km: digitavel(ab, 'km'), posto: texto(ab, 'posto') }
       ))
     return {
       ...atual,
@@ -1075,7 +1082,7 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
                   <Campo
                     tipo="numero"
                     rotulo="Litros"
-                    span={3}
+                    span={2}
                     mono
                     valor={ab.litros}
                     aoMudar={(valor) => f.mudarAbastecimentoDaViagem(i, 'litros', valor)}
@@ -1083,10 +1090,18 @@ function celulasDeViagem(f: Ferramentas): readonly Celula[] {
                   <Campo
                     tipo="numero"
                     rotulo="Valor por litro"
-                    span={3}
+                    span={2}
                     mono
                     valor={ab.vlLitro}
                     aoMudar={(valor) => f.mudarAbastecimentoDaViagem(i, 'vlLitro', valor)}
+                  />
+                  <Campo
+                    tipo="numero"
+                    rotulo="km hodômetro"
+                    span={2}
+                    mono
+                    valor={ab.km}
+                    aoMudar={(valor) => f.mudarAbastecimentoDaViagem(i, 'km', valor)}
                   />
                   <Campo
                     rotulo="Posto / fornecedor"
