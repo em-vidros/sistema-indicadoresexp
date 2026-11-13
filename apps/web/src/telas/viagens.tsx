@@ -36,9 +36,10 @@
  */
 import { useState } from 'react'
 import type { JSX } from 'react'
+import { invalidar } from '../app/dados.ts'
 import { useRegistros } from '../dashboard/carregar.ts'
 import { EstadoDosRegistros } from '../dashboard/estado-dos-registros.tsx'
-import { PONTUALIDADES, brl, calcularKPIs, diaMes, filtrarDados, porcento } from '../dashboard/dominio.ts'
+import { PONTUALIDADES, brl, calcularKPIs, diaMes, filtrarDados, porcento, texto } from '../dashboard/dominio.ts'
 import { COLUNAS_DO_EXCEL, linhaDoExcel } from '../dashboard/excel-viagens.ts'
 import type { Item, Pontualidade } from '../dashboard/dominio.ts'
 import {
@@ -51,8 +52,9 @@ import {
 } from '../dashboard/filtros.ts'
 import type { Filtros } from '../dashboard/filtros.ts'
 import { baixarXlsx } from '../dashboard/relatorio.ts'
-import { useAvisos } from '../geist/formulario.tsx'
-import { ChevronLeft, ChevronRight, Download, Filter, Plus } from '../geist/icones.tsx'
+import { Dialogo, useAvisos } from '../geist/formulario.tsx'
+import { ChevronLeft, ChevronRight, Download, Filter, PencilEdit, Plus, Trash } from '../geist/icones.tsx'
+import { apagarRegistro } from '../js/registros-api.ts'
 import {
   Badge,
   Botao,
@@ -135,7 +137,8 @@ function combina(viagem: Viagem, busca: string): boolean {
 }
 
 /** As colunas da tabela, na ordem em que o artboard as desenhou. */
-const COLUNAS = ['Data', 'Motorista', 'Veículo', 'Rota', 'Km', 'Carga', 'Custo', '% custo', 'Pontualidade']
+// A ultima coluna, sem titulo, e a das acoes (Editar e Apagar).
+const COLUNAS = ['Data', 'Motorista', 'Veículo', 'Rota', 'Km', 'Carga', 'Custo', '% custo', 'Pontualidade', '']
 
 /** O texto de cada celula da linha, que e o mesmo que a tabela mostra e o que o CSV leva. */
 function celulasDa(viagem: Viagem): readonly string[] {
@@ -152,7 +155,10 @@ function celulasDa(viagem: Viagem): readonly string[] {
   ]
 }
 
-function Linha({ viagem }: { readonly viagem: Viagem }): JSX.Element {
+function Linha({ viagem, aoApagar }: {
+  readonly viagem: Viagem
+  readonly aoApagar: (viagem: Viagem) => void
+}): JSX.Element {
   const [data, motorista, veiculo, rota, km, carga, custo, pct, pontualidade] = celulasDa(viagem)
   // Os 9% sao do artboard, e nao os limites do KPI. `faixaDe` diria "atencao" em 7%, e
   // numa semana ruim a coluna inteira ficaria ambar, onde nada salta.
@@ -172,6 +178,18 @@ function Linha({ viagem }: { readonly viagem: Viagem }): JSX.Element {
           ? '·'
           : <Badge rotulo={pontualidade} cor={BADGE_DA_PONTUALIDADE[viagem.pontualidade]} />}
       </Td>
+      <Td direita>
+        <span className="g-rodape-acoes">
+          {/* Editar abre a viagem no formulario do Registrar, que ja valida e grava. */}
+          <Botao
+            tipo="terciario"
+            antes={PencilEdit}
+            rotulo="Editar"
+            href={`/registrar?tipo=viagem&editar=${encodeURIComponent(texto(viagem.bruto, 'id'))}`}
+          />
+          <Botao tipo="terciario" antes={Trash} nome="Apagar" aoClicar={() => aoApagar(viagem)} />
+        </span>
+      </Td>
     </tr>
   )
 }
@@ -182,6 +200,25 @@ export default function Viagens(): JSX.Element {
   const { itens } = registros
   const [vista, setVista] = useState<Vista>(VISTA_INICIAL)
   const { avisar } = useAvisos()
+  /** A viagem esperando confirmacao para apagar, ou nulo com o dialogo fechado. */
+  const [apagando, setApagando] = useState<Viagem | null>(null)
+  const [apagandoEmProgresso, setApagandoEmProgresso] = useState(false)
+
+  async function confirmarApagar(): Promise<void> {
+    const id = apagando === null ? '' : texto(apagando.bruto, 'id')
+    if (id === '') return
+    setApagandoEmProgresso(true)
+    try {
+      await apagarRegistro('viagem', id)
+      invalidar('registros')
+      setApagando(null)
+      avisar('Viagem apagada.', 'ok')
+    } catch (falha) {
+      avisar(falha instanceof Error ? falha.message : 'Não foi possível apagar.', 'erro')
+    } finally {
+      setApagandoEmProgresso(false)
+    }
+  }
 
   const todas = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo, filtros.mes)).viagens
   // So os meses que tem viagem no recorte de base e periodo: escolher um mes vazio so
@@ -238,10 +275,10 @@ export default function Viagens(): JSX.Element {
           ? 'Nenhuma viagem com este recorte'
           : `${primeira + 1}–${primeira + naPagina.length} de ${achadas.length}`}
       />
-      <Tabela cabecalho={COLUNAS.map((coluna, i) => <Th key={coluna} direita={i >= 4 && i <= 7}>{coluna}</Th>)}>
+      <Tabela cabecalho={COLUNAS.map((coluna, i) => <Th key={coluna || 'acoes'} direita={(i >= 4 && i <= 7) || coluna === ''}>{coluna === '' ? <span className="g-escondido">Ações</span> : coluna}</Th>)}>
         {naPagina.length === 0
           ? <tr><Td colunas={COLUNAS.length} vazio>Sem viagens no período</Td></tr>
-          : naPagina.map((viagem, i) => <Linha key={primeira + i} viagem={viagem} />)}
+          : naPagina.map((viagem, i) => <Linha key={primeira + i} viagem={viagem} aoApagar={setApagando} />)}
       </Tabela>
       <div className="g-paginacao">
         <span className="g-paginacao-conta g-l13">Página {pagina} de {paginas}</span>
@@ -310,6 +347,30 @@ export default function Viagens(): JSX.Element {
       </div>
 
       <Grade celulas={[{ col: [1, 13], linha: 1, rente: true, conteudo: tabela }]} />
+
+      <Dialogo
+        aberto={apagando !== null}
+        titulo="Apagar viagem"
+        subtitulo="Viagens"
+        aoFechar={() => setApagando(null)}
+        acoes={
+          <>
+            <Botao tipo="terciario" rotulo="Cancelar" aoClicar={() => setApagando(null)} />
+            <Botao
+              tipo="primario"
+              rotulo="Apagar viagem"
+              carregando={apagandoEmProgresso}
+              aoClicar={() => void confirmarApagar()}
+            />
+          </>
+        }
+      >
+        <div className="g-l14">
+          {apagando === null
+            ? null
+            : `Isto apaga a viagem de ${diaMes(apagando.dataSaida || apagando.quando)}, ${apagando.veiculo} · ${apagando.rota}, e os abastecimentos lançados nela. Não tem como desfazer pela tela.`}
+        </div>
+      </Dialogo>
     </EstadoDosRegistros>
   )
 }

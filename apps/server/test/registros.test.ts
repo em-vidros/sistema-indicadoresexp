@@ -1032,3 +1032,81 @@ describe('viagem sem custo: so a rota local aceita', () => {
     expect(Number(depois!.custo_viagem)).toBe(0)
   })
 })
+
+describe('registro de atividades', () => {
+  const idsDoTeste: string[] = []
+
+  afterAll(async () => {
+    if (idsDoTeste.length) await sql`delete from atividade where registro_id = any(${sql.array(idsDoTeste)}::text[])`
+  })
+
+  const ler = (cookie: string, consulta = '') => pedir(`/api/atividades${consulta}`, { headers: { cookie } })
+
+  test('lançar, alterar o km e apagar deixam três linhas, e a alteração mostra o antes e o depois', async () => {
+    const [salva] = await lancar(livia, [{
+      ...viagem, data_saida: '2026-10-14', data_chegada: '2026-10-14', km_saida: 1000, km_chegada: 9941,
+      observacao: 'Prova das atividades',
+    }])
+    idsDoTeste.push(salva!.id)
+
+    const editar = await pedir(`/api/registros/${salva!.id}`, {
+      method: 'PUT',
+      headers: { cookie: livia, 'content-type': 'application/json' },
+      body: JSON.stringify({ registros: [{
+        ...viagem, data_saida: '2026-10-14', data_chegada: '2026-10-14', km_saida: 1000, km_chegada: 1941,
+        observacao: 'Prova das atividades',
+      }] }),
+    })
+    expect(editar.status).toBe(200)
+
+    const apagar = await pedir(`/api/registros/viagem/${salva!.id}`, { method: 'DELETE', headers: { cookie: livia } })
+    expect(apagar.status).toBe(204)
+
+    const linhas = await sql<Array<{ acao: string; tipo: string; resumo: string; mudancas: Array<{ campo: string; antes: string; depois: string }> | null }>>`
+      select acao, tipo, resumo, mudancas from atividade where registro_id = ${salva!.id}`
+    expect(linhas.map((l) => l.acao).sort()).toEqual(['alterou', 'apagou', 'criou'])
+    const alterou = linhas.find((l) => l.acao === 'alterou')!
+    expect(alterou.mudancas).toEqual([{ campo: 'Km de chegada', antes: '9941', depois: '1941' }])
+    expect(alterou.resumo).toContain('DMG9D41')
+    expect(linhas.every((l) => l.tipo === 'viagem')).toBe(true)
+  })
+
+  test('gravar sem mudar nada não deixa linha de alteração', async () => {
+    const [salva] = await lancar(livia, [{ ...viagem, data_saida: '2026-10-15', data_chegada: '2026-10-15' }])
+    idsDoTeste.push(salva!.id)
+    const mesmo = await pedir(`/api/registros/${salva!.id}`, {
+      method: 'PUT',
+      headers: { cookie: livia, 'content-type': 'application/json' },
+      body: JSON.stringify({ registros: [{ ...viagem, data_saida: '2026-10-15', data_chegada: '2026-10-15' }] }),
+    })
+    expect(mesmo.status).toBe(200)
+    const [linha] = await sql<Array<{ n: number }>>`
+      select count(*)::int as n from atividade where registro_id = ${salva!.id} and acao = 'alterou'`
+    expect(linha!.n).toBe(0)
+  })
+
+  test('uma gravação recusada não deixa rastro', async () => {
+    const [antes] = await sql<Array<{ n: number }>>`select count(*)::int as n from atividade`
+    const resposta = await pedir('/api/registros', {
+      method: 'POST',
+      headers: { cookie: livia, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        registros: [{ ...viagem, combustivel: 0, diarias: 0, data_saida: '2026-10-16', data_chegada: '2026-10-16' }],
+      }),
+    })
+    expect(resposta.status).toBe(400)
+    const [depois] = await sql<Array<{ n: number }>>`select count(*)::int as n from atividade`
+    expect(depois!.n).toBe(antes!.n)
+  })
+
+  test('só quem administra vê as atividades: operador recebe 403, sem sessão 401, filtro inválido 400', async () => {
+    expect((await ler(andreina)).status).toBe(403)
+    expect((await pedir('/api/atividades')).status).toBe(401)
+    expect((await ler(livia, '?tipo=outro')).status).toBe(400)
+    const boa = await ler(livia, '?limite=2')
+    expect(boa.status).toBe(200)
+    const corpo = (await boa.json()) as { atividades: unknown[]; temMais: boolean }
+    expect(corpo.atividades.length).toBeLessThanOrEqual(2)
+    expect(typeof corpo.temMais).toBe('boolean')
+  })
+})

@@ -2065,14 +2065,22 @@ export default function Registrar(): JSX.Element {
   const listaDeRegistros = registros.dados ?? null
   useEffect(() => {
     if (idParaAbrir === null || idParaAbrir === '' || listaDeRegistros === null) return
-    const alvo = listaDeRegistros.find((r) => r.tipo === 'manutencao' && texto(r, 'id') === idParaAbrir)
+    // Manutencao e viagem: as duas telas (Manutencao e Viagens) tem o Editar que chega aqui.
+    // A viagem leva junto os abastecimentos lancados nela, como o Editar do historico faz.
+    const alvo = listaDeRegistros.find(
+      (r) => (r.tipo === 'manutencao' || r.tipo === 'viagem') && texto(r, 'id') === idParaAbrir,
+    )
     if (alvo === undefined) {
       avisar('Lançamento não encontrado. Talvez já tenha sido apagado.', 'erro')
     } else {
+      const doAlvo: Tipo = alvo.tipo === 'viagem' ? 'viagem' : 'manutencao'
+      const grupo = doAlvo === 'viagem'
+        ? [alvo, ...listaDeRegistros.filter((r) => r.tipo === 'abastecimento' && texto(r, 'viagem_id') === idParaAbrir)]
+        : [alvo]
       setBase(alvo.base)
-      setRascunho((r) => LEITORES_DE_RASCUNHO.manutencao([alvo], r))
-      setTipoEscolhido('manutencao')
-      setEditando({ id: idParaAbrir, tipo: 'manutencao' })
+      setRascunho((r) => LEITORES_DE_RASCUNHO[doAlvo](grupo, r))
+      setTipoEscolhido(doAlvo)
+      setEditando({ id: idParaAbrir, tipo: doAlvo })
     }
     const restante = new URLSearchParams(busca)
     restante.delete('editar')

@@ -14,6 +14,7 @@ import { and, eq, inArray, isNull, notInArray, sql } from 'drizzle-orm'
 import type { Db } from '../index.ts'
 import { base, veiculo } from '../schema/cadastro.ts'
 import { itemPreventivo, tipoPreventivo } from '../schema/preventiva.ts'
+import { registrarAtividade } from './atividades.ts'
 import { lerPermissao } from './permissao.ts'
 import { RegistroInvalido } from './registros.ts'
 
@@ -138,7 +139,7 @@ export async function gravarKmAtual(
   }
   return await db.transaction(async (tx) => {
     const [alvo] = await tx
-      .select({ id: veiculo.id, placa: veiculo.placa, baseId: veiculo.baseId })
+      .select({ id: veiculo.id, placa: veiculo.placa, baseId: veiculo.baseId, kmAnterior: veiculo.kmAtual })
       .from(veiculo)
       .where(eq(veiculo.id, veiculoId))
     if (!alvo) throw new RegistroInvalido('veículo inexistente')
@@ -151,6 +152,23 @@ export async function gravarKmAtual(
       .update(veiculo)
       .set({ kmAtual: km, kmAtualEm: agora, kmAtualPor: km === null ? null : usuarioId })
       .where(eq(veiculo.id, alvo.id))
+
+    // Sem km manual o plano usa o km dos registros: "automático". So deixa linha quando o
+    // valor mudou de fato.
+    const antes = alvo.kmAnterior === null ? 'automático' : String(alvo.kmAnterior)
+    const depois = km === null ? 'automático' : String(km)
+    if (antes !== depois) {
+      const [dono] = await tx.select({ nome: base.nome }).from(base).where(eq(base.id, alvo.baseId))
+      await registrarAtividade(tx, {
+        usuarioId,
+        acao: 'alterou',
+        tipo: 'km_atual',
+        base: dono?.nome ?? null,
+        registroId: alvo.id,
+        resumo: `Km atual de ${alvo.placa}`,
+        mudancas: [{ campo: 'Km atual', antes, depois }],
+      })
+    }
     return {
       id: alvo.id,
       placa: alvo.placa,

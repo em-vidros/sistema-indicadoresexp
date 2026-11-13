@@ -4,6 +4,8 @@ import { usuarioTipo } from '../schema/auth.ts'
 import { base, colaborador, rota, veiculo } from '../schema/cadastro.ts'
 import { itemPreventivo, tipoPreventivo } from '../schema/preventiva.ts'
 import { abastecimento, abastecimentoParada, manutencao, quebra, viagem } from '../schema/registro.ts'
+import { descreverRegistro, registrarAlteracao, registrarAtividade, registrarCriacao, registrarExclusao } from './atividades.ts'
+import { diaMesDe } from './atividades-texto.ts'
 import { mesEstaFechado } from './fechamento.ts'
 import { lerPermissao } from './permissao.ts'
 
@@ -164,6 +166,7 @@ async function salvarViagemEm(tx: Escritor, usuarioId: string, entrada: EntradaV
       .returning({ id: viagem.id })
     if (!salva) throw new RegistroInvalido('viagem não foi salva')
     await sincronizarAbastecimentoDaViagem(tx, usuarioId, entrada, salva.id, valores)
+    await registrarCriacao(tx, usuarioId, 'viagem', salva.id)
     return { ...salva, tipo: 'viagem' as const }
 }
 
@@ -522,6 +525,7 @@ async function salvarAbastecimentoEm(
   }).returning({ id: abastecimento.id })
   if (!salvo) throw new RegistroInvalido('abastecimento não foi salvo')
   await tx.insert(abastecimentoParada).values(paradas.map((parada) => ({ ...parada, abastecimentoId: salvo.id })))
+  await registrarCriacao(tx, usuarioId, 'abastecimento', salvo.id)
   return { id: salvo.id, tipo: 'abastecimento' as const }
 }
 
@@ -554,6 +558,7 @@ async function salvarManutencaoEm(tx: Escritor, usuarioId: string, entrada: Entr
   }).returning({ id: manutencao.id })
   if (!salva) throw new RegistroInvalido('manutenção não foi salva')
   await renovarItemPreventivo(tx, usuarioId, valores.veiculoId, entrada)
+  await registrarCriacao(tx, usuarioId, 'manutencao', salva.id)
   return { ...salva, tipo: 'manutencao' as const }
 }
 
@@ -620,6 +625,7 @@ async function salvarQuebraEm(tx: Escritor, usuarioId: string, entrada: EntradaQ
     atualizadoPor: usuarioId,
   }).returning({ id: quebra.id })
   if (!salva) throw new RegistroInvalido('quebra não foi salva')
+  await registrarCriacao(tx, usuarioId, 'quebra', salva.id)
   return { ...salva, tipo: 'quebra' as const }
 }
 
@@ -657,9 +663,11 @@ export async function atualizarRegistro(
         .where(and(eq(viagem.id, id), isNull(viagem.apagadoEm)))
       if (!atual) throw new RegistroAusente()
       await contextoPermitido(tx, usuarioId, atual.nome, 'viagem', atual.data)
+      const antes = await descreverRegistro(tx, 'viagem', id)
       const valores = await valoresDaViagem(tx, usuarioId, primeira)
       await tx.update(viagem).set({ ...valores, ...marca }).where(eq(viagem.id, id))
       await sincronizarAbastecimentoDaViagem(tx, usuarioId, primeira, id, valores)
+      await registrarAlteracao(tx, usuarioId, 'viagem', id, antes)
     } else if (primeira.tipo === 'manutencao') {
       const [atual] = await tx
         .select({ nome: base.nome, data: manutencao.dataEntrada })
@@ -668,8 +676,10 @@ export async function atualizarRegistro(
         .where(and(eq(manutencao.id, id), isNull(manutencao.apagadoEm)))
       if (!atual) throw new RegistroAusente()
       await contextoPermitido(tx, usuarioId, atual.nome, 'manutencao', atual.data)
+      const antes = await descreverRegistro(tx, 'manutencao', id)
       const valores = await valoresDaManutencao(tx, usuarioId, primeira)
       await tx.update(manutencao).set({ ...valores, ...marca }).where(eq(manutencao.id, id))
+      await registrarAlteracao(tx, usuarioId, 'manutencao', id, antes)
     } else if (primeira.tipo === 'quebra') {
       const [atual] = await tx
         .select({ nome: base.nome, data: quebra.data })
@@ -678,8 +688,10 @@ export async function atualizarRegistro(
         .where(and(eq(quebra.id, id), isNull(quebra.apagadoEm)))
       if (!atual) throw new RegistroAusente()
       await contextoPermitido(tx, usuarioId, atual.nome, 'quebra', atual.data)
+      const antes = await descreverRegistro(tx, 'quebra', id)
       const valores = await valoresDaQuebra(tx, usuarioId, primeira)
       await tx.update(quebra).set({ ...valores, ...marca }).where(eq(quebra.id, id))
+      await registrarAlteracao(tx, usuarioId, 'quebra', id, antes)
     } else {
       const [atual] = await tx
         .select({ nome: base.nome, data: abastecimento.data })
@@ -688,11 +700,13 @@ export async function atualizarRegistro(
         .where(and(eq(abastecimento.id, id), isNull(abastecimento.apagadoEm)))
       if (!atual) throw new RegistroAusente()
       await contextoPermitido(tx, usuarioId, atual.nome, 'abastecimento', atual.data)
+      const antes = await descreverRegistro(tx, 'abastecimento', id)
       const paradasNovas = entradas.filter((e): e is EntradaAbastecimento => e.tipo === 'abastecimento')
       const { cabecalho, paradas } = await valoresDoAbastecimento(tx, usuarioId, paradasNovas)
       await tx.update(abastecimento).set({ ...cabecalho, ...marca }).where(eq(abastecimento.id, id))
       await tx.delete(abastecimentoParada).where(eq(abastecimentoParada.abastecimentoId, id))
       await tx.insert(abastecimentoParada).values(paradas.map((parada) => ({ ...parada, abastecimentoId: id })))
+      await registrarAlteracao(tx, usuarioId, 'abastecimento', id, antes)
     }
     return { id, tipo: primeira.tipo }
   })
@@ -722,7 +736,9 @@ export async function apagarRegistro(
         .where(and(eq(viagem.id, id), isNull(viagem.apagadoEm)))
       if (!atual) throw new RegistroAusente()
       await contextoPermitido(tx, usuarioId, atual.nome, 'viagem', atual.data)
+      const antes = await descreverRegistro(tx, 'viagem', id)
       await tx.update(viagem).set(marca).where(eq(viagem.id, id))
+      await registrarExclusao(tx, usuarioId, 'viagem', id, antes)
       // Soft-delete nao aciona o `onDelete: cascade` do FK -- esse so dispara num DELETE
       // fisico, que esta casa nunca faz. O abastecimento embutido precisa ser apagado
       // explicitamente junto, senao sobrevive sozinho no historico sem a viagem dele.
@@ -738,7 +754,9 @@ export async function apagarRegistro(
         .where(and(eq(manutencao.id, id), isNull(manutencao.apagadoEm)))
       if (!atual) throw new RegistroAusente()
       await contextoPermitido(tx, usuarioId, atual.nome, 'manutencao', atual.data)
+      const antes = await descreverRegistro(tx, 'manutencao', id)
       await tx.update(manutencao).set(marca).where(eq(manutencao.id, id))
+      await registrarExclusao(tx, usuarioId, 'manutencao', id, antes)
     } else if (tipo === 'quebra') {
       const [atual] = await tx
         .select({ nome: base.nome, data: quebra.data })
@@ -747,7 +765,9 @@ export async function apagarRegistro(
         .where(and(eq(quebra.id, id), isNull(quebra.apagadoEm)))
       if (!atual) throw new RegistroAusente()
       await contextoPermitido(tx, usuarioId, atual.nome, 'quebra', atual.data)
+      const antes = await descreverRegistro(tx, 'quebra', id)
       await tx.update(quebra).set(marca).where(eq(quebra.id, id))
+      await registrarExclusao(tx, usuarioId, 'quebra', id, antes)
     } else {
       const [atual] = await tx
         .select({ nome: base.nome, data: abastecimento.data })
@@ -756,7 +776,9 @@ export async function apagarRegistro(
         .where(and(eq(abastecimento.id, id), isNull(abastecimento.apagadoEm)))
       if (!atual) throw new RegistroAusente()
       await contextoPermitido(tx, usuarioId, atual.nome, 'abastecimento', atual.data)
+      const antes = await descreverRegistro(tx, 'abastecimento', id)
       await tx.update(abastecimento).set(marca).where(eq(abastecimento.id, id))
+      await registrarExclusao(tx, usuarioId, 'abastecimento', id, antes)
     }
   })
 }
@@ -834,6 +856,19 @@ export async function apagarRegistrosDoDia(
       quebra: quebras.length,
     }
     const apagados = Object.values(por_tipo).reduce((soma, item) => soma + item, 0)
+    // Uma linha por tipo, e nao uma por lancamento: o dia inteiro some de uma vez, e a lista
+    // de atividades nao precisa de dezenas de linhas iguais para dizer isso.
+    for (const tipo of TIPOS) {
+      if (por_tipo[tipo] === 0) continue
+      await registrarAtividade(tx, {
+        usuarioId,
+        acao: 'apagou',
+        tipo,
+        base: nomeBase,
+        registroId: null,
+        resumo: `${por_tipo[tipo]} ${por_tipo[tipo] === 1 ? 'lançamento' : 'lançamentos'} de ${tipo} do dia ${diaMesDe(data)} (Limpar hoje)`,
+      })
+    }
     return { apagados, por_tipo }
   })
 }

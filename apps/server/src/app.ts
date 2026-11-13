@@ -18,6 +18,7 @@ import { type Dependencias as DependenciasSessao, rotasSessao } from './rotas-se
 import { rotasCadastro } from './rotas-cadastro.ts'
 import { rotasIntegracoes } from './rotas-integracoes.ts'
 import { rotasAtas } from './rotas-atas.ts'
+import { rotasAtividades } from './rotas-atividades.ts'
 import { rotasDocumentos } from './rotas-documentos.ts'
 import { rotasPreventiva } from './rotas-preventiva.ts'
 import { rotasRegistros } from './rotas-registros.ts'
@@ -44,6 +45,7 @@ export function montarRotas(app: Hono<Ambiente>, deps: Dependencias): Hono<Ambie
   app.route('/api', rotasDocumentos(deps.db, deps.arquivos))
   app.route('/api', rotasRegistros(deps.db))
   app.route('/api', rotasPreventiva(deps.db))
+  app.route('/api', rotasAtividades(deps.db))
 
   app.get('/docs/*', documentos)
 

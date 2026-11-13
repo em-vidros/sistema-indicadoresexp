@@ -262,8 +262,8 @@ export type CustoDaPlaca = {
 /**
  * Custo por m², custo por km e custo por placa do periodo.
  *
- * - Custo por m²: custo das viagens (combustivel + diarias) / m² transportado. So entram
- *   as viagens com m² lancado, no numerador e no denominador.
+ * - Custo por m²: combustivel das viagens / m² transportado, sem diarias, como nos
+ *   fechamentos mensais. So entram as viagens com m² lancado, no numerador e no denominador.
  * - Custo por km: (combustivel das viagens + manutencao) / km rodado. Diarias ficam de
  *   fora, como nos fechamentos mensais. Como a manutencao nao e de uma viagem, ela entra
  *   inteira; o combustivel so das viagens com km rodado, para a viagem sem km nao
@@ -277,7 +277,7 @@ export function indicadoresDeCusto(dados: readonly Item[]) {
 
   const comM2 = viagens.filter((v) => numero(v.bruto, 'm2') > 0)
   const m2 = comM2.reduce((s, v) => s + numero(v.bruto, 'm2'), 0)
-  const custoDasViagensComM2 = comM2.reduce((s, v) => s + v.custoViagem, 0)
+  const combustivelComM2 = comM2.reduce((s, v) => s + numero(v.bruto, 'combustivel'), 0)
 
   const comKm = viagens.filter((v) => (v.km ?? 0) > 0)
   const km = comKm.reduce((s, v) => s + (v.km ?? 0), 0)
@@ -310,7 +310,7 @@ export function indicadoresDeCusto(dados: readonly Item[]) {
     .sort((a, b) => b.custo - a.custo)
 
   return {
-    custoPorM2: m2 > 0 ? custoDasViagensComM2 / m2 : null,
+    custoPorM2: m2 > 0 ? combustivelComM2 / m2 : null,
     m2,
     viagensComM2: comM2.length,
     viagensSemM2: viagens.length - comM2.length,

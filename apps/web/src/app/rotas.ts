@@ -19,6 +19,7 @@
 import type { ComponentType } from 'react'
 import {
   ArrowLeftRight,
+  ClockRewind,
   Database,
   FileText,
   Gauge,
@@ -157,6 +158,16 @@ export const ROTAS: readonly Rota[] = [
     comFiltros: false,
     exige: 'gerenciaUsuarios',
     carregar: () => import('../telas/usuarios.tsx'),
+  },
+  {
+    id: 'atividades',
+    caminho: '/atividades',
+    titulo: 'Atividades',
+    grupo: 'Gestão',
+    icone: ClockRewind,
+    comFiltros: false,
+    exige: 'gerenciaUsuarios',
+    carregar: () => import('../telas/atividades.tsx'),
   },
   {
     id: 'pneus',

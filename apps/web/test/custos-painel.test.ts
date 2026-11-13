@@ -19,14 +19,14 @@ const manutencao = (extra: Record<string, unknown>): Item =>
   } as never)
 
 describe('custo por m², custo por km e custo por placa', () => {
-  test('caminho feliz: m² usa combustível e diárias; km usa combustível e manutenção, sem diárias', () => {
+  test('caminho feliz: m² e km usam combustível, o km soma a manutenção, e nenhum leva diárias', () => {
     const r = indicadoresDeCusto([
       viagem({}),
       viagem({ id: 'v2', veiculo: 'BBB2B22', km_rodados: 300, combustivel: 900, diarias: 0, custo_viagem: 900, m2: 200 }),
       manutencao({}),
     ])
-    // (700 + 900) / (100 + 200) m²
-    expect(r.custoPorM2).toBeCloseTo(1600 / 300, 6)
+    // (600 + 900) de combustível / (100 + 200) m², sem as diárias de R$ 100
+    expect(r.custoPorM2).toBeCloseTo(1500 / 300, 6)
     // (600 + 900 + 400 manutenção) / (200 + 300) km
     expect(r.custoPorKm).toBeCloseTo(1900 / 500, 6)
     expect(r.porPlaca.map((p) => [p.placa, p.custo, p.km])).toEqual([
@@ -41,7 +41,7 @@ describe('custo por m², custo por km e custo por placa', () => {
       viagem({}),
       viagem({ id: 'v2', m2: 0, km_chegada: null, km_rodados: 0, combustivel: 5000, custo_viagem: 5100 }),
     ])
-    expect(r.custoPorM2).toBeCloseTo(700 / 100, 6)
+    expect(r.custoPorM2).toBeCloseTo(600 / 100, 6)
     expect(r.custoPorKm).toBeCloseTo(600 / 200, 6)
     expect(r.viagensSemM2).toBe(1)
     expect(r.viagensSemKm).toBe(1)
