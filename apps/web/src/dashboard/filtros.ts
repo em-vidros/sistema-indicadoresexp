@@ -16,7 +16,7 @@
  * mao. `lerFiltros` e `consultaDe` continuam existindo porque href precisa de string, e
  * string nao e hook: a sidebar e o switcher da casca montam o destino do link com elas.
  */
-import { parseAsStringLiteral, useQueryStates } from 'nuqs'
+import { createParser, parseAsStringLiteral, useQueryStates } from 'nuqs'
 
 /** O rotulo da tela e o do relatorio sao dois. O relatorio e formato congelado. */
 type Descricao = { readonly rotulo: string; readonly noRelatorio: string }
@@ -45,10 +45,50 @@ export const BASES = {
 
 export type Base = keyof typeof BASES
 
-export type Filtros = { readonly base: Base; readonly periodo: Periodo }
+/**
+ * `mes` e um mes inteiro escolhido (`AAAA-MM`) e, quando existe, manda no `periodo`: o painel
+ * mostra o resultado daquele mes. Nulo e o que a tela mostrava antes: vale o `periodo`.
+ */
+export type Filtros = { readonly base: Base; readonly periodo: Periodo; readonly mes: string | null }
 
 /** O que a tela mostra sem query nenhuma, e para onde o botao de limpar leva. */
-export const FILTROS_PADRAO: Filtros = { base: 'todas', periodo: 'semana' }
+export const FILTROS_PADRAO: Filtros = { base: 'todas', periodo: 'semana', mes: null }
+
+const NOMES_DOS_MESES = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
+] as const
+
+export function ehMes(valor: string | null): valor is string {
+  return valor !== null && /^\d{4}-(0[1-9]|1[0-2])$/.test(valor)
+}
+
+/** `2026-11` vira `Novembro/2026`. */
+export function rotuloDoMes(mes: string): string {
+  const [ano, numero] = mes.split('-')
+  return `${NOMES_DOS_MESES[Number(numero) - 1] ?? mes}/${ano}`
+}
+
+/** O mes imediatamente antes de `AAAA-MM`, no mesmo formato. */
+export function mesAnterior(mes: string): string {
+  const [ano, numero] = mes.split('-').map(Number) as [number, number]
+  return numero === 1 ? `${ano - 1}-12` : `${ano}-${String(numero - 1).padStart(2, '0')}`
+}
+
+/** O texto do periodo nas telas e nos relatorios: o mes escolhido, ou o periodo de sempre. */
+export function rotuloDoPeriodo(filtros: Filtros, formato: 'rotulo' | 'noRelatorio' = 'rotulo'): string {
+  return filtros.mes === null ? PERIODOS[filtros.periodo][formato] : rotuloDoMes(filtros.mes)
+}
 
 function ehBase(valor: string | null): valor is Base {
   return valor !== null && valor in BASES
@@ -77,15 +117,18 @@ export function lerFiltros(busca: string): Filtros {
   const params = new URLSearchParams(busca)
   const base = params.get('base')
   const periodo = params.get('periodo')
+  const mes = params.get('mes')
   return {
     base: ehBase(base) ? base : FILTROS_PADRAO.base,
     periodo: ehPeriodo(periodo) ? periodo : FILTROS_PADRAO.periodo,
+    mes: ehMes(mes) ? mes : null,
   }
 }
 
 /** A query com `?`, pronta para colar num href ou em `location.search`. */
 export function consultaDe(filtros: Filtros): string {
-  return `?base=${encodeURIComponent(filtros.base)}&periodo=${encodeURIComponent(filtros.periodo)}`
+  const mes = filtros.mes === null ? '' : `&mes=${encodeURIComponent(filtros.mes)}`
+  return `?base=${encodeURIComponent(filtros.base)}&periodo=${encodeURIComponent(filtros.periodo)}${mes}`
 }
 
 /**
@@ -100,6 +143,12 @@ const PERIODOS_VALIDOS = Object.keys(PERIODOS) as unknown as readonly Periodo[]
 const PARSERS_DE_FILTROS = {
   base: parseAsStringLiteral(BASES_VALIDAS).withDefault(FILTROS_PADRAO.base),
   periodo: parseAsStringLiteral(PERIODOS_VALIDOS).withDefault(FILTROS_PADRAO.periodo),
+  // Sem default: sem `mes` na query o valor e nulo e o `periodo` vale. Mes fora do formato
+  // cai em nulo, igual os outros parsers caem no default.
+  mes: createParser<string>({
+    parse: (valor) => (ehMes(valor) ? valor : null),
+    serialize: (valor) => valor,
+  }),
 }
 
 /**

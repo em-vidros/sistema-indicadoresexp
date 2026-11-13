@@ -10,7 +10,7 @@
  * As duas funcoes de texto sao puras e recebem `agora`. Testar o relatorio nao devia
  * precisar de um relogio congelado, e o unico motivo de elas lerem a hora era conveniencia.
  */
-import { BASES, PERIODOS } from './filtros.ts'
+import { BASES, rotuloDoPeriodo } from './filtros.ts'
 import type { Filtros } from './filtros.ts'
 import { brl, fmtPct, parcela } from './dominio.ts'
 import type { Indicadores, Rota } from './dominio.ts'
@@ -19,7 +19,7 @@ import type { SheetData } from 'write-excel-file/universal'
 export function textoDoRelatorio(kpis: Indicadores, filtros: Filtros, agora: Date): string {
   return [
     `RELATÓRIO LOGÍSTICO EM VIDROS`,
-    `${PERIODOS[filtros.periodo].noRelatorio} · ${BASES[filtros.base].noRelatorio} · ${agora.toLocaleDateString('pt-BR')}`,
+    `${rotuloDoPeriodo(filtros, 'noRelatorio')} · ${BASES[filtros.base].noRelatorio} · ${agora.toLocaleDateString('pt-BR')}`,
     ``,
     `🚛 VIAGENS: ${kpis.viagens.length} | Carga: R$ ${kpis.totalCarga.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} | Custo: R$ ${kpis.totalCustoV.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
     kpis.pctCustoRota !== null ? `   % Custo/Carga: ${kpis.pctCustoRota.toFixed(2)}% ${kpis.pctCustoRota < 7 ? '✅' : '⚠️'} (meta < 7%)` : '',
@@ -59,7 +59,7 @@ export function textoDoWhatsApp(
 
   return [
     `*LOGÍSTICA EM VIDROS · ${BASES[filtros.base].noRelatorio.toUpperCase()}*`,
-    `_${PERIODOS[filtros.periodo].noRelatorio} · ${agora.toLocaleDateString('pt-BR')}_`,
+    `_${rotuloDoPeriodo(filtros, 'noRelatorio')} · ${agora.toLocaleDateString('pt-BR')}_`,
     ``,
     `🚛 *VIAGENS*: ${kpis.viagens.length} viagem(ns)`,
     `   Carga: ${brl(kpis.totalCarga)}`,

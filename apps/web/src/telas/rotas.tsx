@@ -31,9 +31,10 @@ import type { Rota, Tom } from '../dashboard/dominio.ts'
 import {
   BASES,
   OPCOES_DE_PERIODO,
-  PERIODOS,
+  rotuloDoPeriodo,
   useFiltros,
 } from '../dashboard/filtros.ts'
+import { SeletorDeMes } from '../dashboard/seletor-de-mes.tsx'
 import type { Filtros } from '../dashboard/filtros.ts'
 import { baixarCsv } from '../dashboard/relatorio.ts'
 import { Download } from '../geist/icones.tsx'
@@ -170,7 +171,7 @@ export default function Rotas(): JSX.Element {
   const registros = useRegistros()
   const { itens } = registros
 
-  const viagens = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo)).viagens
+  const viagens = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo, filtros.mes)).viagens
   const rotas = porRota(viagens)
 
   const irPara = (novos: Filtros): void => {
@@ -178,22 +179,23 @@ export default function Rotas(): JSX.Element {
   }
 
   const exportar = (): void => {
-    baixarCsv(`rotas-${filtros.base}-${filtros.periodo}.csv`, [COLUNAS, ...rotas.map(celulasDa)])
+    baixarCsv(`rotas-${filtros.base}-${filtros.mes ?? filtros.periodo}.csv`, [COLUNAS, ...rotas.map(celulasDa)])
   }
 
   return (
     <EstadoDosRegistros registros={registros} titulo="Rotas">
       <CabecalhoDePagina
         titulo="Rotas"
-        subtitulo={`${rotas.length} ${rotas.length === 1 ? 'rota' : 'rotas'} · ${PERIODOS[filtros.periodo].rotulo} · ${BASES[filtros.base].naCasca}`}
+        subtitulo={`${rotas.length} ${rotas.length === 1 ? 'rota' : 'rotas'} · ${rotuloDoPeriodo(filtros)} · ${BASES[filtros.base].naCasca}`}
         acoes={
           <>
             <Seletor
               rotulo="Período"
               valor={filtros.periodo}
               opcoes={OPCOES_DE_PERIODO}
-              aoEscolher={(periodo) => irPara({ ...filtros, periodo })}
+              aoEscolher={(periodo) => irPara({ ...filtros, periodo, mes: null })}
             />
+            <SeletorDeMes itens={itens} filtros={filtros} aoEscolher={irPara} />
             <Botao rotulo="Exportar" antes={Download} aoClicar={exportar} />
           </>
         }

@@ -46,7 +46,7 @@ import {
   FILTROS_PADRAO,
   OPCOES_DE_BASE,
   OPCOES_DE_PERIODO,
-  PERIODOS,
+  rotuloDoPeriodo,
   useFiltros,
 } from '../dashboard/filtros.ts'
 import type { Filtros } from '../dashboard/filtros.ts'
@@ -183,7 +183,7 @@ export default function Viagens(): JSX.Element {
   const [vista, setVista] = useState<Vista>(VISTA_INICIAL)
   const { avisar } = useAvisos()
 
-  const todas = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo)).viagens
+  const todas = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo, filtros.mes)).viagens
   // So os meses que tem viagem no recorte de base e periodo: escolher um mes vazio so
   // mostraria uma tabela vazia. O mais recente primeiro.
   const mesesComViagem = [...new Set(todas.map(mesDa).filter((m) => /^\d{4}-\d{2}$/.test(m)))].sort().reverse()
@@ -221,7 +221,7 @@ export default function Viagens(): JSX.Element {
     const cabecalho = COLUNAS_DO_EXCEL.map(([value]) => ({ value, fontWeight: 'bold' as const }))
     try {
       await baixarXlsx(
-        `viagens-${filtros.base}-${vista.mes === 'todos' ? filtros.periodo : vista.mes}.xlsx`,
+        `viagens-${filtros.base}-${vista.mes === 'todos' ? filtros.mes ?? filtros.periodo : vista.mes}.xlsx`,
         [cabecalho, ...achadas.map(linhaDoExcel)],
         COLUNAS_DO_EXCEL.map(([, largura]) => largura),
       )
@@ -265,7 +265,7 @@ export default function Viagens(): JSX.Element {
     <EstadoDosRegistros registros={registros} titulo="Viagens">
       <CabecalhoDePagina
         titulo="Viagens"
-        subtitulo={`${todas.length} ${todas.length === 1 ? 'viagem' : 'viagens'} · ${PERIODOS[filtros.periodo].rotulo} · ${BASES[filtros.base].naCasca}`}
+        subtitulo={`${todas.length} ${todas.length === 1 ? 'viagem' : 'viagens'} · ${rotuloDoPeriodo(filtros)} · ${BASES[filtros.base].naCasca}`}
         acoes={
           <>
             <Botao rotulo="Exportar Excel" antes={Download} aoClicar={() => void exportar()} />
@@ -291,7 +291,7 @@ export default function Viagens(): JSX.Element {
           rotulo="Período"
           valor={filtros.periodo}
           opcoes={OPCOES_DE_PERIODO}
-          aoEscolher={(periodo) => irPara({ ...filtros, periodo })}
+          aoEscolher={(periodo) => irPara({ ...filtros, periodo, mes: null })}
         />
         <Seletor
           rotulo="Mês"

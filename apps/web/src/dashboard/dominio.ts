@@ -173,7 +173,23 @@ export function lerItem(registro: Registro): Item {
   return { ...comum, tipo: 'outro' }
 }
 
-export function filtrarDados(itens: readonly Item[], base: string, periodo: Periodo): Item[] {
+/** Os meses (`AAAA-MM`) que tem algum registro, do mais recente para o mais antigo. */
+export function mesesComRegistro(itens: readonly Item[], base: string): string[] {
+  const meses = new Set<string>()
+  for (const item of itens) {
+    if (base !== 'todas' && item.base !== base) continue
+    const mes = item.quando.slice(0, 7)
+    if (/^\d{4}-\d{2}$/.test(mes)) meses.add(mes)
+  }
+  return [...meses].sort().reverse()
+}
+
+export function filtrarDados(itens: readonly Item[], base: string, periodo: Periodo, mes: string | null = null): Item[] {
+  // Um mes escolhido vale no lugar do periodo: `quando` comeca com `AAAA-MM-DD`, entao o
+  // mes do registro e o inicio do texto, sem passar por `Date` e por fuso.
+  if (mes !== null) {
+    return itens.filter((item) => (base === 'todas' || item.base === base) && item.quando.slice(0, 7) === mes)
+  }
   const agora = new Date()
 
   let inicio: Date
@@ -229,6 +245,82 @@ export function calcularKPIs(dados: readonly Item[]) {
   }
 
   return { viagens, abasts, manuts, quebras, totalCarga, totalCustoV, totalManut, totalAbast, pctCustoRota, pctQuebra, pctManutProd, pont }
+}
+
+export type CustoDaPlaca = {
+  readonly placa: string
+  readonly viagens: number
+  readonly km: number
+  readonly combustivel: number
+  readonly manutencao: number
+  /** Combustivel mais manutencao, sem diarias: a conta dos fechamentos mensais. */
+  readonly custo: number
+  /** Nulo quando nenhuma viagem da placa tem km rodado lancado. */
+  readonly custoKm: number | null
+}
+
+/**
+ * Custo por m², custo por km e custo por placa do periodo.
+ *
+ * - Custo por m²: custo das viagens (combustivel + diarias) / m² transportado. So entram
+ *   as viagens com m² lancado, no numerador e no denominador.
+ * - Custo por km: (combustivel das viagens + manutencao) / km rodado. Diarias ficam de
+ *   fora, como nos fechamentos mensais. Como a manutencao nao e de uma viagem, ela entra
+ *   inteira; o combustivel so das viagens com km rodado, para a viagem sem km nao
+ *   inflar o custo de um km que nao existe.
+ * - Por placa: a mesma conta do custo por km, uma placa por linha, da mais cara para a
+ *   mais barata. Uma placa so com manutencao aparece, sem custo por km.
+ */
+export function indicadoresDeCusto(dados: readonly Item[]) {
+  const viagens = dados.filter((d) => d.tipo === 'viagem')
+  const manuts = dados.filter((d) => d.tipo === 'manutencao')
+
+  const comM2 = viagens.filter((v) => numero(v.bruto, 'm2') > 0)
+  const m2 = comM2.reduce((s, v) => s + numero(v.bruto, 'm2'), 0)
+  const custoDasViagensComM2 = comM2.reduce((s, v) => s + v.custoViagem, 0)
+
+  const comKm = viagens.filter((v) => (v.km ?? 0) > 0)
+  const km = comKm.reduce((s, v) => s + (v.km ?? 0), 0)
+  const combustivelComKm = comKm.reduce((s, v) => s + numero(v.bruto, 'combustivel'), 0)
+  const manutencao = manuts.reduce((s, m) => s + m.valor, 0)
+
+  const placas = new Map<string, { viagens: number; km: number; combustivel: number; manutencao: number }>()
+  const da = (placa: string) => {
+    const atual = placas.get(placa) ?? { viagens: 0, km: 0, combustivel: 0, manutencao: 0 }
+    placas.set(placa, atual)
+    return atual
+  }
+  for (const v of viagens) {
+    if (v.veiculo === '') continue
+    const atual = da(v.veiculo)
+    atual.viagens++
+    if ((v.km ?? 0) > 0) {
+      atual.km += v.km ?? 0
+      atual.combustivel += numero(v.bruto, 'combustivel')
+    }
+  }
+  for (const m of manuts) {
+    if (m.placa !== '') da(m.placa).manutencao += m.valor
+  }
+  const porPlaca: CustoDaPlaca[] = [...placas]
+    .map(([placa, d]) => {
+      const custo = d.combustivel + d.manutencao
+      return { placa, ...d, custo, custoKm: d.km > 0 ? custo / d.km : null }
+    })
+    .sort((a, b) => b.custo - a.custo)
+
+  return {
+    custoPorM2: m2 > 0 ? custoDasViagensComM2 / m2 : null,
+    m2,
+    viagensComM2: comM2.length,
+    viagensSemM2: viagens.length - comM2.length,
+    custoPorKm: km > 0 ? (combustivelComKm + manutencao) / km : null,
+    km,
+    combustivelComKm,
+    manutencao,
+    viagensSemKm: viagens.length - comKm.length,
+    porPlaca,
+  }
 }
 
 export type Rota = {
@@ -292,6 +384,12 @@ export function semanasDoGrafico(
     })
   }
   return semanas
+}
+
+/** Reais com centavos, para o que vale poucos reais (custo por km, custo por m²). */
+export function brlCentavos(valor: number | null): string {
+  if (valor === null) return '·'
+  return `R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export function brl(valor: number): string {

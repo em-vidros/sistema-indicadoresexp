@@ -458,7 +458,8 @@ export function Kpi({ rotulo, valor, grande = false, delta, apoio, meta, sparkli
   readonly grande?: boolean
   readonly delta?: Delta | undefined
   readonly apoio: string
-  readonly meta: { readonly texto: string; readonly tom: Tom }
+  /** Sem meta definida (indicador novo), a linha da meta some em vez de inventar uma. */
+  readonly meta?: { readonly texto: string; readonly tom: Tom } | undefined
   readonly sparkline?: ReactNode
 }): JSX.Element {
   return (
@@ -479,10 +480,14 @@ export function Kpi({ rotulo, valor, grande = false, delta, apoio, meta, sparkli
           )}
         <span>{apoio}</span>
       </div>
-      <div className="g-kpi-meta">
-        <span className={`g-ponto ${PONTO_DO_TOM[meta.tom]}`} />
-        <span>{meta.texto}</span>
-      </div>
+      {meta === undefined
+        ? null
+        : (
+          <div className="g-kpi-meta">
+            <span className={`g-ponto ${PONTO_DO_TOM[meta.tom]}`} />
+            <span>{meta.texto}</span>
+          </div>
+        )}
     </div>
   )
 }

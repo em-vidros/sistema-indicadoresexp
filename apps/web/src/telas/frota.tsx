@@ -26,9 +26,10 @@ import type { Item } from '../dashboard/dominio.ts'
 import {
   BASES,
   OPCOES_DE_PERIODO,
-  PERIODOS,
+  rotuloDoPeriodo,
   useFiltros,
 } from '../dashboard/filtros.ts'
+import { SeletorDeMes } from '../dashboard/seletor-de-mes.tsx'
 import type { Filtros } from '../dashboard/filtros.ts'
 import {
   CabecalhoDeBloco,
@@ -169,7 +170,7 @@ export default function Frota(): JSX.Element {
   const registros = useRegistros()
   const { itens } = registros
 
-  const kpis = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo))
+  const kpis = calcularKPIs(filtrarDados(itens, filtros.base, filtros.periodo, filtros.mes))
   const veiculos = veiculosDe([...kpis.manuts, ...kpis.abasts])
 
   const irPara = (novos: Filtros): void => {
@@ -180,14 +181,17 @@ export default function Frota(): JSX.Element {
     <EstadoDosRegistros registros={registros} titulo="Frota">
       <CabecalhoDePagina
         titulo="Frota"
-        subtitulo={`${veiculos} ${veiculos === 1 ? 'veículo' : 'veículos'} · ${PERIODOS[filtros.periodo].rotulo} · ${BASES[filtros.base].naCasca}`}
+        subtitulo={`${veiculos} ${veiculos === 1 ? 'veículo' : 'veículos'} · ${rotuloDoPeriodo(filtros)} · ${BASES[filtros.base].naCasca}`}
         acoes={
-          <Seletor
-            rotulo="Período"
-            valor={filtros.periodo}
-            opcoes={OPCOES_DE_PERIODO}
-            aoEscolher={(periodo) => irPara({ ...filtros, periodo })}
-          />
+          <>
+            <Seletor
+              rotulo="Período"
+              valor={filtros.periodo}
+              opcoes={OPCOES_DE_PERIODO}
+              aoEscolher={(periodo) => irPara({ ...filtros, periodo, mes: null })}
+            />
+            <SeletorDeMes itens={itens} filtros={filtros} aoEscolher={irPara} />
+          </>
         }
       />
       <Grade celulas={celulasDe(kpis.manuts, kpis.abasts)} />
