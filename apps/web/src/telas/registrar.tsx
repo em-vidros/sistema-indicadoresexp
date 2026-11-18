@@ -15,7 +15,7 @@ import type { JSX, ReactNode } from 'react'
 import { invalidar, useRecurso, useSessao } from '../app/dados.ts'
 import { navegar, useLocalizacao } from '../app/navegacao.tsx'
 import { brl, numero, texto } from '../dashboard/dominio.ts'
-import { lerDinheiro, lerNumero } from '../dashboard/digitado.ts'
+import { erroDeNumero, lerDinheiro, lerNumero } from '../dashboard/digitado.ts'
 import { hojeISO } from '../app/data.ts'
 import {
   AreaDeTexto,
@@ -436,6 +436,21 @@ type Montagem = { readonly erro: string } | { readonly registros: Registro[] }
  */
 const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string, rotaLocal: boolean) => Montagem>> = {
   viagem: ({ viagem, abastecimentosDaViagem }, base, rotaLocal) => {
+    const malFormado = erroDeNumero([
+      ['km saída', viagem.kmSaida],
+      ['km chegada', viagem.kmChegada],
+      ['m² total da carga', viagem.m2],
+      ['Peso da carga', viagem.peso],
+      ['Valor da carga', viagem.valorCarga],
+      ['Diárias', viagem.diarias],
+      ['Combustível', viagem.combustivel],
+      ...abastecimentosDaViagem.flatMap((ab, i): Array<readonly [string, string]> => [
+        [`Abastecimento ${i + 1} · Litros`, ab.litros],
+        [`Abastecimento ${i + 1} · Valor por litro`, ab.vlLitro],
+        [`Abastecimento ${i + 1} · km hodômetro`, ab.km],
+      ]),
+    ])
+    if (malFormado !== null) return { erro: malFormado }
     const veiculo = viagem.veiculo.trim().toUpperCase()
     const valorCarga = decimal(viagem.valorCarga)
     const diarias = decimal(viagem.diarias)
@@ -511,6 +526,19 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string, rotaL
   },
 
   abastecimento: ({ abastecimento }, base) => {
+    const malFormado = erroDeNumero(
+      abastecimento.paradas.slice(0, abastecimento.longa ? abastecimento.ativas : 1).flatMap(
+        (parada, i): Array<readonly [string, string]> => {
+          const quando = abastecimento.longa ? `Abastecimento ${i + 1} · ` : ''
+          return [
+            [`${quando}Litros`, parada.litros],
+            [`${quando}Valor por litro`, parada.vlLitro],
+            [`${quando}km hodômetro`, parada.km],
+          ]
+        },
+      ),
+    )
+    if (malFormado !== null) return { erro: malFormado }
     const placa = abastecimento.placa.trim().toUpperCase()
     const motorista = abastecimento.motorista.trim()
     if (abastecimento.data === '' || placa === '' || motorista === '') {
@@ -562,6 +590,8 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string, rotaL
   },
 
   manutencao: ({ manutencao }, base) => {
+    const malFormado = erroDeNumero([['Valor', manutencao.valor], ['km', manutencao.km]])
+    if (malFormado !== null) return { erro: malFormado }
     const placa = manutencao.placa.trim().toUpperCase()
     const servico = manutencao.servico.trim()
     const valor = lerDinheiro(manutencao.valor)
@@ -588,6 +618,8 @@ const MONTADORES: Readonly<Record<Tipo, (rascunho: Rascunho, base: string, rotaL
   },
 
   quebra: ({ quebra }, base) => {
+    const malFormado = erroDeNumero([['m² expedido', quebra.m2Expedido], ['m² quebrado', quebra.m2Quebrado]])
+    if (malFormado !== null) return { erro: malFormado }
     const expedido = decimal(quebra.m2Expedido)
     if (quebra.data === '' || expedido <= 0) return { erro: 'Preencha a data e o m² expedido.' }
     return {

@@ -22,6 +22,24 @@ export function lerNumero(digitado: string, { milhar = true }: { readonly milhar
   return Number.isFinite(lido) ? lido : 0
 }
 
+/**
+ * O primeiro campo numerico digitado num formato que nao se le como numero (`1,683,65`,
+ * `12a`). `lerNumero` devolve zero para esses, e o aviso de campo obrigatorio que vinha
+ * depois nao dizia qual campo estava errado, entao o formulario parecia todo preenchido e
+ * bloqueado. Aqui o aviso diz o campo e o que foi digitado. Campo vazio passa: obrigatorio
+ * e outra checagem.
+ */
+export function erroDeNumero(campos: ReadonlyArray<readonly [string, string]>): string | null {
+  for (const [rotulo, digitado] of campos) {
+    const texto = digitado.trim()
+    if (texto === '') continue
+    if (lerDinheiro(texto) === null) {
+      return `${rotulo}: "${texto}" não é um número válido. Use, por exemplo, 1683,65 ou 1.683,65.`
+    }
+  }
+  return null
+}
+
 export function lerDinheiro(digitado: string): number | null {
   const limpo = digitado.trim().replace(/^R\$\s*/, '')
   const brasileiro = /^-?(?:\d{1,3}(?:\.\d{3})+|\d+)(?:,\d+)?$/
