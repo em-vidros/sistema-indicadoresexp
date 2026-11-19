@@ -12,6 +12,7 @@ import {
   MAXIMO_DE_RECAPAGENS,
   MOTIVOS,
   TIPOS_DE_MOVIMENTO,
+  TIPOS_DE_PNEU,
   listarEstoquePneu,
   listarMovimentosDePneu,
   registrarMovimentoDePneu,
@@ -30,6 +31,9 @@ const Movimento = z.object({
   base: z.string().trim().min(1).max(80),
   medida: z.string().trim().min(1, 'Informe a medida do pneu.').max(40),
   marca: z.string().trim().max(60).optional().default(''),
+  // Direcional, tracao ou misto. O vazio so passa nas linhas antigas ("sem tipo"), e a consulta
+  // so o aceita em saida e ajuste: entrada nova exige um dos tres.
+  tipoPneu: z.enum(['', ...TIPOS_DE_PNEU], { message: 'Informe o tipo do pneu: direcional, tração ou misto.' }),
   recapagens: z.number().int().min(0).max(MAXIMO_DE_RECAPAGENS),
   tipo: z.enum(TIPOS_DE_MOVIMENTO as [string, ...string[]]),
   // O ajuste e a contagem fisica e pode ser zero; entrada e saida exigem mais que zero, e a

@@ -11,7 +11,14 @@
 import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import { useRecurso } from '../app/dados.ts'
-import { agruparEstoque, medidasDoEstoque, totaisDoEstoque } from '../dashboard/estoque-pneus.ts'
+import {
+  ROTULO_DO_TIPO_DE_PNEU,
+  TIPOS_DE_PNEU,
+  agruparEstoque,
+  medidasDoEstoque,
+  rotuloDoTipoDePneu,
+  totaisDoEstoque,
+} from '../dashboard/estoque-pneus.ts'
 import { erroDeNumero, lerNumero } from '../dashboard/digitado.ts'
 import { Campo, Chips, Dialogo, GradeDeCampos, useAvisos } from '../geist/formulario.tsx'
 import { Plus, SettingsGear } from '../geist/icones.tsx'
@@ -68,6 +75,9 @@ const OPCOES_DE_CONDICAO: readonly Opcao[] = [
 
 const POR_PAGINA_DO_HISTORICO = 30
 
+/** A escolha explicita de "sem tipo" no formulario; vai ao servidor como texto vazio. */
+const SEM_TIPO = '__sem_tipo'
+
 function rotuloDaCondicao(recapagens: number): string {
   return recapagens === 0 ? 'Não recapado' : `Recapado ${recapagens}×`
 }
@@ -80,6 +90,8 @@ type Rascunho = {
   readonly tipo: TipoDeMovimento
   readonly medida: string
   readonly marca: string
+  /** `direcional`, `tracao`, `misto`, ou vazio (nao escolhido, ou a linha antiga sem tipo). */
+  readonly tipoPneu: string
   readonly condicao: string
   readonly quantidade: string
   readonly motivo: string
@@ -87,11 +99,15 @@ type Rascunho = {
   readonly observacao: string
 }
 
-function rascunhoNovo(inicial?: { readonly medida: string; readonly marca: string }): Rascunho {
+function rascunhoNovo(
+  inicial?: { readonly medida: string; readonly marca: string; readonly tipoPneu: string },
+): Rascunho {
   return {
     tipo: 'entrada',
     medida: inicial?.medida ?? '',
     marca: inicial?.marca ?? '',
+    // Da linha antiga sem tipo (vazio no banco) vem a escolha explicita; linha nova comeca sem nada.
+    tipoPneu: inicial === undefined ? '' : inicial.tipoPneu === '' ? SEM_TIPO : inicial.tipoPneu,
     condicao: '0',
     quantidade: '',
     motivo: 'compra',
@@ -109,10 +125,12 @@ function textoDoMovimento(m: MovimentoListado): string {
   return `${m.delta > 0 ? '+' : '−'}${Math.abs(m.delta)}`
 }
 
-function DialogoDeMovimento({ base, medidas, placas, inicial, aoFechar, aoSalvar }: {
+function DialogoDeMovimento({ base, medidas, placas, temSemTipo, inicial, aoFechar, aoSalvar }: {
   readonly base: string
   readonly medidas: readonly string[]
   readonly placas: readonly Opcao[]
+  /** Ha saldo lancado antes do tipo existir: a linha "Sem tipo" aparece como escolha. */
+  readonly temSemTipo: boolean
   readonly inicial: Rascunho
   readonly aoFechar: () => void
   readonly aoSalvar: () => void
@@ -135,6 +153,12 @@ function DialogoDeMovimento({ base, medidas, placas, inicial, aoFechar, aoSalvar
       avisar('Informe a medida do pneu.', 'erro')
       return
     }
+    // Nada escolhido, ou "sem tipo" numa entrada: o "sem tipo" so serve para dar saida e
+    // ajustar o estoque antigo.
+    if (rascunho.tipoPneu === '' || (rascunho.tipoPneu === SEM_TIPO && rascunho.tipo === 'entrada')) {
+      avisar('Informe o tipo do pneu: direcional, tração ou misto.', 'erro')
+      return
+    }
     const malFormado = erroDeNumero([[ajuste ? 'Quantidade contada' : 'Quantidade', rascunho.quantidade]])
     if (malFormado !== null) {
       avisar(malFormado, 'erro')
@@ -149,6 +173,7 @@ function DialogoDeMovimento({ base, medidas, placas, inicial, aoFechar, aoSalvar
       base,
       medida,
       marca: rascunho.marca.trim(),
+      tipoPneu: rascunho.tipoPneu === SEM_TIPO ? '' : rascunho.tipoPneu,
       recapagens: Number(rascunho.condicao),
       tipo: rascunho.tipo,
       quantidade: Math.trunc(lerNumero(rascunho.quantidade)),
@@ -207,6 +232,19 @@ function DialogoDeMovimento({ base, medidas, placas, inicial, aoFechar, aoSalvar
               />
             </div>
           )}
+        <Campo
+          tipo="select"
+          rotulo="Tipo do pneu"
+          obrigatorio
+          span={6}
+          dica="Selecione o tipo"
+          opcoes={[
+            ...TIPOS_DE_PNEU.map((valor) => ({ valor, rotulo: ROTULO_DO_TIPO_DE_PNEU[valor] ?? valor })),
+            ...(temSemTipo ? [{ valor: SEM_TIPO, rotulo: 'Sem tipo (estoque antigo)' }] : []),
+          ]}
+          valor={rascunho.tipoPneu}
+          aoMudar={(tipoPneu) => mudar({ tipoPneu })}
+        />
         <Campo
           tipo="select"
           rotulo="Condição"
@@ -306,7 +344,7 @@ export function EstoqueDePneus({ base }: { readonly base: string }): JSX.Element
     <>
       <CabecalhoDeBloco
         titulo="Pneus em estoque"
-        subtitulo="Por medida e condição · o saldo muda só por movimentação"
+        subtitulo="Por medida, tipo e condição · o saldo muda só por movimentação"
         direita={<Botao rotulo="Movimentar estoque" antes={Plus} aoClicar={() => setAberto(rascunhoNovo())} />}
       />
       {estado === 'ok' && grupos.length === 0
@@ -324,6 +362,7 @@ export function EstoqueDePneus({ base }: { readonly base: string }): JSX.Element
               <>
                 <Th>Medida</Th>
                 <Th>Marca</Th>
+                <Th>Tipo</Th>
                 <Th direita>Não recapado</Th>
                 <Th direita>Recapado 1×</Th>
                 <Th direita>Recapado 2×</Th>
@@ -334,11 +373,16 @@ export function EstoqueDePneus({ base }: { readonly base: string }): JSX.Element
             }
           >
             {estado === 'carregando'
-              ? <tr><Td colunas={8} vazio>Carregando…</Td></tr>
+              ? <tr><Td colunas={9} vazio>Carregando…</Td></tr>
               : grupos.map((grupo) => (
-                <tr key={`${grupo.medida}|${grupo.marca}`}>
+                <tr key={`${grupo.medida}|${grupo.marca}|${grupo.tipoPneu}`}>
                   <Td><span className="g-forte g-l14m">{grupo.medida}</span></Td>
                   <Td>{grupo.marca === '' ? <span className="g-fraco">·</span> : grupo.marca}</Td>
+                  <Td>
+                    {grupo.tipoPneu === ''
+                      ? <Badge rotulo="Sem tipo" cor="cinza" comIcone={false} />
+                      : <Badge rotulo={rotuloDoTipoDePneu(grupo.tipoPneu)} cor={grupo.tipoPneu === 'misto' ? 'teal' : 'verde'} comIcone={false} />}
+                  </Td>
                   {grupo.porCondicao.map((quantidade, i) => (
                     <Td key={i} direita>{quantidade === 0 ? <span className="g-fraco">·</span> : quantidade}</Td>
                   ))}
@@ -347,7 +391,11 @@ export function EstoqueDePneus({ base }: { readonly base: string }): JSX.Element
                     <Botao
                       tipo="terciario"
                       rotulo="Movimentar"
-                      aoClicar={() => setAberto(rascunhoNovo({ medida: grupo.medida, marca: grupo.marca }))}
+                      aoClicar={() => setAberto(rascunhoNovo({
+                        medida: grupo.medida,
+                        marca: grupo.marca,
+                        tipoPneu: grupo.tipoPneu,
+                      }))}
                     />
                   </Td>
                 </tr>
@@ -377,7 +425,7 @@ export function EstoqueDePneus({ base }: { readonly base: string }): JSX.Element
               <Td>
                 <span className="g-l14m">{m.medida}</span>
                 {m.marca === '' ? null : <span className="g-fraco"> · {m.marca}</span>}
-                <span className="g-fraco"> · {rotuloDaCondicao(m.recapagens)}</span>
+                <span className="g-fraco"> · {rotuloDoTipoDePneu(m.tipoPneu)} · {rotuloDaCondicao(m.recapagens)}</span>
               </Td>
               <Td direita>
                 <Badge
@@ -451,6 +499,7 @@ export function EstoqueDePneus({ base }: { readonly base: string }): JSX.Element
             base={base}
             medidas={medidas}
             placas={placas}
+            temSemTipo={linhas.some((l) => l.tipoPneu === '' && l.quantidade > 0)}
             inicial={aberto}
             aoFechar={() => setAberto(null)}
             aoSalvar={() => {

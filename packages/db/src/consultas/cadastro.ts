@@ -171,6 +171,8 @@ export type PneuCadastro = {
   posicao: string
   numeroFogo: string | null
   marca: string | null
+  /** `direcional`, `tracao` ou `misto`; nulo nos pneus cadastrados antes do campo existir. */
+  tipoPneu: string | null
   status: StatusPneu
   recapagens: number
   kmInstalado: number | null
@@ -230,6 +232,7 @@ export type EntradaPneu = {
   posicao: string
   numeroFogo: string | null
   marca: string | null
+  tipoPneu: 'direcional' | 'tracao' | 'misto' | null
   status: StatusPneu
   recapagens: number
   kmInstalado: number | null
@@ -277,6 +280,7 @@ const CAMPOS_PNEU = {
   posicao: pneu.posicao,
   numeroFogo: pneu.numeroFogo,
   marca: pneu.marca,
+  tipoPneu: pneu.tipoPneu,
   status: pneu.status,
   recapagens: pneu.recapagens,
   kmInstalado: pneu.kmInstalado,

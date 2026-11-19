@@ -18,11 +18,15 @@ afterAll(async () => {
   await sql`delete from estoque_pneu where medida like 'ZZ-TESTE%'`
 })
 
-type Linha = { id: string; base: string; medida: string; marca: string; recapagens: number; quantidade: number }
-type Movimento = { tipo: string; delta: number; saldoDepois: number; motivo: string; placa: string | null; medida: string }
+type Linha = {
+  id: string; base: string; medida: string; marca: string; tipoPneu: string; recapagens: number; quantidade: number
+}
+type Movimento = {
+  tipo: string; delta: number; saldoDepois: number; motivo: string; placa: string | null; medida: string; tipoPneu: string
+}
 
 const base = {
-  base: 'Raposa', medida: 'ZZ-TESTE 295/80 R22.5', marca: '', recapagens: 0,
+  base: 'Raposa', medida: 'ZZ-TESTE 295/80 R22.5', marca: '', tipoPneu: 'misto', recapagens: 0,
   placa: null, observacao: null,
 }
 
@@ -33,10 +37,11 @@ const mover = (cookie: string, corpo: Record<string, unknown>) =>
     body: JSON.stringify({ ...base, ...corpo }),
   })
 
-const saldoDe = async (medida: string, recapagens = 0): Promise<number> => {
+const saldoDe = async (medida: string, recapagens = 0, tipoPneu = 'misto'): Promise<number> => {
   const resposta = await pedir('/api/estoque-pneus?base=Raposa', { headers: { cookie: livia } })
   const { linhas } = (await resposta.json()) as { linhas: Linha[] }
-  return linhas.find((l) => l.medida === medida && l.recapagens === recapagens)?.quantidade ?? -1
+  return linhas.find((l) => l.medida === medida && l.recapagens === recapagens && l.tipoPneu === tipoPneu)
+    ?.quantidade ?? -1
 }
 
 describe('movimentar o estoque de pneus', () => {
@@ -129,6 +134,45 @@ describe('movimentar o estoque de pneus', () => {
       select m.placa from estoque_pneu_movimento m join estoque_pneu e on e.id = m.estoque_id
       where e.medida = ${medida} and m.tipo = 'saida'`
     expect(linha!.placa).toBe('PTV0006')
+  })
+
+  test('o mesmo pneu de tipos diferentes são linhas separadas, e o tipo é obrigatório na entrada', async () => {
+    const medida = 'ZZ-TESTE TIPOS'
+    await mover(livia, { medida, tipoPneu: 'direcional', tipo: 'entrada', quantidade: 2, motivo: 'compra' })
+    await mover(livia, { medida, tipoPneu: 'tracao', tipo: 'entrada', quantidade: 5, motivo: 'compra' })
+    await mover(livia, { medida, tipoPneu: 'misto', tipo: 'entrada', quantidade: 1, motivo: 'compra' })
+    expect(await saldoDe(medida, 0, 'direcional')).toBe(2)
+    expect(await saldoDe(medida, 0, 'tracao')).toBe(5)
+    expect(await saldoDe(medida, 0, 'misto')).toBe(1)
+
+    // A saída de um tipo não toca no outro.
+    expect((await mover(livia, { medida, tipoPneu: 'tracao', tipo: 'saida', quantidade: 3, motivo: 'sucata' })).status)
+      .toBe(201)
+    expect(await saldoDe(medida, 0, 'tracao')).toBe(2)
+    expect(await saldoDe(medida, 0, 'direcional')).toBe(2)
+
+    for (const tipoPneu of ['', 'liso', undefined]) {
+      const recusada = await mover(livia, { medida, tipoPneu, tipo: 'entrada', quantidade: 1, motivo: 'compra' })
+      expect(recusada.status).toBe(400)
+    }
+  })
+
+  test('a linha antiga sem tipo aceita saída e ajuste, mas não entrada, e não nasce linha nova sem tipo', async () => {
+    const medida = 'ZZ-TESTE SEM TIPO'
+    const [baseRaposa] = await sql<Array<{ id: string }>>`select id from base where nome = 'Raposa'`
+    await sql`insert into estoque_pneu (base_id, medida, marca, tipo_pneu, recapagens, quantidade)
+      values (${baseRaposa!.id}::uuid, ${medida}, '', '', 0, 4)`
+
+    expect((await mover(livia, { medida, tipoPneu: '', tipo: 'entrada', quantidade: 1, motivo: 'compra' })).status).toBe(400)
+    expect((await mover(livia, { medida, tipoPneu: '', tipo: 'saida', quantidade: 1, motivo: 'sucata' })).status).toBe(201)
+    expect(await saldoDe(medida, 0, '')).toBe(3)
+    expect((await mover(livia, { medida, tipoPneu: '', tipo: 'ajuste', quantidade: 0, motivo: 'inventario' })).status).toBe(201)
+    expect(await saldoDe(medida, 0, '')).toBe(0)
+
+    const inexistente = await mover(livia, { medida: 'ZZ-TESTE NUNCA SEM TIPO', tipoPneu: '', tipo: 'ajuste', quantidade: 5, motivo: 'inventario' })
+    expect(inexistente.status).toBe(400)
+    const [linha] = await sql<Array<{ n: number }>>`select count(*)::int as n from estoque_pneu where medida = 'ZZ-TESTE NUNCA SEM TIPO'`
+    expect(linha!.n).toBe(0)
   })
 
   test('motivo de outro tipo, condição acima de 3× e medida vazia são 400', async () => {

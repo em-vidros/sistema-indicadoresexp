@@ -16,6 +16,7 @@ import { invalidar, useRecurso, useSessao } from '../app/dados.ts'
 import { lerNumero } from '../dashboard/digitado.ts'
 import { Campo, CampoDeArquivo, Chips, Dialogo, GradeDeCampos, TituloDeSecao, useAvisos } from '../geist/formulario.tsx'
 import { CloudUpload, Plus, SettingsGear, Trash } from '../geist/icones.tsx'
+import { TIPOS_DE_PNEU, rotuloDoTipoDePneu } from '../dashboard/estoque-pneus.ts'
 import { EstoqueDePneus } from './estoque-pneus.tsx'
 import {
   Abas,
@@ -33,7 +34,14 @@ import {
 } from '../geist/primitivos.tsx'
 import type { CorDeBadge, Opcao } from '../geist/primitivos.tsx'
 import { atualizarPneu, atualizarVeiculo, criarPneu, obterCadastro } from '../js/cadastro-api.ts'
-import type { EntradaPneu, EntradaVeiculo, PneuCadastro, StatusPneu, VeiculoCadastro } from '../js/cadastro-api.ts'
+import type {
+  EntradaPneu,
+  EntradaVeiculo,
+  PneuCadastro,
+  StatusPneu,
+  TipoDePneu,
+  VeiculoCadastro,
+} from '../js/cadastro-api.ts'
 import { listarRegistros } from '../js/registros-api.ts'
 import type { Registro } from '../js/registros-api.ts'
 
@@ -255,6 +263,16 @@ function TabelaDeVeiculos({ veiculos, aoConfigurar }: {
 
 // ---------- dialogo por veiculo ----------
 
+const OPCOES_DE_TIPO_DE_PNEU: readonly Opcao[] = TIPOS_DE_PNEU.map((valor) => ({
+  valor,
+  rotulo: rotuloDoTipoDePneu(valor),
+}))
+
+/** O select devolve texto: so um dos tres tipos vira valor, e o vazio fica como nao informado. */
+function tipoDoFormulario(valor: string): TipoDePneu | null {
+  return (TIPOS_DE_PNEU as readonly string[]).includes(valor) ? (valor as TipoDePneu) : null
+}
+
 const OPCOES_DE_STATUS: readonly Opcao<StatusPneu>[] = [
   { valor: 'novo', rotulo: 'Novo' },
   { valor: 'recapado', rotulo: 'Recapado' },
@@ -266,6 +284,8 @@ type Formulario = {
   readonly posicao: string
   readonly numeroFogo: string
   readonly marca: string
+  /** `direcional`, `tracao`, `misto` ou vazio (nao informado). */
+  readonly tipoPneu: string
   readonly status: StatusPneu
   readonly recapagens: string
   readonly kmInstalado: string
@@ -278,6 +298,7 @@ const FORMULARIO_VAZIO: Formulario = {
   posicao: '',
   numeroFogo: '',
   marca: '',
+  tipoPneu: '',
   status: 'novo',
   recapagens: '0',
   kmInstalado: '',
@@ -291,6 +312,7 @@ function paraFormulario(p: PneuCadastro): Formulario {
     posicao: p.posicao,
     numeroFogo: p.numeroFogo ?? '',
     marca: p.marca ?? '',
+    tipoPneu: p.tipoPneu ?? '',
     status: p.status,
     recapagens: String(p.recapagens),
     kmInstalado: p.kmInstalado === null ? '' : String(p.kmInstalado),
@@ -338,6 +360,7 @@ function DialogoDoVeiculo({ veiculo, aoFechar }: {
       posicao,
       numeroFogo: formulario.numeroFogo.trim() || null,
       marca: formulario.marca.trim() || null,
+      tipoPneu: tipoDoFormulario(formulario.tipoPneu),
       status: formulario.status,
       recapagens: Math.max(0, Math.trunc(lerNumero(formulario.recapagens)) || 0),
       kmInstalado: formulario.kmInstalado === '' ? null : Math.trunc(lerNumero(formulario.kmInstalado)) || null,
@@ -357,6 +380,7 @@ function DialogoDoVeiculo({ veiculo, aoFechar }: {
       posicao: pneu.posicao,
       numeroFogo: pneu.numeroFogo,
       marca: pneu.marca,
+      tipoPneu: pneu.tipoPneu,
       status: pneu.status,
       recapagens: pneu.recapagens,
       kmInstalado: pneu.kmInstalado,
@@ -390,7 +414,7 @@ function DialogoDoVeiculo({ veiculo, aoFechar }: {
                       <Badge comIcone={false} cor={p.status === 'sucateado' ? 'vermelho' : 'cinza'} rotulo={ROTULO_DO_STATUS_PNEU[p.status]} />
                     </div>
                     <div className="g-linha-apoio g-l13">
-                      {`${p.marca ?? 'sem marca'} · ${p.recapagens} ${p.recapagens === 1 ? 'recapagem' : 'recapagens'} · ` +
+                      {`${p.marca ?? 'sem marca'} · ${p.tipoPneu === null ? 'sem tipo' : rotuloDoTipoDePneu(p.tipoPneu)} · ${p.recapagens} ${p.recapagens === 1 ? 'recapagem' : 'recapagens'} · ` +
                         (p.kmRodado === null ? 'km desde a instalação não disponível' : `${emKm(p.kmRodado)} km desde a instalação`)}
                     </div>
                   </div>
@@ -442,6 +466,15 @@ function DialogoDoVeiculo({ veiculo, aoFechar }: {
             span={4}
             valor={formulario.numeroFogo}
             aoMudar={(numeroFogo) => setFormulario((atual) => ({ ...atual, numeroFogo }))}
+          />
+          <Campo
+            tipo="select"
+            rotulo="Tipo"
+            span={4}
+            dica="Não informado"
+            opcoes={OPCOES_DE_TIPO_DE_PNEU}
+            valor={formulario.tipoPneu}
+            aoMudar={(tipoPneu) => setFormulario((atual) => ({ ...atual, tipoPneu }))}
           />
           <Campo
             tipo="select"

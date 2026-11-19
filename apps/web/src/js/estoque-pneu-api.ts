@@ -15,6 +15,8 @@ export type LinhaDeEstoque = {
   readonly base: string
   readonly medida: string
   readonly marca: string
+  /** `direcional`, `tracao`, `misto`, ou vazio nas linhas lancadas antes do tipo existir. */
+  readonly tipoPneu: string
   /** 0 e pneu nao recapado (novo); 1 a 3 e quantas vezes ja foi recapado. */
   readonly recapagens: number
   readonly quantidade: number
@@ -28,6 +30,7 @@ export type MovimentoListado = {
   readonly base: string
   readonly medida: string
   readonly marca: string
+  readonly tipoPneu: string
   readonly recapagens: number
   readonly tipo: TipoDeMovimento
   /** A variacao com sinal: +4 na entrada, -2 na saida. */
@@ -42,6 +45,8 @@ export type EntradaDeMovimento = {
   readonly base: string
   readonly medida: string
   readonly marca: string
+  /** Obrigatorio: `direcional`, `tracao` ou `misto`. */
+  readonly tipoPneu: string
   readonly recapagens: number
   readonly tipo: TipoDeMovimento
   /** Na entrada e na saida, quantos; no ajuste, a contagem fisica (o saldo novo). */

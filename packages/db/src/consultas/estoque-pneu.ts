@@ -1,5 +1,6 @@
 /**
- * O estoque de pneus do almoxarifado: o saldo por base x medida x marca x condicao
+ * O estoque de pneus do almoxarifado: o saldo por base x medida x marca x tipo
+ * (direcional, tracao ou misto) x condicao
  * (nao recapado, ou recapado 1x a 3x) e o historico de cada movimentacao.
  *
  * O saldo so muda por movimentacao, na mesma transacao que grava a linha do historico, e a
@@ -23,6 +24,7 @@ import {
   normalizarMarca,
   normalizarMedida,
   novoSaldo,
+  tipoDePneuValido,
 } from './estoque-pneu-regras.ts'
 import { lerPermissao } from './permissao.ts'
 
@@ -33,6 +35,8 @@ export type LinhaDeEstoque = {
   base: string
   medida: string
   marca: string
+  /** `direcional`, `tracao`, `misto`, ou vazio nas linhas lancadas antes do tipo existir. */
+  tipoPneu: string
   recapagens: number
   quantidade: number
 }
@@ -44,6 +48,7 @@ export type MovimentoListado = {
   base: string
   medida: string
   marca: string
+  tipoPneu: string
   recapagens: number
   tipo: TipoDeMovimento
   delta: number
@@ -81,19 +86,22 @@ export async function listarEstoquePneu(
       base: base.nome,
       medida: estoquePneu.medida,
       marca: estoquePneu.marca,
+      tipoPneu: estoquePneu.tipoPneu,
       recapagens: estoquePneu.recapagens,
       quantidade: estoquePneu.quantidade,
     })
     .from(estoquePneu)
     .innerJoin(base, eq(base.id, estoquePneu.baseId))
     .where(inArray(estoquePneu.baseId, bases.map((item) => item.id)))
-    .orderBy(estoquePneu.medida, estoquePneu.marca, estoquePneu.recapagens)
+    .orderBy(estoquePneu.medida, estoquePneu.marca, estoquePneu.tipoPneu, estoquePneu.recapagens)
 }
 
 export type EntradaDeMovimento = {
   base: string
   medida: string
   marca: string
+  /** `direcional`, `tracao` ou `misto`: obrigatorio em toda movimentacao nova. */
+  tipoPneu: string
   recapagens: number
   tipo: TipoDeMovimento
   quantidade: number
@@ -119,6 +127,13 @@ export async function registrarMovimentoDePneu(
   const medida = normalizarMedida(entrada.medida)
   const marca = normalizarMarca(entrada.marca)
   if (medida === '') throw new CadastroInvalido('Informe a medida do pneu.', 400)
+  // O vazio ("sem tipo") so existe nas linhas lancadas antes do tipo existir: nelas cabe dar
+  // saida e ajustar, mas nunca dar entrada nem criar linha nova sem tipo.
+  const semTipo = entrada.tipoPneu === ''
+  if (!tipoDePneuValido(entrada.tipoPneu) && !(semTipo && entrada.tipo !== 'entrada')) {
+    throw new CadastroInvalido('Informe o tipo do pneu: direcional, tração ou misto.', 400)
+  }
+  const tipoPneu = entrada.tipoPneu
   if (
     !Number.isInteger(entrada.recapagens) || entrada.recapagens < 0 || entrada.recapagens > MAXIMO_DE_RECAPAGENS
   ) {
@@ -143,10 +158,12 @@ export async function registrarMovimentoDePneu(
 
   return await db.transaction(async (tx) => {
     // A linha nasce zerada se ainda nao existia; se a transacao for recusada, ela volta junto.
-    await tx
-      .insert(estoquePneu)
-      .values({ baseId: alvo.id, medida, marca, recapagens: entrada.recapagens })
-      .onConflictDoNothing()
+    if (!semTipo) {
+      await tx
+        .insert(estoquePneu)
+        .values({ baseId: alvo.id, medida, marca, tipoPneu, recapagens: entrada.recapagens })
+        .onConflictDoNothing()
+    }
     const [linha] = await tx
       .select()
       .from(estoquePneu)
@@ -154,10 +171,14 @@ export async function registrarMovimentoDePneu(
         eq(estoquePneu.baseId, alvo.id),
         eq(estoquePneu.medida, medida),
         eq(estoquePneu.marca, marca),
+        eq(estoquePneu.tipoPneu, tipoPneu),
         eq(estoquePneu.recapagens, entrada.recapagens),
       ))
       .for('update')
-    if (!linha) throw new CadastroInvalido('Estoque indisponível, tente de novo.', 409)
+    if (!linha) {
+      if (semTipo) throw new CadastroInvalido('Não há pneus sem tipo em estoque desta medida e condição.', 400)
+      throw new CadastroInvalido('Estoque indisponível, tente de novo.', 409)
+    }
 
     const resultado = novoSaldo(entrada.tipo, linha.quantidade, entrada.quantidade)
     if ('erro' in resultado) throw new CadastroInvalido(resultado.erro, 400)
@@ -167,6 +188,7 @@ export async function registrarMovimentoDePneu(
       base: alvo.nome,
       medida,
       marca,
+      tipoPneu,
       recapagens: entrada.recapagens,
       quantidade: resultado.saldo,
     }
@@ -219,6 +241,7 @@ export async function listarMovimentosDePneu(
       base: base.nome,
       medida: estoquePneu.medida,
       marca: estoquePneu.marca,
+      tipoPneu: estoquePneu.tipoPneu,
       recapagens: estoquePneu.recapagens,
       tipo: movimentoEstoquePneu.tipo,
       delta: movimentoEstoquePneu.delta,

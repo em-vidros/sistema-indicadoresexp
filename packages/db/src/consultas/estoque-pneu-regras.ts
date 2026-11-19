@@ -29,6 +29,26 @@ export const ROTULO_DO_MOTIVO: Readonly<Record<string, string>> = {
   outro: 'Outro',
 }
 
+/**
+ * O tipo do pneu pela posicao em que trabalha: direcional (eixo dianteiro), tracao (eixo
+ * motriz) ou misto (serve nos dois). O estoque vazio ("sem tipo") so existe nas linhas
+ * lancadas antes deste campo; movimentacao nova exige um dos tres.
+ */
+export const TIPOS_DE_PNEU = ['direcional', 'tracao', 'misto'] as const
+
+export type TipoDePneu = (typeof TIPOS_DE_PNEU)[number]
+
+export const ROTULO_DO_TIPO_DE_PNEU: Readonly<Record<string, string>> = {
+  direcional: 'Direcional',
+  tracao: 'Tração',
+  misto: 'Misto',
+  '': 'Sem tipo',
+}
+
+export function tipoDePneuValido(tipo: string): tipo is TipoDePneu {
+  return (TIPOS_DE_PNEU as readonly string[]).includes(tipo)
+}
+
 /** `295/80  r22.5 ` vira `295/80 R22.5`: a mesma medida escrita de dois jeitos e duas linhas. */
 export function normalizarMedida(texto: string): string {
   return texto.trim().replace(/\s+/g, ' ').toUpperCase()

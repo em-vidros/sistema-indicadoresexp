@@ -56,6 +56,8 @@ const Pneu = z.object({
   posicao: z.string().trim().min(1).max(80),
   numeroFogo: TextoOuNulo.optional().default(null),
   marca: TextoOuNulo.optional().default(null),
+  // Nulo e permitido: pneu cadastrado antes do campo existir, ou ainda sem classificar.
+  tipoPneu: z.enum(['direcional', 'tracao', 'misto']).nullable().optional().default(null),
   status: z.enum(statusPneu.enumValues).optional().default('novo'),
   recapagens: z.number().int().nonnegative().optional().default(0),
   kmInstalado: z.number().int().positive().nullable().optional().default(null),

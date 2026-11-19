@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
   boolean,
+  check,
   date,
   integer,
   pgEnum,
@@ -95,6 +96,8 @@ export const pneu = pgTable(
     posicao: text('posicao').notNull(),
     numeroFogo: text('numero_fogo'),
     marca: text('marca'),
+    /** `direcional`, `tracao` ou `misto`; nulo nos pneus cadastrados antes deste campo. */
+    tipoPneu: text('tipo_pneu'),
     status: statusPneu('status').notNull().default('novo'),
     recapagens: integer('recapagens').notNull().default(0),
     /** km do veiculo quando este pneu foi instalado (ou recapado) nesta posicao. */
@@ -106,5 +109,6 @@ export const pneu = pgTable(
   (t) => [
     // So um pneu ativo por posicao do veiculo; desativar libera a posicao pro proximo.
     uniqueIndex('pneu_veiculo_posicao_uk').on(t.veiculoId, t.posicao).where(sql`${t.ativo} = true`),
+    check('pneu_tipo_ck', sql`${t.tipoPneu} is null or ${t.tipoPneu} in ('direcional', 'tracao', 'misto')`),
   ],
 )

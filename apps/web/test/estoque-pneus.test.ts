@@ -1,13 +1,25 @@
 import { describe, expect, test } from 'bun:test'
-import { agruparEstoque, medidasDoEstoque, totaisDoEstoque } from '../src/dashboard/estoque-pneus.ts'
+import {
+  agruparEstoque,
+  medidasDoEstoque,
+  rotuloDoTipoDePneu,
+  totaisDoEstoque,
+} from '../src/dashboard/estoque-pneus.ts'
 import { listarEstoque, listarMovimentos, registrarMovimento } from '../src/js/estoque-pneu-api.ts'
 import type { LinhaDeEstoque } from '../src/js/estoque-pneu-api.ts'
 
-const linha = (medida: string, marca: string, recapagens: number, quantidade: number): LinhaDeEstoque => ({
-  id: `${medida}-${marca}-${recapagens}`,
+const linha = (
+  medida: string,
+  marca: string,
+  recapagens: number,
+  quantidade: number,
+  tipoPneu = 'misto',
+): LinhaDeEstoque => ({
+  id: `${medida}-${marca}-${tipoPneu}-${recapagens}`,
   base: 'Raposa',
   medida,
   marca,
+  tipoPneu,
   recapagens,
   quantidade,
 })
@@ -18,16 +30,35 @@ describe('o estoque em forma de tabela', () => {
     linha('295/80 R22.5', 'MICHELIN', 1, 4),
     linha('295/80 R22.5', 'MICHELIN', 2, 2),
     linha('295/80 R22.5', '', 3, 1),
-    linha('275/80 R22.5', 'PIRELLI', 0, 3),
+    linha('275/80 R22.5', 'PIRELLI', 0, 3, 'direcional'),
   ]
 
-  test('caminho feliz: uma linha por medida e marca, uma coluna por condição', () => {
+  test('caminho feliz: uma linha por medida, marca e tipo, uma coluna por condição', () => {
     const grupos = agruparEstoque(linhas)
-    expect(grupos.map((g) => [g.medida, g.marca, ...g.porCondicao, g.total])).toEqual([
-      ['275/80 R22.5', 'PIRELLI', 3, 0, 0, 0, 3],
-      ['295/80 R22.5', 'MICHELIN', 6, 4, 2, 0, 12],
-      ['295/80 R22.5', '', 0, 0, 0, 1, 1],
+    expect(grupos.map((g) => [g.medida, g.marca, g.tipoPneu, ...g.porCondicao, g.total])).toEqual([
+      ['275/80 R22.5', 'PIRELLI', 'direcional', 3, 0, 0, 0, 3],
+      ['295/80 R22.5', 'MICHELIN', 'misto', 6, 4, 2, 0, 12],
+      ['295/80 R22.5', '', 'misto', 0, 0, 0, 1, 1],
     ])
+  })
+
+  test('o mesmo pneu de tipos diferentes são linhas diferentes, na ordem direcional, tração, misto e sem tipo', () => {
+    const grupos = agruparEstoque([
+      linha('295/80 R22.5', 'MICHELIN', 0, 1, ''),
+      linha('295/80 R22.5', 'MICHELIN', 0, 2, 'misto'),
+      linha('295/80 R22.5', 'MICHELIN', 0, 3, 'tracao'),
+      linha('295/80 R22.5', 'MICHELIN', 1, 4, 'tracao'),
+      linha('295/80 R22.5', 'MICHELIN', 0, 5, 'direcional'),
+    ])
+    expect(grupos.map((g) => [g.tipoPneu, g.total])).toEqual([
+      ['direcional', 5],
+      ['tracao', 7],
+      ['misto', 2],
+      ['', 1],
+    ])
+    expect(rotuloDoTipoDePneu('tracao')).toBe('Tração')
+    expect(rotuloDoTipoDePneu('')).toBe('Sem tipo')
+    expect(rotuloDoTipoDePneu(null)).toBe('Sem tipo')
   })
 
   test('os totais separam novos de recapados e abrem os recapados por número de recapagens', () => {
@@ -67,7 +98,7 @@ describe('a aba Estoque fala com a API', () => {
       return Response.json(linha('295/80 R22.5', '', 0, 4), { status: 201 })
     }
     const entrada = {
-      base: 'Raposa', medida: '295/80 R22.5', marca: '', recapagens: 0, tipo: 'entrada' as const,
+      base: 'Raposa', medida: '295/80 R22.5', marca: '', tipoPneu: 'tracao', recapagens: 0, tipo: 'entrada' as const,
       quantidade: 4, motivo: 'compra', placa: null, observacao: null,
     }
     expect((await registrarMovimento(entrada, aceita)).quantidade).toBe(4)

@@ -5,23 +5,53 @@
  */
 import type { LinhaDeEstoque } from '../js/estoque-pneu-api.ts'
 
+/** Os tres tipos de pneu, na ordem em que a tela os oferece. */
+export const TIPOS_DE_PNEU = ['direcional', 'tracao', 'misto'] as const
+
+export const ROTULO_DO_TIPO_DE_PNEU: Readonly<Record<string, string>> = {
+  direcional: 'Direcional',
+  tracao: 'Tração',
+  misto: 'Misto',
+  '': 'Sem tipo',
+}
+
+/** `Sem tipo` e o das linhas lancadas antes do campo existir; so aparece quando ha saldo nele. */
+export function rotuloDoTipoDePneu(tipo: string | null): string {
+  return ROTULO_DO_TIPO_DE_PNEU[tipo ?? ''] ?? tipo ?? 'Sem tipo'
+}
+
 /** Nao recapado (0) e recapado 1x, 2x, 3x: as quatro colunas da tabela. */
 export const CONDICOES = [0, 1, 2, 3] as const
 
 export type GrupoDeEstoque = {
   readonly medida: string
   readonly marca: string
+  /** `direcional`, `tracao`, `misto` ou vazio (sem tipo). */
+  readonly tipoPneu: string
   /** O saldo de cada condicao, na ordem de `CONDICOES`. */
   readonly porCondicao: readonly [number, number, number, number]
   readonly total: number
 }
 
-/** Medida e marca juntas, em ordem alfabetica. Marca vazia fica por ultimo da medida. */
+/** Direcional, tracao, misto e, por ultimo, as linhas antigas sem tipo. */
+function ordemDoTipo(tipo: string): number {
+  const posicao = (TIPOS_DE_PNEU as readonly string[]).indexOf(tipo)
+  return posicao === -1 ? TIPOS_DE_PNEU.length : posicao
+}
+
+/**
+ * Medida, marca e tipo juntos, em ordem alfabetica da medida. Marca vazia fica por ultimo
+ * da medida, e dentro dela os tipos seguem direcional, tracao, misto e sem tipo.
+ */
 export function agruparEstoque(linhas: readonly LinhaDeEstoque[]): GrupoDeEstoque[] {
-  const grupos = new Map<string, { medida: string; marca: string; saldos: [number, number, number, number] }>()
+  const grupos = new Map<
+    string,
+    { medida: string; marca: string; tipoPneu: string; saldos: [number, number, number, number] }
+  >()
   for (const linha of linhas) {
-    const chave = `${linha.medida}\u0000${linha.marca}`
-    const grupo = grupos.get(chave) ?? { medida: linha.medida, marca: linha.marca, saldos: [0, 0, 0, 0] }
+    const chave = `${linha.medida}\u0000${linha.marca}\u0000${linha.tipoPneu}`
+    const grupo = grupos.get(chave) ??
+      { medida: linha.medida, marca: linha.marca, tipoPneu: linha.tipoPneu, saldos: [0, 0, 0, 0] }
     if (linha.recapagens >= 0 && linha.recapagens <= 3) {
       const condicao = linha.recapagens as 0 | 1 | 2 | 3
       grupo.saldos[condicao] += linha.quantidade
@@ -32,13 +62,15 @@ export function agruparEstoque(linhas: readonly LinhaDeEstoque[]): GrupoDeEstoqu
     .map((g) => ({
       medida: g.medida,
       marca: g.marca,
+      tipoPneu: g.tipoPneu,
       porCondicao: g.saldos,
       total: g.saldos.reduce((soma, n) => soma + n, 0),
     }))
     .sort((a, b) =>
       a.medida.localeCompare(b.medida) ||
       (a.marca === '' ? 1 : 0) - (b.marca === '' ? 1 : 0) ||
-      a.marca.localeCompare(b.marca)
+      a.marca.localeCompare(b.marca) ||
+      ordemDoTipo(a.tipoPneu) - ordemDoTipo(b.tipoPneu)
     )
 }
 

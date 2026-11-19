@@ -1,11 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 import {
   MOTIVOS,
+  ROTULO_DO_TIPO_DE_PNEU,
+  TIPOS_DE_PNEU,
   motivoValido,
   normalizarMarca,
   normalizarMedida,
   novoSaldo,
   rotuloDaCondicao,
+  tipoDePneuValido,
 } from '../src/consultas/estoque-pneu-regras.ts'
 
 describe('a escrita da medida e da marca', () => {
@@ -44,6 +47,19 @@ describe('o saldo depois de uma movimentação', () => {
     expect(novoSaldo('entrada', 5, -2)).toEqual({ erro: 'A quantidade precisa ser um número inteiro.' })
     expect(novoSaldo('entrada', 5, 1.5)).toEqual({ erro: 'A quantidade precisa ser um número inteiro.' })
     expect(novoSaldo('ajuste', 5, -1)).toEqual({ erro: 'A quantidade precisa ser um número inteiro.' })
+  })
+})
+
+describe('o tipo do pneu', () => {
+  test('só direcional, tração e misto valem; vazio e outros nomes não', () => {
+    expect(TIPOS_DE_PNEU).toEqual(['direcional', 'tracao', 'misto'])
+    expect(tipoDePneuValido('direcional')).toBe(true)
+    expect(tipoDePneuValido('tracao')).toBe(true)
+    expect(tipoDePneuValido('misto')).toBe(true)
+    expect(tipoDePneuValido('')).toBe(false)
+    expect(tipoDePneuValido('liso')).toBe(false)
+    expect(ROTULO_DO_TIPO_DE_PNEU['tracao']).toBe('Tração')
+    expect(ROTULO_DO_TIPO_DE_PNEU['']).toBe('Sem tipo')
   })
 })
 

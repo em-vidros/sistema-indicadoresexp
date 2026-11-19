@@ -31,6 +31,9 @@ export type VeiculoCadastro = {
 
 export type StatusPneu = 'novo' | 'recapado' | 'sucateado'
 
+/** Direcional (eixo dianteiro), tracao (eixo motriz) ou misto (serve nos dois). */
+export type TipoDePneu = 'direcional' | 'tracao' | 'misto'
+
 export type PneuCadastro = {
   id: string
   veiculoId: string
@@ -38,6 +41,8 @@ export type PneuCadastro = {
   posicao: string
   numeroFogo: string | null
   marca: string | null
+  /** Nulo nos pneus cadastrados antes do campo existir. */
+  tipoPneu: TipoDePneu | null
   status: StatusPneu
   recapagens: number
   kmInstalado: number | null
@@ -89,6 +94,7 @@ export type EntradaPneu = {
   posicao: string
   numeroFogo: string | null
   marca: string | null
+  tipoPneu: TipoDePneu | null
   status: StatusPneu
   recapagens: number
   kmInstalado: number | null

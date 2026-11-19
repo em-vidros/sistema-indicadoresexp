@@ -24,12 +24,18 @@ export const estoquePneu = pgTable(
       .references(() => base.id),
     medida: text('medida').notNull(),
     marca: text('marca').notNull().default(''),
+    /**
+     * `direcional`, `tracao` ou `misto`. Vazio so existe nas linhas lancadas antes deste campo
+     * existir ("sem tipo"): toda movimentacao nova exige um dos tres.
+     */
+    tipoPneu: text('tipo_pneu').notNull().default(''),
     recapagens: integer('recapagens').notNull().default(0),
     quantidade: integer('quantidade').notNull().default(0),
     atualizadoEm: timestamp('atualizado_em', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
-    unique('estoque_pneu_chave_uk').on(t.baseId, t.medida, t.marca, t.recapagens),
+    unique('estoque_pneu_chave_uk').on(t.baseId, t.medida, t.marca, t.tipoPneu, t.recapagens),
+    check('estoque_pneu_tipo_ck', sql`${t.tipoPneu} in ('', 'direcional', 'tracao', 'misto')`),
     check('estoque_pneu_recapagens_ck', sql`${t.recapagens} between 0 and 3`),
     check('estoque_pneu_quantidade_ck', sql`${t.quantidade} >= 0`),
   ],
