@@ -16,7 +16,9 @@ import { invalidar, useRecurso, useSessao } from '../app/dados.ts'
 import { lerNumero } from '../dashboard/digitado.ts'
 import { Campo, CampoDeArquivo, Chips, Dialogo, GradeDeCampos, TituloDeSecao, useAvisos } from '../geist/formulario.tsx'
 import { CloudUpload, Plus, SettingsGear, Trash } from '../geist/icones.tsx'
+import { EstoqueDePneus } from './estoque-pneus.tsx'
 import {
+  Abas,
   Badge,
   Botao,
   CabecalhoDeBloco,
@@ -680,6 +682,8 @@ export default function Pneus(): JSX.Element {
   const registros = useRecurso('registros', () => listarRegistros())
 
   const [base, setBase] = useState<string | null>(null)
+  /** 0 e o controle por veiculo (o que a tela sempre foi); 1 e o estoque do almoxarifado. */
+  const [aba, setAba] = useState(0)
   const [veiculoConfigurando, setVeiculoConfigurando] = useState<string | null>(null)
   const [importandoVeiculos, setImportandoVeiculos] = useState(false)
 
@@ -718,20 +722,28 @@ export default function Pneus(): JSX.Element {
     <>
       <CabecalhoDePagina
         titulo="Controle de pneus"
-        subtitulo={`${veiculos.length} ${veiculos.length === 1 ? 'veículo' : 'veículos'} · Base ${baseAtual}`}
-        acoes={
-          <>
-            <Botao rotulo="Importar eixos e modelo" antes={CloudUpload} aoClicar={() => setImportandoVeiculos(true)} />
-            <Botao rotulo="Cadastrar veículo" href="/cadastro" />
-          </>
-        }
+        subtitulo={aba === 1
+          ? `Estoque do almoxarifado · Base ${baseAtual}`
+          : `${veiculos.length} ${veiculos.length === 1 ? 'veículo' : 'veículos'} · Base ${baseAtual}`}
+        acoes={aba === 1
+          ? undefined
+          : (
+            <>
+              <Botao rotulo="Importar eixos e modelo" antes={CloudUpload} aoClicar={() => setImportandoVeiculos(true)} />
+              <Botao rotulo="Cadastrar veículo" href="/cadastro" />
+            </>
+          )}
       />
 
       <div className="g-secao">
         <Chips valor={baseAtual} opcoes={bases.map((nome) => ({ valor: nome, rotulo: nome }))} aoEscolher={setBase} />
       </div>
 
-      <Grade
+      <Abas itens={['Nos veículos', 'Estoque']} ativa={aba} aoTrocar={setAba} />
+
+      {aba === 1 ? <EstoqueDePneus base={baseAtual} /> : null}
+
+      {aba === 1 ? null : <Grade
         celulas={[
           {
             col: [1, 5],
@@ -761,7 +773,7 @@ export default function Pneus(): JSX.Element {
             conteudo: <TabelaDeVeiculos veiculos={veiculos} aoConfigurar={setVeiculoConfigurando} />,
           },
         ]}
-      />
+      />}
 
       {configurando === null ? null : (
         <DialogoDoVeiculo veiculo={configurando} aoFechar={() => setVeiculoConfigurando(null)} />
