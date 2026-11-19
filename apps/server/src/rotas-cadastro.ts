@@ -23,6 +23,7 @@ import {
   criarColaborador,
   criarPneu,
   criarRota,
+  excluirRota,
   criarVeiculo,
   funcaoColaborador,
   statusPneu,
@@ -171,6 +172,12 @@ export function rotasCadastro(db: Db): Hono<Ambiente> {
       return c.json({ erro: mensagemDaEntrada(entrada.error, 'entrada invalida') }, 400)
     }
     return responder(c, () => atualizarRota(db, c.get('usuarioId'), id.data, entrada.data))
+  })
+
+  rotas.delete('/cadastro/rotas/:id', async (c) => {
+    const id = Id.safeParse(c.req.param('id'))
+    if (!id.success) return c.json({ erro: 'entrada invalida' }, 400)
+    return responder(c, () => excluirRota(db, c.get('usuarioId'), id.data))
   })
 
   rotas.post('/cadastro/bases', async (c) => {

@@ -315,6 +315,72 @@ describe('escrita de rota', () => {
   })
 })
 
+describe('exclusão de rota', () => {
+  const NOMES_EXCLUSAO = ['ZZ EXCLUIR LIVRE', 'ZZ EXCLUIR COM VIAGEM', 'ZZ EXCLUIR ANDREINA']
+  const viagensCriadas: string[] = []
+
+  afterAll(async () => {
+    if (viagensCriadas.length) {
+      await sql`delete from atividade where registro_id = any(${sql.array(viagensCriadas)}::text[])`
+      await sql`delete from viagem where id = any(${sql.array(viagensCriadas)}::uuid[])`
+    }
+    await sql`delete from rota where nome = any(${sql.array(NOMES_EXCLUSAO)})`
+  })
+
+  const criar = async (nome: string, base: string) =>
+    (await (await escrever(livia, 'rotas', { nome, baseId: baseDe(base) })).json()) as Rota
+
+  const excluir = (cookie: string, id: string) =>
+    pedir(`/api/cadastro/rotas/${id}`, { method: 'DELETE', headers: { cookie } })
+
+  test('rota que nunca foi usada é excluída de verdade e some do cadastro', async () => {
+    const rota = await criar(NOMES_EXCLUSAO[0]!, 'Imperatriz')
+    const resposta = await excluir(livia, rota.id)
+    expect(resposta.status).toBe(200)
+    const [linha] = await sql<Array<{ n: number }>>`select count(*)::int as n from rota where id = ${rota.id}::uuid`
+    expect(linha!.n).toBe(0)
+    const { corpo } = await catalogo(livia, true)
+    expect(corpo!.rotas.map((r) => r.nome)).not.toContain(NOMES_EXCLUSAO[0]!)
+  })
+
+  test('rota com viagem lançada é recusada com 409, diz quantas são, e continua no banco', async () => {
+    const rota = await criar(NOMES_EXCLUSAO[1]!, 'Imperatriz')
+    const lancada = await pedir('/api/registros', {
+      method: 'POST',
+      headers: { cookie: livia, 'content-type': 'application/json' },
+      body: JSON.stringify({ registros: [{
+        tipo: 'viagem', base: 'Imperatriz', data_saida: '2026-09-02', hora_saida: '08:00', data_chegada: '2026-09-02',
+        hora_prevista: '18:00', hora_chegada: '18:30', motorista: 'Nataniel Pereira Rocha', veiculo: 'DMG9D41',
+        rota: NOMES_EXCLUSAO[1]!, km_saida: 1000, km_chegada: 1200, valor_carga: 10000, combustivel: 500,
+        diarias: 200, m2: 50, peso_kg: 1000, observacao: 'Prova da exclusão de rota',
+      }] }),
+    })
+    expect(lancada.status).toBe(201)
+    const [salva] = (await lancada.json()) as Array<{ id: string }>
+    viagensCriadas.push(salva!.id)
+
+    const resposta = await excluir(livia, rota.id)
+    expect(resposta.status).toBe(409)
+    expect(((await resposta.json()) as { erro: string }).erro).toContain('já foi usada em 1 viagem')
+    const [linha] = await sql<Array<{ n: number }>>`select count(*)::int as n from rota where id = ${rota.id}::uuid`
+    expect(linha!.n).toBe(1)
+
+    // A viagem apagada continua amarrada à rota: contar só as ativas deixaria o banco recusar.
+    await pedir(`/api/registros/viagem/${salva!.id}`, { method: 'DELETE', headers: { cookie: livia } })
+    expect((await excluir(livia, rota.id)).status).toBe(409)
+  })
+
+  test('operador não exclui rota (403), id inválido é 400 e id desconhecido é 404', async () => {
+    const rota = await criar(NOMES_EXCLUSAO[2]!, 'Raposa')
+    expect((await excluir(andreina, rota.id)).status).toBe(403)
+    const [linha] = await sql<Array<{ n: number }>>`select count(*)::int as n from rota where id = ${rota.id}::uuid`
+    expect(linha!.n).toBe(1)
+    expect((await excluir(livia, 'nao-e-uuid')).status).toBe(400)
+    expect((await excluir(livia, '00000000-0000-4000-8000-000000000000')).status).toBe(404)
+    expect((await pedir(`/api/cadastro/rotas/${rota.id}`, { method: 'DELETE' })).status).toBe(401)
+  })
+})
+
 describe('escrita de base', () => {
   test('a Lívia cria a base, desativa, e ela continua no ?todos=1', async () => {
     const resposta = await escrever(livia, 'bases', { nome: BASES[0]! })

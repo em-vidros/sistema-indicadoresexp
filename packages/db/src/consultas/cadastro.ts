@@ -13,9 +13,11 @@
  * vem direto das tabelas de cadastro, entao a regra e a de `permissao.ts`: admin
  * ve toda base ativa, o resto ve o que `usuario_base` lista.
  */
-import { and, eq, inArray, type SQL } from 'drizzle-orm'
+import { CAPACIDADES } from '@ind/core'
+import { and, count, eq, inArray, type SQL } from 'drizzle-orm'
 import type { Db } from '../index.ts'
 import { base, colaborador, pneu, rota, veiculo } from '../schema/cadastro.ts'
+import { abastecimento, viagem } from '../schema/registro.ts'
 import { type BasePermitida, lerPermissao } from './permissao.ts'
 
 /**
@@ -442,6 +444,46 @@ export async function atualizarRota(
   )
   if (!salva) throw new CadastroInvalido('rota inexistente', 404)
   return { ...salva, base: nome }
+}
+
+/**
+ * Exclui uma rota de verdade, e so a que nunca foi usada: criada errada, duplicada.
+ *
+ * A viagem e o abastecimento guardam a rota por chave estrangeira, e as linhas apagadas
+ * (`apagado_em`) continuam la, entao a conta inclui as apagadas: excluir a rota delas
+ * quebraria o historico e os paineis. Rota com lancamento so se desativa. A recusa diz
+ * quantos sao, para quem le saber que nao e um defeito.
+ *
+ * Quem pode: o mesmo alcance de base de `atualizarRota`, mais a capacidade de editar o
+ * cadastro (admin e gestor); apagar e mais grave do que editar, e o operador nao edita.
+ */
+export async function excluirRota(db: Db, usuarioId: string, id: string): Promise<{ id: string }> {
+  const alcance = await alcanceDoCadastro(db, usuarioId)
+  const permissao = await lerPermissao(db, usuarioId)
+  if (!permissao || !CAPACIDADES[permissao.papel].editaCadastro) {
+    throw new CadastroInvalido('sem permissão para excluir rotas')
+  }
+  await exigirAlvo(db, rota, id, alcance, 'rota inexistente')
+
+  return await db.transaction(async (tx) => {
+    const [daViagem] = await tx.select({ n: count() }).from(viagem).where(eq(viagem.rotaId, id))
+    const [doAbastecimento] = await tx.select({ n: count() }).from(abastecimento).where(eq(abastecimento.rotaId, id))
+    const viagens = daViagem?.n ?? 0
+    const abastecimentos = doAbastecimento?.n ?? 0
+    if (viagens + abastecimentos > 0) {
+      const partes = [
+        viagens > 0 ? `${viagens} ${viagens === 1 ? 'viagem' : 'viagens'}` : null,
+        abastecimentos > 0 ? `${abastecimentos} ${abastecimentos === 1 ? 'abastecimento' : 'abastecimentos'}` : null,
+      ].filter((parte) => parte !== null)
+      throw new CadastroInvalido(
+        `Esta rota já foi usada em ${partes.join(' e ')} e não pode ser excluída sem perder o histórico. Use Desativar para tirá-la da lista.`,
+        409,
+      )
+    }
+    const [apagada] = await tx.delete(rota).where(eq(rota.id, id)).returning({ id: rota.id })
+    if (!apagada) throw new CadastroInvalido('rota inexistente', 404)
+    return apagada
+  })
 }
 
 export async function criarBase(

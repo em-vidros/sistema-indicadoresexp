@@ -56,6 +56,7 @@ import {
   criarColaborador,
   criarRota,
   criarVeiculo,
+  excluirRota,
   obterCadastro,
 } from '../js/cadastro-api.ts'
 import type {
@@ -550,6 +551,9 @@ export default function Cadastro(): JSX.Element {
   const [vista, setVista] = useState<Vista>(VISTA_INICIAL)
   const [edicao, setEdicao] = useState<Edicao | null>(null)
   const [salvando, setSalvando] = useState(false)
+  /** A rota esperando confirmacao para ser excluida, ou nulo com o dialogo fechado. */
+  const [excluindo, setExcluindo] = useState<{ readonly id: string; readonly nome: string } | null>(null)
+  const [excluindoEmProgresso, setExcluindoEmProgresso] = useState(false)
 
   const editaCadastro = sessao.dados?.capacidades.editaCadastro === true
   const abas = editaCadastro ? ORDEM : ORDEM.slice(0, 3)
@@ -625,6 +629,28 @@ export default function Cadastro(): JSX.Element {
     )
   }
 
+  /**
+   * A recusa do servidor (rota com viagens) chega como aviso, com a mensagem dele, que diz
+   * quantas sao e manda usar Desativar; o dialogo fecha para a lista nao ficar parada.
+   */
+  const confirmarExclusao = (): void => {
+    if (excluindo === null) return
+    setExcluindoEmProgresso(true)
+    void excluirRota(excluindo.id).then(
+      () => {
+        setExcluindoEmProgresso(false)
+        setExcluindo(null)
+        invalidar('cadastro')
+        avisar('Rota excluída')
+      },
+      (motivo: unknown) => {
+        setExcluindoEmProgresso(false)
+        setExcluindo(null)
+        avisar(motivo instanceof Error ? motivo.message : 'não foi possível excluir', 'erro')
+      },
+    )
+  }
+
   const alternar = (linha: Linha): void => {
     void gravar(comAtivo(linha.rascunho, !linha.ativo)).then(
       () => terminar(linha.ativo ? especie.desativado : especie.reativado),
@@ -664,6 +690,17 @@ export default function Cadastro(): JSX.Element {
                           rotulo: linha.ativo ? 'Desativar' : 'Reativar',
                           aoEscolher: () => alternar(linha),
                         },
+                        // So a rota se exclui: as outras abas so se desativam.
+                        ...(linha.rascunho.aba === 'rotas' && linha.rascunho.id !== null
+                          ? [{
+                            rotulo: 'Excluir',
+                            aoEscolher: () => {
+                              if (linha.rascunho.aba === 'rotas' && linha.rascunho.id !== null) {
+                                setExcluindo({ id: linha.rascunho.id, nome: linha.rascunho.nome })
+                              }
+                            },
+                          }]
+                          : []),
                       ]}
                     />
                   </Td>
@@ -805,6 +842,30 @@ export default function Cadastro(): JSX.Element {
             />
           </Dialogo>
         )}
+
+      <Dialogo
+        aberto={excluindo !== null}
+        titulo="Excluir rota"
+        subtitulo={excluindo?.nome ?? ''}
+        aoFechar={() => setExcluindo(null)}
+        acoes={
+          <>
+            <Botao tipo="terciario" rotulo="Cancelar" aoClicar={() => setExcluindo(null)} />
+            <Botao
+              tipo="primario"
+              rotulo="Excluir rota"
+              carregando={excluindoEmProgresso}
+              aoClicar={confirmarExclusao}
+            />
+          </>
+        }
+      >
+        <div className="g-l14">
+          Isto exclui a rota de vez, e não tem como desfazer pela tela. Só funciona para rota que nunca
+          foi usada; se ela já tem viagens ou abastecimentos lançados, o sistema recusa e você pode usar
+          Desativar para tirá-la da lista sem perder o histórico.
+        </div>
+      </Dialogo>
     </>
   )
 }

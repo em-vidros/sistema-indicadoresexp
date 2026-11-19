@@ -206,6 +206,14 @@ export async function atualizarRota(
   return await gravar('rotas', id, entrada, chamar)
 }
 
+/**
+ * Exclui uma rota que nunca foi usada. Rota com viagens ou abastecimentos lancados volta 409
+ * com a mensagem do servidor, que diz quantos sao e manda usar Desativar.
+ */
+export async function excluirRota(id: string, chamar: Chamar = fetch): Promise<void> {
+  await pedirJson(`/api/cadastro/rotas/${encodeURIComponent(id)}`, { method: 'DELETE' }, chamar)
+}
+
 export async function criarBase(
   entrada: EntradaBase,
   chamar: Chamar = fetch,

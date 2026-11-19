@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  excluirRota,
   atualizarBase,
   atualizarColaborador,
   atualizarRota,
@@ -114,5 +115,26 @@ describe('a tela de cadastro fala com a API', () => {
     expect(proibido).toBeInstanceOf(FalhaDeCadastro)
     expect((proibido as FalhaDeCadastro).status).toBe(403)
     expect((proibido as FalhaDeCadastro).message).toBe('só o admin mexe nas bases')
+  })
+})
+
+describe('excluir rota', () => {
+  test('manda DELETE para a rota certa', async () => {
+    const pedidos: Array<{ url: string; metodo: string | undefined }> = []
+    const chamar = async (recurso: string | URL | Request, init?: RequestInit) => {
+      pedidos.push({ url: recurso.toString(), metodo: init?.method })
+      return Response.json({ id: 'r1' })
+    }
+    await excluirRota('r1', chamar)
+    expect(pedidos).toEqual([{ url: '/api/cadastro/rotas/r1', metodo: 'DELETE' }])
+  })
+
+  test('rota com viagens volta 409 com a mensagem do servidor, para a tela mostrar', async () => {
+    const chamar = async () =>
+      Response.json({ erro: 'Esta rota já foi usada em 3 viagens e não pode ser excluída' }, { status: 409 })
+    const falha = await excluirRota('r1', chamar).catch((motivo: unknown) => motivo)
+    expect(falha).toBeInstanceOf(FalhaDeCadastro)
+    expect((falha as FalhaDeCadastro).status).toBe(409)
+    expect((falha as FalhaDeCadastro).message).toContain('3 viagens')
   })
 })
